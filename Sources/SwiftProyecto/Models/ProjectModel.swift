@@ -106,6 +106,14 @@ public final class ProjectModel {
     /// Last time project was synced with filesystem
     public var lastSyncDate: Date?
 
+    /// Date when this project was last opened by the user
+    ///
+    /// Used to display recent items in welcome screens and "Open Recent" menus.
+    /// Automatically updated when the project window is opened.
+    ///
+    /// - Note: A nil value indicates the project has never been opened (newly created).
+    public var lastOpenedDate: Date?
+
     /// Raw PROJECT.md body content (markdown without front matter)
     ///
     /// This stores the project notes and description from PROJECT.md body.
@@ -148,6 +156,7 @@ public final class ProjectModel {
         folderBookmark: Data? = nil,
         folderPath: String? = nil,
         lastSyncDate: Date? = nil,
+        lastOpenedDate: Date? = nil,
         projectMarkdownContent: String? = nil
     ) {
         self.id = id
@@ -162,6 +171,7 @@ public final class ProjectModel {
         self.folderBookmark = folderBookmark
         self.folderPath = folderPath
         self.lastSyncDate = lastSyncDate
+        self.lastOpenedDate = lastOpenedDate
         self.projectMarkdownContent = projectMarkdownContent
         self.fileReferences = []
     }
