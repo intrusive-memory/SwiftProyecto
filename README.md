@@ -45,18 +45,22 @@ SwiftProyecto sits between SwiftCompartido (data structures & parsing) and Produ
 
 ## Features (Roadmap)
 
-### ✅ Phase 0: Foundation (Current)
-- [ ] Package structure and dependencies
-- [ ] Basic documentation
+### ✅ Phase 0: Foundation (Complete)
+- [x] Package structure and dependencies
+- [x] Basic documentation
+- [x] GitHub repository published
 
-### 🚧 Phase 1: SwiftData Models
-- [ ] `ProjectModel` - Project metadata and relationships
-- [ ] `ProjectFileReference` - File discovery and state tracking
-- [ ] `FileLoadingState` enum - File state transitions
+### ✅ Phase 1: SwiftData Models (Complete)
+- [x] `ProjectModel` - Project metadata and relationships
+- [x] `ProjectFileReference` - File discovery and state tracking
+- [x] `FileLoadingState` enum - File state transitions
+- [x] 32 tests, all passing (100%)
+- [x] ~95% test coverage
 
-### 🚧 Phase 2: Container Strategy
+### 🚧 Phase 2: Container Strategy (In Progress)
 - [ ] `DocumentContext` enum - Single file vs project context
 - [ ] `ModelContainerFactory` - Dual container selection logic
+- [ ] SwiftCompartido dependency integration
 
 ### 🚧 Phase 3: Service Layer
 - [ ] `ProjectManager` - Project CRUD operations

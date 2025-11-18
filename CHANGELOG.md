@@ -7,7 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Phase 0: Foundation (In Progress)
+### Phase 2: Container Strategy (In Progress)
+
+#### Planned
+- DocumentContext enum for single-file vs project context
+- ModelContainerFactory for dual container selection
+- SwiftCompartido dependency integration
+- GuionDocumentModel relationship integration
+
+---
+
+## [0.2.0] - 2025-11-17
+
+### Phase 1: SwiftData Models (Complete)
+
+#### Added
+- **FileLoadingState** enum with 6 states (notLoaded, loading, loaded, stale, missing, error)
+  - Display properties (displayName, systemIconName)
+  - Capability flags (canOpen, canLoad, showsWarning)
+  - Full Codable support
+- **ProjectFileReference** SwiftData model
+  - File discovery and state tracking
+  - Bidirectional relationship to ProjectModel
+  - Convenience properties for querying
+  - Display name with path context
+- **ProjectModel** SwiftData model
+  - Complete project metadata (title, author, created, description, etc.)
+  - Optional fields (season, episodes, genre, tags)
+  - Security-scoped folder bookmark storage
+  - Cascade delete for file references
+  - Query methods (file counts, filtering, sorting)
+  - Sync detection logic
+
+#### Tests
+- 32 tests total, all passing (100%)
+- FileLoadingStateTests: 8 tests
+- ProjectFileReferenceTests: 10 tests
+- ProjectModelTests: 12 tests
+- Test coverage: ~95%
+
+#### Development
+- Swift 6.2 compatibility
+- iOS 26.0+ and macOS 26.0+ support
+- Full SwiftData persistence
+- Zero compiler warnings
+
+---
+
+## [0.1.0] - 2025-11-17
+
+### Phase 0: Foundation (Complete)
 
 #### Added
 - Initial package structure with Package.swift
@@ -24,15 +73,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic tests pass (version check, placeholder test)
 - Repository published to GitHub
 
----
-
-## [0.1.0] - 2025-11-17
-
-### Initial Release
-
-- Package structure created
-- Repository initialized
-- Phase 0 (Foundation) in progress
-
-[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/intrusive-memory/SwiftProyecto/releases/tag/v0.2.0
 [0.1.0]: https://github.com/intrusive-memory/SwiftProyecto/releases/tag/v0.1.0
