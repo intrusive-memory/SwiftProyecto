@@ -550,8 +550,13 @@ public final class ProjectManager {
     /// - Parameters:
     ///   - fileReference: The file reference to load
     ///   - project: The project containing the file
+    ///   - progress: Optional progress callback for parsing updates
     /// - Throws: ProjectError if loading fails
-    public func loadFile(_ fileReference: ProjectFileReference, in project: ProjectModel) async throws {
+    public func loadFile(
+        _ fileReference: ProjectFileReference,
+        in project: ProjectModel,
+        progress: OperationProgress? = nil
+    ) async throws {
         // Verify file can be loaded
         guard fileReference.canLoad else {
             if fileReference.isLoaded {
@@ -575,7 +580,10 @@ public final class ProjectManager {
                 }
 
                 // Parse file using SwiftCompartido
-                let parsedCollection = try await GuionParsedElementCollection(file: fileURL.path)
+                let parsedCollection = try await GuionParsedElementCollection(
+                    file: fileURL.path,
+                    progress: progress
+                )
 
                 // Create GuionDocumentModel
                 let document = GuionDocumentModel(
