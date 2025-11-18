@@ -247,6 +247,15 @@ public final class ProjectManager {
         genre: String? = nil,
         tags: [String]? = nil
     ) throws -> ProjectModel {
+        // Start accessing security-scoped resource
+        // On macOS, the folderURL comes from NSOpenPanel and needs explicit access
+        let didStartAccessing = folderURL.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccessing {
+                folderURL.stopAccessingSecurityScopedResource()
+            }
+        }
+
         // Check if folder already exists
         var isDirectory: ObjCBool = false
         if fileManager.fileExists(atPath: folderURL.path, isDirectory: &isDirectory) {
