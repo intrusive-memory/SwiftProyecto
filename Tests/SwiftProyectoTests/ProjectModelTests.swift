@@ -1,5 +1,6 @@
 import XCTest
 import SwiftData
+import SwiftCompartido
 @testable import SwiftProyecto
 
 @MainActor
@@ -13,7 +14,8 @@ final class ProjectModelTests: XCTestCase {
 
         let schema = Schema([
             ProjectModel.self,
-            ProjectFileReference.self
+            ProjectFileReference.self,
+            GuionDocumentModel.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
@@ -118,7 +120,10 @@ final class ProjectModelTests: XCTestCase {
             fileExtension: "fountain",
             loadingState: .loaded
         )
-        file2.loadedDocumentID = UUID()
+        // Create a mock document for testing
+        let mockDoc = GuionDocumentModel(filename: "file2.fountain", rawContent: nil, suppressSceneNumbers: false)
+        modelContext.insert(mockDoc)
+        file2.loadedDocument = mockDoc
         project.fileReferences.append(file2)
 
         XCTAssertEqual(project.totalFileCount, 2)
@@ -128,7 +133,9 @@ final class ProjectModelTests: XCTestCase {
 
         // Load first file
         file1.loadingState = .loaded
-        file1.loadedDocumentID = UUID()
+        let mockDoc1 = GuionDocumentModel(filename: "file1.fountain", rawContent: nil, suppressSceneNumbers: false)
+        modelContext.insert(mockDoc1)
+        file1.loadedDocument = mockDoc1
 
         XCTAssertEqual(project.totalFileCount, 2)
         XCTAssertEqual(project.loadedFileCount, 2)

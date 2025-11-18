@@ -25,6 +25,7 @@
 
 import Foundation
 import SwiftData
+import SwiftCompartido
 
 /// A reference to a screenplay file within a project.
 ///
@@ -75,14 +76,17 @@ public final class ProjectFileReference {
     /// Optional error message if loadingState is .error
     public var errorMessage: String?
 
-    /// ID of the loaded GuionDocumentModel (if loaded)
+    /// The loaded GuionDocumentModel (if file has been imported)
     ///
-    /// This is set when the file is successfully parsed and imported to SwiftData.
-    /// It's nil for unloaded files.
+    /// This relationship is set when the file is successfully parsed and imported to SwiftData.
+    /// It's nil for unloaded files (state = .notLoaded).
     ///
-    /// **Note**: In Phase 2, this will become a proper @Relationship to GuionDocumentModel
-    /// when SwiftCompartido is added as a dependency.
-    public var loadedDocumentID: UUID?
+    /// - When file is loaded: This links to the GuionDocumentModel in the same container
+    /// - When file is unloaded: This is nil (file exists but not parsed)
+    ///
+    /// **Delete Rule**: `.nullify` - Deleting the document unlinks it but doesn't delete the reference
+    @Relationship(deleteRule: .nullify)
+    public var loadedDocument: GuionDocumentModel?
 
     /// Parent project this file belongs to
     @Relationship(inverse: \ProjectModel.fileReferences)
@@ -122,12 +126,12 @@ public final class ProjectFileReference {
 public extension ProjectFileReference {
     /// Whether this file is currently loaded in SwiftData
     var isLoaded: Bool {
-        return loadingState == .loaded && loadedDocumentID != nil
+        return loadingState == .loaded && loadedDocument != nil
     }
 
     /// Whether this file can be opened for editing
     var canOpen: Bool {
-        return loadingState.canOpen && loadedDocumentID != nil
+        return loadingState.canOpen && loadedDocument != nil
     }
 
     /// Whether this file can be loaded

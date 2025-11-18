@@ -15,12 +15,12 @@ let package = Package(
         ),
     ],
     dependencies: [
-        // Will add SwiftCompartido dependency when we need PROJECT.md parsing
+        .package(path: "../SwiftCompartido")
     ],
     targets: [
         .target(
             name: "SwiftProyecto",
-            dependencies: []
+            dependencies: ["SwiftCompartido"]
         ),
         .testTarget(
             name: "SwiftProyectoTests",

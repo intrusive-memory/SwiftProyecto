@@ -1,5 +1,6 @@
 import XCTest
 import SwiftData
+import SwiftCompartido
 @testable import SwiftProyecto
 
 @MainActor
@@ -14,7 +15,8 @@ final class ProjectFileReferenceTests: XCTestCase {
         // Create in-memory model container for testing
         let schema = Schema([
             ProjectModel.self,
-            ProjectFileReference.self
+            ProjectFileReference.self,
+            GuionDocumentModel.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
@@ -43,7 +45,7 @@ final class ProjectFileReferenceTests: XCTestCase {
         XCTAssertNil(fileRef.lastKnownModificationDate)
         XCTAssertEqual(fileRef.loadingState, .notLoaded)
         XCTAssertNil(fileRef.errorMessage)
-        XCTAssertNil(fileRef.loadedDocumentID)
+        XCTAssertNil(fileRef.loadedDocument)
         XCTAssertNil(fileRef.project)
     }
 
@@ -82,12 +84,14 @@ final class ProjectFileReferenceTests: XCTestCase {
         // Not loaded initially
         XCTAssertFalse(fileRef.isLoaded)
 
-        // Set to loaded state but no document ID
+        // Set to loaded state but no document
         fileRef.loadingState = .loaded
         XCTAssertFalse(fileRef.isLoaded)
 
-        // Add document ID
-        fileRef.loadedDocumentID = UUID()
+        // Add document
+        let mockDoc = GuionDocumentModel(filename: "test.fountain", rawContent: nil, suppressSceneNumbers: false)
+        modelContext.insert(mockDoc)
+        fileRef.loadedDocument = mockDoc
         XCTAssertTrue(fileRef.isLoaded)
 
         // Change state to stale
@@ -107,7 +111,9 @@ final class ProjectFileReferenceTests: XCTestCase {
 
         // Can open when loaded with document
         fileRef.loadingState = .loaded
-        fileRef.loadedDocumentID = UUID()
+        let mockDoc = GuionDocumentModel(filename: "test.fountain", rawContent: nil, suppressSceneNumbers: false)
+        modelContext.insert(mockDoc)
+        fileRef.loadedDocument = mockDoc
         XCTAssertTrue(fileRef.canOpen)
 
         // Can open when stale with document
@@ -115,7 +121,7 @@ final class ProjectFileReferenceTests: XCTestCase {
         XCTAssertTrue(fileRef.canOpen)
 
         // Cannot open with no document
-        fileRef.loadedDocumentID = nil
+        fileRef.loadedDocument = nil
         XCTAssertFalse(fileRef.canOpen)
     }
 
@@ -214,7 +220,9 @@ final class ProjectFileReferenceTests: XCTestCase {
 
         // Update
         fileRef.loadingState = .loaded
-        fileRef.loadedDocumentID = UUID()
+        let mockDoc = GuionDocumentModel(filename: "test.fountain", rawContent: nil, suppressSceneNumbers: false)
+        modelContext.insert(mockDoc)
+        fileRef.loadedDocument = mockDoc
         try modelContext.save()
 
         // Fetch all
@@ -222,7 +230,7 @@ final class ProjectFileReferenceTests: XCTestCase {
 
         let fetchedRef = try XCTUnwrap(fetched.first { $0.id == originalID })
         XCTAssertEqual(fetchedRef.loadingState, .loaded)
-        XCTAssertNotNil(fetchedRef.loadedDocumentID)
+        XCTAssertNotNil(fetchedRef.loadedDocument)
     }
 
     func testDelete() throws {
@@ -261,7 +269,9 @@ final class ProjectFileReferenceTests: XCTestCase {
 
         // loading → loaded
         fileRef.loadingState = .loaded
-        fileRef.loadedDocumentID = UUID()
+        let mockDoc = GuionDocumentModel(filename: "test.fountain", rawContent: nil, suppressSceneNumbers: false)
+        modelContext.insert(mockDoc)
+        fileRef.loadedDocument = mockDoc
         XCTAssertEqual(fileRef.loadingState, .loaded)
         XCTAssertTrue(fileRef.isLoaded)
 

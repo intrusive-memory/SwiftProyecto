@@ -7,13 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Phase 2: Container Strategy (In Progress)
+### Phase 3: Service Layer (Planned)
 
 #### Planned
-- DocumentContext enum for single-file vs project context
-- ModelContainerFactory for dual container selection
-- SwiftCompartido dependency integration
-- GuionDocumentModel relationship integration
+- ProjectManager service for CRUD operations
+- Project lifecycle management (create, open, close)
+- File discovery and synchronization
+- File loading/unloading operations
+
+---
+
+## [0.3.0] - 2025-11-17
+
+### Phase 2: Container Strategy (Complete)
+
+#### Added
+- **DocumentContext** enum
+  - Single file vs project context representation
+  - Convenience properties (url, isProject, cacheDirectoryURL, storeURL)
+  - Full Equatable and Sendable support
+- **ModelContainerFactory** service
+  - Dual container creation strategy
+  - Single file: App-wide container in ~/Library/Application Support
+  - Project: Project-local container in `<project>/.cache/`
+  - Container lifecycle methods (create, delete, exists)
+  - Comprehensive error handling
+- **SwiftCompartido dependency** integration
+  - ProjectFileReference.loadedDocument relationship to GuionDocumentModel
+  - Full schema integration with all SwiftCompartido models
+  - Proper @Relationship with .nullify delete rule
+
+#### Tests
+- 55 tests total, all passing (100%)
+- DocumentContextTests: 11 tests
+- ModelContainerFactoryTests: 12 tests
+- All Phase 1 tests updated for GuionDocumentModel relationship
+- Test coverage maintained at ~95%
+
+#### Development
+- Zero compiler warnings
+- Comprehensive integration tests for dual container strategy
+- Proper MainActor isolation for SwiftData operations
 
 ---
 
