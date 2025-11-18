@@ -536,4 +536,63 @@ final class ProjectManagerTests: XCTestCase {
         // Verify lastSyncDate is updated
         XCTAssertNotNil(project.lastSyncDate)
     }
+
+    // MARK: - Error Description Tests
+
+    func testProjectErrorDescriptions() {
+        let testURL = tempDirectory.appendingPathComponent("test.fountain")
+        let testError = NSError(domain: "Test", code: 1, userInfo: [NSLocalizedDescriptionKey: "Test error"])
+
+        let projectAlreadyExistsError = ProjectManager.ProjectError.projectAlreadyExists(testURL)
+        XCTAssertNotNil(projectAlreadyExistsError.errorDescription)
+        XCTAssertTrue(projectAlreadyExistsError.errorDescription!.contains("already exists"))
+
+        let projectFolderNotFoundError = ProjectManager.ProjectError.projectFolderNotFound(testURL)
+        XCTAssertNotNil(projectFolderNotFoundError.errorDescription)
+        XCTAssertTrue(projectFolderNotFoundError.errorDescription!.contains("folder not found"))
+
+        let projectManifestNotFoundError = ProjectManager.ProjectError.projectManifestNotFound(testURL)
+        XCTAssertNotNil(projectManifestNotFoundError.errorDescription)
+        XCTAssertTrue(projectManifestNotFoundError.errorDescription!.contains("PROJECT.md"))
+
+        let projectManifestInvalidError = ProjectManager.ProjectError.projectManifestInvalid("Invalid YAML")
+        XCTAssertNotNil(projectManifestInvalidError.errorDescription)
+        XCTAssertTrue(projectManifestInvalidError.errorDescription!.contains("Invalid"))
+
+        let fileNotFoundError = ProjectManager.ProjectError.fileNotFound(testURL)
+        XCTAssertNotNil(fileNotFoundError.errorDescription)
+        XCTAssertTrue(fileNotFoundError.errorDescription!.contains("not found"))
+
+        let fileAlreadyLoadedError = ProjectManager.ProjectError.fileAlreadyLoaded("test.fountain")
+        XCTAssertNotNil(fileAlreadyLoadedError.errorDescription)
+        XCTAssertTrue(fileAlreadyLoadedError.errorDescription!.contains("already loaded"))
+
+        let unsupportedFileTypeError = ProjectManager.ProjectError.unsupportedFileType(".xyz")
+        XCTAssertNotNil(unsupportedFileTypeError.errorDescription)
+        XCTAssertTrue(unsupportedFileTypeError.errorDescription!.contains("Unsupported"))
+
+        let bookmarkError = ProjectManager.ProjectError.bookmarkCreationFailed(testError)
+        XCTAssertNotNil(bookmarkError.errorDescription)
+        XCTAssertTrue(bookmarkError.errorDescription!.contains("bookmark"))
+
+        let bookmarkResolutionError = ProjectManager.ProjectError.bookmarkResolutionFailed(testError)
+        XCTAssertNotNil(bookmarkResolutionError.errorDescription)
+        XCTAssertTrue(bookmarkResolutionError.errorDescription!.contains("resolve"))
+
+        let securityScopedError = ProjectManager.ProjectError.securityScopedAccessFailed(testURL)
+        XCTAssertNotNil(securityScopedError.errorDescription)
+        XCTAssertTrue(securityScopedError.errorDescription!.contains("security-scoped"))
+
+        let noBookmarkDataError = ProjectManager.ProjectError.noBookmarkData
+        XCTAssertNotNil(noBookmarkDataError.errorDescription)
+        XCTAssertTrue(noBookmarkDataError.errorDescription!.contains("bookmark data"))
+
+        let parsingError = ProjectManager.ProjectError.parsingFailed("test.fountain", testError)
+        XCTAssertNotNil(parsingError.errorDescription)
+        XCTAssertTrue(parsingError.errorDescription!.contains("parse"))
+
+        let saveError = ProjectManager.ProjectError.saveError(testError)
+        XCTAssertNotNil(saveError.errorDescription)
+        XCTAssertTrue(saveError.errorDescription!.contains("save"))
+    }
 }

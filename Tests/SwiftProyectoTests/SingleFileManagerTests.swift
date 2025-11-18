@@ -476,4 +476,47 @@ final class SingleFileManagerTests: XCTestCase {
         // Verify file still exists
         XCTAssertTrue(FileManager.default.fileExists(atPath: fileURL.path))
     }
+
+    // MARK: - Error Description Tests
+
+    func testSingleFileErrorDescriptions() {
+        let testURL = tempDirectory.appendingPathComponent("test.fountain")
+        let testError = NSError(domain: "Test", code: 1, userInfo: [NSLocalizedDescriptionKey: "Test error"])
+
+        let fileNotFoundError = SingleFileManager.SingleFileError.fileNotFound(testURL)
+        XCTAssertNotNil(fileNotFoundError.errorDescription)
+        XCTAssertTrue(fileNotFoundError.errorDescription!.contains("File not found"))
+
+        let fileAccessError = SingleFileManager.SingleFileError.fileAccessFailed(testURL)
+        XCTAssertNotNil(fileAccessError.errorDescription)
+        XCTAssertTrue(fileAccessError.errorDescription!.contains("Cannot access"))
+
+        let bookmarkCreationError = SingleFileManager.SingleFileError.bookmarkCreationFailed(testError)
+        XCTAssertNotNil(bookmarkCreationError.errorDescription)
+        XCTAssertTrue(bookmarkCreationError.errorDescription!.contains("bookmark"))
+
+        let bookmarkResolutionError = SingleFileManager.SingleFileError.bookmarkResolutionFailed(testError)
+        XCTAssertNotNil(bookmarkResolutionError.errorDescription)
+        XCTAssertTrue(bookmarkResolutionError.errorDescription!.contains("resolve"))
+
+        let securityScopedError = SingleFileManager.SingleFileError.securityScopedAccessFailed(testURL)
+        XCTAssertNotNil(securityScopedError.errorDescription)
+        XCTAssertTrue(securityScopedError.errorDescription!.contains("security-scoped"))
+
+        let noBookmarkDataError = SingleFileManager.SingleFileError.noBookmarkData
+        XCTAssertNotNil(noBookmarkDataError.errorDescription)
+        XCTAssertTrue(noBookmarkDataError.errorDescription!.contains("bookmark data"))
+
+        let parsingError = SingleFileManager.SingleFileError.parsingFailed("test.fountain", testError)
+        XCTAssertNotNil(parsingError.errorDescription)
+        XCTAssertTrue(parsingError.errorDescription!.contains("Failed to parse"))
+
+        let saveError = SingleFileManager.SingleFileError.saveError(testError)
+        XCTAssertNotNil(saveError.errorDescription)
+        XCTAssertTrue(saveError.errorDescription!.contains("save"))
+
+        let documentNotFoundError = SingleFileManager.SingleFileError.documentNotFound
+        XCTAssertNotNil(documentNotFoundError.errorDescription)
+        XCTAssertTrue(documentNotFoundError.errorDescription!.contains("Document not found"))
+    }
 }

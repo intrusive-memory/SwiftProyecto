@@ -250,4 +250,22 @@ final class ModelContainerFactoryTests: XCTestCase {
         XCTAssertEqual(projectProjects.count, 1)
         XCTAssertEqual(projectProjects.first?.title, "Project")
     }
+
+    // MARK: - Error Description Tests
+
+    func testContainerErrorDescriptions() {
+        let testError = NSError(domain: "Test", code: 1, userInfo: [NSLocalizedDescriptionKey: "Test error"])
+
+        let projectRootError = ModelContainerFactory.ContainerError.projectRootDoesNotExist(tempDirectory)
+        XCTAssertNotNil(projectRootError.errorDescription)
+        XCTAssertTrue(projectRootError.errorDescription!.contains("Project root"))
+
+        let cacheDirectoryError = ModelContainerFactory.ContainerError.cacheDirectoryCreationFailed(tempDirectory, testError)
+        XCTAssertNotNil(cacheDirectoryError.errorDescription)
+        XCTAssertTrue(cacheDirectoryError.errorDescription!.contains("cache"))
+
+        let containerCreationError = ModelContainerFactory.ContainerError.containerCreationFailed(testError)
+        XCTAssertNotNil(containerCreationError.errorDescription)
+        XCTAssertTrue(containerCreationError.errorDescription!.contains("container"))
+    }
 }
