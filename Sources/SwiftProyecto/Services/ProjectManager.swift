@@ -665,4 +665,176 @@ public final class ProjectManager {
     public func syncProject(_ project: ProjectModel) throws {
         try discoverFiles(for: project)
     }
+
+    // MARK: - iOS-Specific Project Management
+
+    #if os(iOS)
+    /// Creates a new project in iCloud Drive (iOS only).
+    ///
+    /// This method creates a project folder in the app's iCloud container and
+    /// initializes it with a PROJECT.md manifest. The project is automatically
+    /// synced to iCloud Drive.
+    ///
+    /// - Parameters:
+    ///   - title: Project title
+    ///   - author: Project author
+    ///   - description: Optional project description
+    ///   - season: Optional season number
+    ///   - episodes: Optional episode count
+    ///   - genre: Optional genre
+    ///   - tags: Optional tags
+    /// - Returns: The created ProjectModel
+    /// - Throws: ProjectError if creation fails
+    public func createICloudProject(
+        title: String,
+        author: String,
+        description: String? = nil,
+        season: Int? = nil,
+        episodes: Int? = nil,
+        genre: String? = nil,
+        tags: [String]? = nil
+    ) async throws -> ProjectModel {
+        let support = iCloudProjectSupport()
+
+        // Create project folder in iCloud
+        let projectURL = try support.createICloudProjectFolder(named: title)
+
+        // Use the standard createProject method with the iCloud URL
+        return try await createProject(
+            at: projectURL,
+            title: title,
+            author: author,
+            description: description,
+            season: season,
+            episodes: episodes,
+            genre: genre,
+            tags: tags
+        )
+    }
+
+    /// Creates a new project in local Documents directory (iOS only).
+    ///
+    /// This method creates a project folder in the app's local Documents directory.
+    /// The project is stored on-device and not synced to iCloud.
+    ///
+    /// - Parameters:
+    ///   - title: Project title
+    ///   - author: Project author
+    ///   - description: Optional project description
+    ///   - season: Optional season number
+    ///   - episodes: Optional episode count
+    ///   - genre: Optional genre
+    ///   - tags: Optional tags
+    /// - Returns: The created ProjectModel
+    /// - Throws: ProjectError if creation fails
+    public func createLocalProject(
+        title: String,
+        author: String,
+        description: String? = nil,
+        season: Int? = nil,
+        episodes: Int? = nil,
+        genre: String? = nil,
+        tags: [String]? = nil
+    ) async throws -> ProjectModel {
+        let support = iCloudProjectSupport()
+
+        // Create project folder locally
+        let projectURL = try support.createLocalProjectFolder(named: title)
+
+        // Use the standard createProject method with the local URL
+        return try await createProject(
+            at: projectURL,
+            title: title,
+            author: author,
+            description: description,
+            season: season,
+            episodes: episodes,
+            genre: genre,
+            tags: tags
+        )
+    }
+
+    /// Imports a screenplay file into a project by copying it (iOS only).
+    ///
+    /// This method copies an external screenplay file into the project folder,
+    /// then loads it into SwiftData. The original file is not modified.
+    ///
+    /// This is the iOS workflow for importing files from the document picker.
+    ///
+    /// - Parameters:
+    ///   - sourceURL: URL of the file to import
+    ///   - project: The project to import into
+    ///   - replaceExisting: If `true`, replaces existing file with same name
+    /// - Returns: The created ProjectFileReference
+    /// - Throws: ProjectError if import fails
+    public func importFileToProject(
+        from sourceURL: URL,
+        into project: ProjectModel,
+        replaceExisting: Bool = false
+    ) async throws -> ProjectFileReference {
+        let support = iCloudProjectSupport()
+
+        // Resolve project folder URL from bookmark
+        let projectURL = try resolveProjectURL(for: project)
+
+        // Copy file into project folder
+        let copiedURL = try support.copyFileToProject(
+            from: sourceURL,
+            to: projectURL,
+            replaceExisting: replaceExisting
+        )
+
+        // Discover files to add the new file reference
+        try discoverFiles(for: project)
+
+        // Find the file reference for the copied file
+        let filename = copiedURL.lastPathComponent
+        guard let fileReference = project.fileReferences.first(where: { $0.filename == filename }) else {
+            throw ProjectError.fileNotFound(copiedURL)
+        }
+
+        // Load the file
+        try await loadFile(fileReference, in: project)
+
+        return fileReference
+    }
+
+    /// Resolves the project folder URL from its bookmark.
+    ///
+    /// Helper method for iOS file operations.
+    ///
+    /// - Parameter project: The project model
+    /// - Returns: Resolved URL to the project folder
+    /// - Throws: ProjectError if resolution fails
+    private func resolveProjectURL(for project: ProjectModel) throws -> URL {
+        guard let bookmarkData = project.folderBookmark else {
+            throw ProjectError.noBookmarkData
+        }
+
+        var isStale = false
+        do {
+            let url = try URL(
+                resolvingBookmarkData: bookmarkData,
+                options: bookmarkResolutionOptions,
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            )
+
+            // Recreate bookmark if stale
+            if isStale {
+                let newBookmark = try url.bookmarkData(
+                    options: bookmarkCreationOptions,
+                    includingResourceValuesForKeys: nil,
+                    relativeTo: nil
+                )
+                project.folderBookmark = newBookmark
+                try modelContext.save()
+            }
+
+            return url
+        } catch {
+            throw ProjectError.bookmarkResolutionFailed(error)
+        }
+    }
+    #endif
 }

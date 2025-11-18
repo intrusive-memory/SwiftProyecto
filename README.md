@@ -16,6 +16,9 @@ SwiftProyecto handles:
 - File discovery and state tracking (loaded, unloaded, stale, missing)
 - Dual SwiftData container strategy (app-wide vs project-local)
 - Project lifecycle operations (create, open, sync, load files)
+- **iOS iCloud Drive integration** with local storage fallback
+- **macOS security-scoped bookmark** management for sandboxed access
+- Platform-specific file operations (import, export, copy)
 
 ## Architecture
 
@@ -141,6 +144,91 @@ tags: [sci-fi, drama]
 
 Additional notes and production information go here...
 ```
+
+### iOS-Specific Features
+
+SwiftProyecto provides iOS-native project management with **iCloud Drive integration** and **local storage** support.
+
+#### iCloud Projects
+
+Projects are automatically synced across devices via iCloud Drive:
+
+```swift
+let manager = ProjectManager(modelContext: modelContext)
+
+// Check if iCloud is available
+let support = iCloudProjectSupport()
+if support.isICloudAvailable {
+    // Create project in iCloud Drive
+    let project = try await manager.createICloudProject(
+        title: "My Series",
+        author: "Jane Showrunner",
+        description: "A multi-episode series"
+    )
+}
+```
+
+**iCloud Structure:**
+```
+iCloud Drive/
+└── Produciesta/
+    └── Documents/
+        └── Projects/
+            ├── My Series/
+            │   ├── PROJECT.md
+            │   └── episode-01.fountain
+            └── Another Project/
+```
+
+#### Local Projects
+
+For offline work or when iCloud is unavailable:
+
+```swift
+// Create project in local Documents directory
+let project = try await manager.createLocalProject(
+    title: "Local Project",
+    author: "John Writer"
+)
+```
+
+**Local Structure:**
+```
+Documents/
+└── Projects/
+    └── Local Project/
+        ├── PROJECT.md
+        └── screenplay.fountain
+```
+
+#### Importing Files on iOS
+
+Files are **copied** into the project folder (original preserved):
+
+```swift
+// User selects file from document picker
+let sourceURL = ... // From UIDocumentPickerViewController
+
+// Copy file into project and load it
+let fileRef = try await manager.importFileToProject(
+    from: sourceURL,
+    into: project,
+    replaceExisting: false
+)
+
+// File is now part of the project
+print(fileRef.filename) // "imported-screenplay.fountain"
+```
+
+#### Platform Differences
+
+| Feature | macOS | iOS |
+|---------|-------|-----|
+| **Project Location** | User-selected folder | iCloud Drive or local Documents |
+| **File Access** | Security-scoped bookmarks | Standard bookmarks |
+| **Import** | Direct file access | Copy to project folder |
+| **Export** | Direct file access | Share sheet / Files app |
+| **Sync** | Manual (user manages location) | Automatic (iCloud) or manual (local) |
 
 ## Development
 

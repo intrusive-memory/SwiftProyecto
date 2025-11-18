@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### iOS iCloud Support (In Progress)
+
+#### Added
+- **iCloudProjectSupport** class for iOS-specific project management
+  - iCloud Drive integration with automatic synchronization
+  - Local (on-device) project support
+  - `isICloudAvailable` property for feature detection
+  - `iCloudContainerURL` property for accessing iCloud container
+  - `iCloudProjectsFolder()` and `localProjectsFolder()` methods
+  - `createICloudProjectFolder()` and `createLocalProjectFolder()` methods
+  - `copyFileToProject()` for file import workflow
+  - `copyFileFromProject()` for file export workflow
+  - `discoverICloudProjects()` and `discoverLocalProjects()` methods
+- **ProjectManager iOS methods** (iOS-only, conditional compilation)
+  - `createICloudProject()` - Creates projects in iCloud Drive
+  - `createLocalProject()` - Creates projects in local Documents
+  - `importFileToProject()` - Imports files by copying to project folder
+- **Platform-specific security-scoped bookmark handling**
+  - macOS: Uses `.withSecurityScope` for sandboxed file access
+  - iOS: Uses standard bookmarks (security handled by document picker)
+  - Conditional compilation with `#if os(macOS)` / `#if os(iOS)`
+
+#### Changed
+- ProjectManager and SingleFileManager now use platform-specific bookmark options
+- Security-scoped resource access only on macOS (iOS handles automatically)
+
 ---
 
 ## [0.5.0] - 2025-11-17
