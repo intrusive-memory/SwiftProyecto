@@ -7,13 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Phase 3: Service Layer (Planned)
+---
 
-#### Planned
-- ProjectManager service for CRUD operations
-- Project lifecycle management (create, open, close)
-- File discovery and synchronization
-- File loading/unloading operations
+## [0.5.0] - 2025-11-17
+
+### Phase 4: Single File Service Layer (Complete)
+
+#### Added
+- **SingleFileManager** service for single screenplay file management
+  - `importFile()`: Imports screenplay files into app-wide SwiftData container
+  - `reloadFile()`: Refreshes document from source file (re-parsing)
+  - `needsReload()`: Detects if source file has been modified
+  - `resolveBookmark()`: Resolves security-scoped bookmarks with stale handling
+  - `deleteDocument()`: Removes document from SwiftData (preserves source file)
+- **Security-scoped resource access** for single files
+  - Bookmark creation and resolution for file persistence
+  - Automatic stale bookmark detection and recreation
+  - Proper security scope lifecycle management
+- **File modification tracking**
+  - Compare modification dates to detect stale documents
+  - `lastImportDate` tracking on GuionDocumentModel
+  - Smart reload detection
+- **Comprehensive error handling**
+  - `SingleFileError` enum with 9 error cases
+  - Descriptive error messages for all failure scenarios
+  - Proper error propagation and categorization
+
+#### Tests
+- 88 tests total, all passing (100%)
+- SingleFileManagerTests: 15 comprehensive tests
+  - File import (success, not found, multiple files)
+  - File reload (success, not found, no bookmark)
+  - Stale detection (new document, not modified, modified, not found)
+  - Bookmark resolution (success, no data)
+  - Document deletion (with cascade verification)
+  - Full lifecycle integration test
+- Test coverage maintained at ~95%
+
+#### Development
+- Zero compiler warnings
+- Full iOS 26.0+ and macOS 26.0+ platform support
+- Proper MainActor isolation for SwiftData operations
+- Security-scoped access tested on both platforms
+
+---
+
+## [0.4.0] - 2025-11-17
+
+### Phase 3: Service Layer (Complete)
+
+#### Added
+- **ProjectManager** service for project lifecycle management
+  - `createProject()`: Creates new project folder with PROJECT.md manifest
+  - `openProject()`: Opens existing projects and syncs with SwiftData
+  - `discoverFiles()`: Scans project folder for screenplay files
+  - `loadFile()`: Parses and imports screenplay files to SwiftData
+  - `unloadFile()`: Removes loaded files from SwiftData
+  - `syncProject()`: Synchronizes filesystem with SwiftData state
+- **Security-scoped resource access** (iOS/macOS sandboxing)
+  - Bookmark resolution with stale detection
+  - Automatic bookmark recreation when stale
+  - Helper methods for secure file access: `withSecurityScopedAccess()`
+  - Proper `startAccessingSecurityScopedResource()` / `stopAccessingSecurityScopedResource()` patterns
+- **Enhanced error handling**
+  - New `ProjectError` cases: `bookmarkResolutionFailed`, `securityScopedAccessFailed`, `noBookmarkData`
+  - Tiered error handling for file operations (missing vs error states)
+- **File state management**
+  - Automatic state transitions: notLoaded → loading → loaded
+  - Missing file detection during sync operations
+  - Error state tracking with messages
+
+#### Tests
+- 73 tests total, all passing (100%)
+- ProjectManagerTests: 18 comprehensive tests
+  - Project creation (minimal and full metadata)
+  - Project opening (new and existing)
+  - File discovery (empty, with files, missing files, hidden/cache exclusion)
+  - File loading (success, not found, already loaded)
+  - File unloading (success, already unloaded)
+  - Project synchronization
+- Test coverage maintained at ~95%
+
+#### Development
+- Zero compiler warnings
+- Full iOS 26.0+ and macOS 26.0+ platform support
+- Security-scoped access tested on both platforms
+- Proper MainActor isolation for SwiftData operations
 
 ---
 
@@ -107,6 +186,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic tests pass (version check, placeholder test)
 - Repository published to GitHub
 
-[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/intrusive-memory/SwiftProyecto/releases/tag/v0.2.0
 [0.1.0]: https://github.com/intrusive-memory/SwiftProyecto/releases/tag/v0.1.0

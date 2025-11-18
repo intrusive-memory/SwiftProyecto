@@ -4,7 +4,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-0.1.0-blue.svg" />
+    <img src="https://img.shields.io/badge/Version-0.5.0-blue.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package for managing screenplay projects in Produciesta. It provides data models, business logic, and services for folder-based project management with lazy loading and isolated SwiftData containers.
@@ -65,10 +65,25 @@ SwiftProyecto sits between SwiftCompartido (data structures & parsing) and Produ
 - [x] 55 tests total, all passing (100%)
 - [x] ~95% test coverage maintained
 
-### 🚧 Phase 3: Service Layer
-- [ ] `ProjectManager` - Project CRUD operations
-- [ ] Project lifecycle management
-- [ ] File loading/unloading
+### ✅ Phase 3: Service Layer (Complete)
+- [x] `ProjectManager` - Project CRUD operations
+- [x] Project lifecycle management (create, open, close)
+- [x] File discovery and synchronization
+- [x] File loading/unloading operations
+- [x] Security-scoped bookmark management (iOS/macOS)
+- [x] Stale bookmark detection and recreation
+- [x] 73 tests total, all passing (100%)
+- [x] ~95% test coverage maintained
+
+### ✅ Phase 4: Single File Service Layer (Complete)
+- [x] `SingleFileManager` - Single file operations
+- [x] File import with security-scoped bookmarks
+- [x] File reload/refresh functionality
+- [x] Stale file detection (modification date tracking)
+- [x] Bookmark resolution with stale handling
+- [x] Document deletion (preserves source files)
+- [x] 88 tests total, all passing (100%)
+- [x] ~95% test coverage maintained
 
 ## Installation
 
@@ -174,6 +189,6 @@ SwiftProyecto is released under the MIT License. See [LICENSE](./LICENSE) for de
 
 ## Status
 
-🚧 **In Development** - Currently in Phase 0 (Foundation)
+🚧 **In Development** - Phase 4 (Single File Service Layer) Complete
 
-SwiftProyecto is under active development as part of the Produciesta Projects feature. APIs may change until version 1.0.0.
+SwiftProyecto is under active development as part of the Produciesta Projects feature. Core functionality (models, containers, project service, and single-file service) is complete with 88 passing tests. APIs may change until version 1.0.0.

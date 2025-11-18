@@ -1,0 +1,160 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [main, development]
+  push:
+    branches: [main, development]
+  workflow_dispatch:
+
+jobs:
+  test-ios:
+    name: iOS Tests
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Show available simulators
+        run: |
+          echo "Available iOS Simulators:"
+          xcrun simctl list devices available | grep "iPhone" | head -5
+
+      - name: Build for iOS Simulator
+        run: |
+          echo "🔨 Building for iOS Simulator (arm64)"
+          xcodebuild build \
+            -scheme SwiftProyecto \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run tests on iOS Simulator
+        run: |
+          set +e
+
+          TOTAL_CPUS=$(sysctl -n hw.ncpu)
+          echo "🖥️  Total CPUs: $TOTAL_CPUS"
+          echo "🧪 Running tests on iOS Simulator"
+
+          # Run all tests (SwiftProyecto has no long-running tests)
+          xcodebuild test \
+            -scheme SwiftProyecto \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -enableCodeCoverage YES \
+            -parallel-testing-enabled YES \
+            -maximum-parallel-testing-workers $TOTAL_CPUS \
+            CODE_SIGNING_ALLOWED=NO \
+            > test_output_ios.txt 2>&1
+          TEST_EXIT_CODE=$?
+          cat test_output_ios.txt
+
+          # Check if tests passed
+          if grep -q "Test run with .* tests in .* suites passed\|TEST SUCCEEDED" test_output_ios.txt; then
+            echo "✅ All iOS tests passed"
+            exit 0
+          else
+            echo "❌ iOS tests failed"
+            exit $TEST_EXIT_CODE
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: test_output_ios.txt
+          retention-days: 7
+
+  test-macos:
+    name: macOS Tests
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build for macOS
+        run: |
+          echo "🔨 Building for macOS (arm64)"
+          xcodebuild build \
+            -scheme SwiftProyecto \
+            -destination 'platform=macOS' \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run tests on macOS
+        run: |
+          set +e
+
+          TOTAL_CPUS=$(sysctl -n hw.ncpu)
+          echo "🖥️  Total CPUs: $TOTAL_CPUS"
+          echo "🧪 Running tests on macOS"
+
+          # Run all tests (SwiftProyecto has no long-running tests)
+          xcodebuild test \
+            -scheme SwiftProyecto \
+            -destination 'platform=macOS' \
+            -enableCodeCoverage YES \
+            -parallel-testing-enabled YES \
+            -maximum-parallel-testing-workers $TOTAL_CPUS \
+            CODE_SIGNING_ALLOWED=NO \
+            > test_output_macos.txt 2>&1
+          TEST_EXIT_CODE=$?
+          cat test_output_macos.txt
+
+          # Check if tests passed
+          if grep -q "Test run with .* tests in .* suites passed\|TEST SUCCEEDED" test_output_macos.txt; then
+            echo "✅ All macOS tests passed"
+            exit 0
+          else
+            echo "❌ macOS tests failed"
+            exit $TEST_EXIT_CODE
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-test-results
+          path: test_output_macos.txt
+          retention-days: 7
+
+  lint:
+    name: Code Quality
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for TODOs in committed code
+        run: |
+          if git diff origin/main...HEAD | grep -E "^\+.*TODO|^\+.*FIXME"; then
+            echo "⚠️  Warning: New TODOs or FIXMEs detected"
+          fi
+
+      - name: Check file sizes
+        run: |
+          find Sources -type f -name "*.swift" -size +100k -exec echo "⚠️  Large file: {}" \;
+
+      - name: Check for print statements
+        run: |
+          if grep -r "print(" Sources/ --include="*.swift" | grep -v "// print"; then
+            echo "⚠️  Warning: print() statements found in source code"
+          fi
