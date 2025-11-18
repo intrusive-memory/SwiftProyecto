@@ -84,6 +84,28 @@ public final class SingleFileManager {
         self.modelContext = modelContext
     }
 
+    // MARK: - Platform-Specific Bookmark Options
+
+    /// Bookmark resolution options appropriate for the current platform.
+    /// macOS uses security-scoped bookmarks, iOS uses standard bookmarks.
+    private var bookmarkResolutionOptions: URL.BookmarkResolutionOptions {
+        #if os(macOS)
+        return .withSecurityScope
+        #else
+        return []
+        #endif
+    }
+
+    /// Bookmark creation options appropriate for the current platform.
+    /// macOS uses security-scoped bookmarks, iOS uses standard bookmarks.
+    private var bookmarkCreationOptions: URL.BookmarkCreationOptions {
+        #if os(macOS)
+        return .withSecurityScope
+        #else
+        return .minimalBookmark
+        #endif
+    }
+
     // MARK: - File Operations
 
     /// Imports a screenplay file into the app-wide SwiftData container.
@@ -107,7 +129,7 @@ public final class SingleFileManager {
         let bookmarkData: Data
         do {
             bookmarkData = try fileURL.bookmarkData(
-                options: .withSecurityScope,
+                options: bookmarkCreationOptions,
                 includingResourceValuesForKeys: nil,
                 relativeTo: nil
             )
@@ -314,7 +336,7 @@ public final class SingleFileManager {
         do {
             fileURL = try URL(
                 resolvingBookmarkData: bookmarkData,
-                options: .withSecurityScope,
+                options: bookmarkResolutionOptions,
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
             )
@@ -326,7 +348,7 @@ public final class SingleFileManager {
         if isStale {
             do {
                 let newBookmark = try fileURL.bookmarkData(
-                    options: .withSecurityScope,
+                    options: bookmarkCreationOptions,
                     includingResourceValuesForKeys: nil,
                     relativeTo: nil
                 )

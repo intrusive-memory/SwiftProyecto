@@ -93,6 +93,28 @@ public final class ProjectManager {
         self.fileManager = .default
     }
 
+    // MARK: - Platform-Specific Bookmark Options
+
+    /// Bookmark resolution options appropriate for the current platform.
+    /// macOS uses security-scoped bookmarks, iOS uses standard bookmarks.
+    private var bookmarkResolutionOptions: URL.BookmarkResolutionOptions {
+        #if os(macOS)
+        return .withSecurityScope
+        #else
+        return []
+        #endif
+    }
+
+    /// Bookmark creation options appropriate for the current platform.
+    /// macOS uses security-scoped bookmarks, iOS uses standard bookmarks.
+    private var bookmarkCreationOptions: URL.BookmarkCreationOptions {
+        #if os(macOS)
+        return .withSecurityScope
+        #else
+        return .minimalBookmark
+        #endif
+    }
+
     // MARK: - Security-Scoped Access Helpers
 
     /// Performs an operation with security-scoped access to the project folder.
@@ -122,7 +144,7 @@ public final class ProjectManager {
         do {
             folderURL = try URL(
                 resolvingBookmarkData: bookmarkData,
-                options: .withSecurityScope,
+                options: bookmarkResolutionOptions,
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
             )
@@ -134,7 +156,7 @@ public final class ProjectManager {
         if isStale {
             do {
                 let newBookmark = try folderURL.bookmarkData(
-                    options: .withSecurityScope,
+                    options: bookmarkCreationOptions,
                     includingResourceValuesForKeys: nil,
                     relativeTo: nil
                 )
@@ -168,7 +190,7 @@ public final class ProjectManager {
         do {
             folderURL = try URL(
                 resolvingBookmarkData: bookmarkData,
-                options: .withSecurityScope,
+                options: bookmarkResolutionOptions,
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
             )
@@ -180,7 +202,7 @@ public final class ProjectManager {
         if isStale {
             do {
                 let newBookmark = try folderURL.bookmarkData(
-                    options: .withSecurityScope,
+                    options: bookmarkCreationOptions,
                     includingResourceValuesForKeys: nil,
                     relativeTo: nil
                 )
@@ -267,7 +289,7 @@ public final class ProjectManager {
         let bookmarkData: Data
         do {
             bookmarkData = try folderURL.bookmarkData(
-                options: .withSecurityScope,
+                options: bookmarkCreationOptions,
                 includingResourceValuesForKeys: nil,
                 relativeTo: nil
             )
@@ -343,7 +365,7 @@ public final class ProjectManager {
         let bookmarkData: Data
         do {
             bookmarkData = try folderURL.bookmarkData(
-                options: .withSecurityScope,
+                options: bookmarkCreationOptions,
                 includingResourceValuesForKeys: nil,
                 relativeTo: nil
             )
@@ -553,7 +575,7 @@ public final class ProjectManager {
                     suppressSceneNumbers: false
                 )
                 document.sourceFileBookmark = try fileURL.bookmarkData(
-                    options: .withSecurityScope,
+                    options: bookmarkCreationOptions,
                     includingResourceValuesForKeys: nil,
                     relativeTo: nil
                 )
