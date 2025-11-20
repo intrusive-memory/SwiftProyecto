@@ -501,14 +501,16 @@ public final class ProjectManager {
 
             // Check if reference already exists
             if let existing = project.fileReference(atPath: relativePath) {
-                // Update modification date
+                // Update current modification date
                 existing.lastKnownModificationDate = modDate
 
-                // Check if file is stale (loaded but modified)
-                if existing.isLoaded, let lastKnown = existing.lastKnownModificationDate, let current = modDate {
-                    if current > lastKnown {
-                        existing.loadingState = .stale
-                    }
+                // Check if file is stale (loaded but modified since load time)
+                // Compare current disk mod date with the date when file was loaded
+                if existing.isLoaded,
+                   let loadedDate = existing.lastLoadedModificationDate,
+                   let currentDate = modDate,
+                   currentDate > loadedDate {
+                    existing.loadingState = .stale
                 }
             } else {
                 // Create new reference
@@ -614,7 +616,11 @@ public final class ProjectManager {
                 // Link to file reference
                 fileReference.loadedDocument = document
                 fileReference.loadingState = .loaded
-                fileReference.lastKnownModificationDate = try fileURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+
+                // Set both modification dates when loading
+                let modDate = try fileURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+                fileReference.lastKnownModificationDate = modDate
+                fileReference.lastLoadedModificationDate = modDate
 
                 // Save all changes
                 try modelContext.save()
@@ -668,6 +674,161 @@ public final class ProjectManager {
             try modelContext.save()
         } catch {
             throw ProjectError.saveError(error)
+        }
+    }
+
+    // MARK: - File Re-Import
+
+    /// Re-imports a screenplay file, updating elements while preserving user data.
+    ///
+    /// This method re-parses the screenplay file from disk and intelligently updates
+    /// the existing document. Unlike `reloadFile`, this method preserves:
+    /// - Generated audio (TypedDataStorage) for unchanged elements
+    /// - Custom elements (CustomOutlineElement) attached to scenes/sections
+    /// - Character voice mappings
+    ///
+    /// ## Element Matching Strategy
+    ///
+    /// Elements are matched by their stable IDs. When an element with the same ID
+    /// exists in both old and new parses:
+    /// - The element's text content is updated
+    /// - Generated audio and custom elements are preserved
+    ///
+    /// New elements are created fresh. Deleted elements (not in new parse) are removed.
+    ///
+    /// - Parameters:
+    ///   - fileReference: The file reference to re-import
+    ///   - project: The project containing the file
+    ///   - progress: Optional progress callback for parsing updates
+    /// - Throws: ProjectError if re-import fails
+    public func reimportFile(
+        _ fileReference: ProjectFileReference,
+        in project: ProjectModel,
+        progress: OperationProgress? = nil
+    ) async throws {
+        // If file not loaded, just load it normally
+        guard let existingDocument = fileReference.loadedDocument else {
+            try await loadFile(fileReference, in: project, progress: progress)
+            return
+        }
+
+        // Set loading state
+        fileReference.loadingState = .loading
+        try modelContext.save()
+
+        do {
+            // Use security-scoped access to read file
+            try await withSecurityScopedAccess(to: project) { folderURL in
+                let fileURL = folderURL.appendingPathComponent(fileReference.relativePath)
+
+                // Verify file exists
+                guard fileManager.fileExists(atPath: fileURL.path) else {
+                    throw ProjectError.fileNotFound(fileURL)
+                }
+
+                // Re-parse file using SwiftCompartido
+                let parsedCollection = try await GuionParsedElementCollection(
+                    file: fileURL.path,
+                    progress: progress
+                )
+
+                // Create content hash for matching elements
+                func elementHash(_ type: ElementType, _ text: String, _ sceneId: String?) -> String {
+                    // Use sceneId for scene headings if available, otherwise use type+text
+                    if type == .sceneHeading, let sceneId = sceneId {
+                        return "scene:\(sceneId)"
+                    }
+                    return "\(type.description):\(text)"
+                }
+
+                // Build mapping of old elements by content hash
+                var oldElementsByHash: [String: GuionElementModel] = [:]
+                for element in existingDocument.elements {
+                    let hash = elementHash(element.elementType, element.elementText, element.sceneId)
+                    // For duplicates, prefer first occurrence
+                    if oldElementsByHash[hash] == nil {
+                        oldElementsByHash[hash] = element
+                    }
+                }
+
+                // Track which old elements we've matched (to detect deletions)
+                var matchedOldElements: Set<PersistentIdentifier> = []
+
+                // Process new elements
+                var updatedElements: [GuionElementModel] = []
+
+                for (index, parsedElement) in parsedCollection.elements.enumerated() {
+                    let hash = elementHash(parsedElement.elementType, parsedElement.elementText, parsedElement.sceneId)
+
+                    if let existingElement = oldElementsByHash[hash] {
+                        // Element matched by content - update it
+                        existingElement.elementType = parsedElement.elementType
+                        existingElement.elementText = parsedElement.elementText
+                        existingElement.orderIndex = index
+                        existingElement.sceneId = parsedElement.sceneId
+                        existingElement.sceneNumber = parsedElement.sceneNumber
+                        existingElement.isCentered = parsedElement.isCentered
+                        existingElement.isDualDialogue = parsedElement.isDualDialogue
+                        // Note: generatedContent and customElements are NOT touched
+                        matchedOldElements.insert(existingElement.persistentModelID)
+                        updatedElements.append(existingElement)
+                    } else {
+                        // New element - create it
+                        let newElement = GuionElementModel(
+                            from: parsedElement,
+                            chapterIndex: 0,
+                            orderIndex: index
+                        )
+                        modelContext.insert(newElement)
+                        updatedElements.append(newElement)
+                    }
+                }
+
+                // Remove elements that were deleted from file
+                for oldElement in existingDocument.elements {
+                    if !matchedOldElements.contains(oldElement.persistentModelID) {
+                        // Element no longer in file - delete it (cascade deletes audio/custom elements)
+                        modelContext.delete(oldElement)
+                    }
+                }
+
+                // Update document's elements array
+                existingDocument.elements = updatedElements
+
+                // Update metadata
+                existingDocument.lastImportDate = Date()
+
+                // Set both modification dates to current disk value
+                let modDate = try fileURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+                fileReference.lastKnownModificationDate = modDate
+                fileReference.lastLoadedModificationDate = modDate
+                fileReference.loadingState = .loaded
+
+                // Save all changes
+                try modelContext.save()
+            } // End of withSecurityScopedAccess
+
+        } catch let error as ProjectError {
+            // Handle known ProjectErrors
+            switch error {
+            case .fileNotFound:
+                // File not found - mark as missing
+                fileReference.loadingState = .missing
+                try modelContext.save()
+                throw error
+            default:
+                // Other errors - mark as error
+                fileReference.loadingState = .error
+                fileReference.errorMessage = error.localizedDescription
+                try modelContext.save()
+                throw error
+            }
+        } catch {
+            // Unknown errors - wrap in parsingFailed
+            fileReference.loadingState = .error
+            fileReference.errorMessage = error.localizedDescription
+            try modelContext.save()
+            throw ProjectError.parsingFailed(fileReference.filename, error)
         }
     }
 
