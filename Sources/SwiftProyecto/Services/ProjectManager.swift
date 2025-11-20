@@ -335,9 +335,12 @@ public final class ProjectManager {
 
     // MARK: - Project Opening
 
-    /// Opens an existing project by reading its PROJECT.md manifest.
+    /// Opens a project folder, creating PROJECT.md if it doesn't exist.
     ///
-    /// - Parameter folderURL: The project folder containing PROJECT.md
+    /// If PROJECT.md doesn't exist, it will be created with the folder name as the title.
+    /// If the project already exists in SwiftData, the existing project is returned.
+    ///
+    /// - Parameter folderURL: The project folder (may or may not contain PROJECT.md)
     /// - Returns: The opened ProjectModel (or existing if already in SwiftData)
     /// - Throws: ProjectError if opening fails
     public func openProject(at folderURL: URL) throws -> ProjectModel {
@@ -348,12 +351,6 @@ public final class ProjectManager {
             throw ProjectError.projectFolderNotFound(folderURL)
         }
 
-        // Verify PROJECT.md exists
-        let manifestURL = folderURL.appendingPathComponent("PROJECT.md")
-        guard fileManager.fileExists(atPath: manifestURL.path) else {
-            throw ProjectError.projectManifestNotFound(folderURL)
-        }
-
         // Check if project already exists in SwiftData
         let descriptor = FetchDescriptor<ProjectModel>()
         let existingProjects = try modelContext.fetch(descriptor)
@@ -361,7 +358,38 @@ public final class ProjectManager {
             return existing
         }
 
-        // Parse PROJECT.md
+        // Check if PROJECT.md exists
+        let manifestURL = folderURL.appendingPathComponent("PROJECT.md")
+        let manifestExists = fileManager.fileExists(atPath: manifestURL.path)
+
+        // If PROJECT.md doesn't exist, create it with folder name as title
+        if !manifestExists {
+            let folderName = folderURL.lastPathComponent
+            let frontMatter = ProjectFrontMatter(
+                type: "project",
+                title: folderName,
+                author: NSFullUserName(),  // Use system user name as default
+                created: Date(),
+                description: nil,
+                season: nil,
+                episodes: nil,
+                genre: nil,
+                tags: nil
+            )
+
+            // Generate PROJECT.md content
+            let parser = ProjectMarkdownParser()
+            let markdownContent = parser.generate(frontMatter: frontMatter, body: "")
+
+            // Write PROJECT.md to disk
+            do {
+                try markdownContent.write(to: manifestURL, atomically: true, encoding: .utf8)
+            } catch {
+                throw ProjectError.saveError(error)
+            }
+        }
+
+        // Parse PROJECT.md (now guaranteed to exist)
         let parser = ProjectMarkdownParser()
         let (frontMatter, body): (ProjectFrontMatter, String)
         do {
