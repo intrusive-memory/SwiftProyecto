@@ -492,8 +492,6 @@ final class PerformanceTests: XCTestCase {
         # Test
         """
 
-        let parser = ProjectMarkdownParser()
-
         let metrics: [XCTMetric] = [
             XCTClockMetric(),
             XCTCPUMetric()
@@ -511,6 +509,8 @@ final class PerformanceTests: XCTestCase {
                     for _ in 0..<20 {
                         group.addTask {
                             do {
+                                // Create parser inside each task to avoid data races
+                                let parser = ProjectMarkdownParser()
                                 _ = try parser.parse(markdown: markdown)
                                 expectation.fulfill()
                             } catch {
