@@ -6,3 +6,5 @@ xcuserdata/
 DerivedData/
 .swiftpm/
 .netrc
+/Package.resolved
+/test_output_macos.txt

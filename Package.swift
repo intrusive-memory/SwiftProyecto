@@ -15,7 +15,8 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/intrusive-memory/SwiftCompartido.git", branch: "development")
+        .package(url: "https://github.com/intrusive-memory/SwiftCompartido.git", branch: "development"),
+        .package(url: "https://github.com/groue/GRMustache.swift.git", from: "7.0.0" )
     ],
     targets: [
         .target(
