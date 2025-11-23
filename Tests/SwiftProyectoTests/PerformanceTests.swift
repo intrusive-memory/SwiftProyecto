@@ -81,10 +81,7 @@ final class PerformanceTests: XCTestCase {
             for i in 0..<100 {
                 _ = ProjectModel(
                     title: "Test Project \(i)",
-                    author: "Test Author",
-                    sourceType: .directory,
-                    sourceName: "TestProject\(i)",
-                    sourceRootURL: "file:///test/project\(i)"
+                    author: "Test Author"
                 )
             }
         }
@@ -112,19 +109,19 @@ final class PerformanceTests: XCTestCase {
         measure(metrics: [XCTClockMetric()]) {
             for _ in 0..<10000 {
                 fileRef.loadingState = .notLoaded
-                _ = fileRef.loadingState.canLoad
+                _ = fileRef.canLoad
 
                 fileRef.loadingState = .loading
-                _ = fileRef.loadingState.isLoading
+                _ = fileRef.isLoading
 
                 fileRef.loadingState = .loaded
-                _ = fileRef.loadingState.isLoaded
+                _ = fileRef.isLoaded
 
                 fileRef.loadingState = .stale
-                _ = fileRef.loadingState.needsReload
+                _ = fileRef.needsReload
 
                 fileRef.loadingState = .missing
-                _ = fileRef.loadingState.isMissing
+                _ = fileRef.isMissing
             }
         }
     }
@@ -236,7 +233,6 @@ final class PerformanceTests: XCTestCase {
         }
     }
 
-    @MainActor
     func testProjectModelInsertionPerformance() throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
@@ -257,10 +253,7 @@ final class PerformanceTests: XCTestCase {
             for i in 0..<50 {
                 let project = ProjectModel(
                     title: "Project \(i)",
-                    author: "Author \(i)",
-                    sourceType: .directory,
-                    sourceName: "Project\(i)",
-                    sourceRootURL: "file:///test/project\(i)"
+                    author: "Author \(i)"
                 )
                 container.mainContext.insert(project)
             }
@@ -272,7 +265,6 @@ final class PerformanceTests: XCTestCase {
         }
     }
 
-    @MainActor
     func testProjectWithFileReferencesPerformance() throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
@@ -293,10 +285,7 @@ final class PerformanceTests: XCTestCase {
             for projIndex in 0..<10 {
                 let project = ProjectModel(
                     title: "Series \(projIndex)",
-                    author: "Showrunner",
-                    sourceType: .directory,
-                    sourceName: "Series\(projIndex)",
-                    sourceRootURL: "file:///test/series\(projIndex)"
+                    author: "Showrunner"
                 )
                 container.mainContext.insert(project)
 
@@ -319,7 +308,6 @@ final class PerformanceTests: XCTestCase {
         }
     }
 
-    @MainActor
     func testProjectQueryPerformance() throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
@@ -331,10 +319,7 @@ final class PerformanceTests: XCTestCase {
         for i in 0..<100 {
             let project = ProjectModel(
                 title: "Project \(i)",
-                author: i % 2 == 0 ? "Author A" : "Author B",
-                sourceType: .directory,
-                sourceName: "Project\(i)",
-                sourceRootURL: "file:///test/project\(i)"
+                author: i % 2 == 0 ? "Author A" : "Author B"
             )
             container.mainContext.insert(project)
 
@@ -382,7 +367,6 @@ final class PerformanceTests: XCTestCase {
 
     // MARK: - Relationship Performance
 
-    @MainActor
     func testProjectFileReferenceRelationshipPerformance() throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
@@ -390,13 +374,7 @@ final class PerformanceTests: XCTestCase {
             configurations: config
         )
 
-        let project = ProjectModel(
-            title: "Test Project",
-            author: "Test Author",
-            sourceType: .directory,
-            sourceName: "TestProject",
-            sourceRootURL: "file:///test/project"
-        )
+        let project = ProjectModel(title: "Test Project", author: "Test Author")
         container.mainContext.insert(project)
 
         // Add 1000 file references
@@ -421,7 +399,6 @@ final class PerformanceTests: XCTestCase {
         }
     }
 
-    @MainActor
     func testFileLoadingStateFilteringPerformance() throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
@@ -429,13 +406,7 @@ final class PerformanceTests: XCTestCase {
             configurations: config
         )
 
-        let project = ProjectModel(
-            title: "Test Project",
-            author: "Test Author",
-            sourceType: .directory,
-            sourceName: "TestProject",
-            sourceRootURL: "file:///test/project"
-        )
+        let project = ProjectModel(title: "Test Project", author: "Test Author")
         container.mainContext.insert(project)
 
         let loadingStates: [FileLoadingState] = [.notLoaded, .loading, .loaded, .stale, .missing]
@@ -489,10 +460,7 @@ final class PerformanceTests: XCTestCase {
                         group.addTask {
                             let project = ProjectModel(
                                 title: "Concurrent Project \(i)",
-                                author: "Author \(i)",
-                                sourceType: .directory,
-                                sourceName: "ConcurrentProject\(i)",
-                                sourceRootURL: "file:///test/concurrent\(i)"
+                                author: "Author \(i)"
                             )
                             await MainActor.run {
                                 container.mainContext.insert(project)
@@ -519,6 +487,8 @@ final class PerformanceTests: XCTestCase {
         # Test
         """
 
+        let parser = ProjectMarkdownParser()
+
         let metrics: [XCTMetric] = [
             XCTClockMetric(),
             XCTCPUMetric()
@@ -536,8 +506,6 @@ final class PerformanceTests: XCTestCase {
                     for _ in 0..<20 {
                         group.addTask {
                             do {
-                                // Create parser inside each task to avoid data races
-                                let parser = ProjectMarkdownParser()
                                 _ = try parser.parse(markdown: markdown)
                                 expectation.fulfill()
                             } catch {
@@ -554,7 +522,6 @@ final class PerformanceTests: XCTestCase {
 
     // MARK: - Memory Footprint Tests
 
-    @MainActor
     func testLargeProjectMemoryFootprint() {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
@@ -566,10 +533,7 @@ final class PerformanceTests: XCTestCase {
             // Create a project with 10,000 file references
             let project = ProjectModel(
                 title: "Large TV Series",
-                author: "Prolific Writer",
-                sourceType: .directory,
-                sourceName: "LargeTVSeries",
-                sourceRootURL: "file:///test/large-series"
+                author: "Prolific Writer"
             )
             container.mainContext.insert(project)
 
@@ -591,7 +555,6 @@ final class PerformanceTests: XCTestCase {
         }
     }
 
-    @MainActor
     func testMultipleProjectsMemoryFootprint() {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
@@ -604,10 +567,7 @@ final class PerformanceTests: XCTestCase {
             for i in 0..<1000 {
                 let project = ProjectModel(
                     title: "Project \(i)",
-                    author: "Author \(i % 100)",
-                    sourceType: .directory,
-                    sourceName: "Project\(i)",
-                    sourceRootURL: "file:///test/project\(i)"
+                    author: "Author \(i % 100)"
                 )
                 container.mainContext.insert(project)
 
@@ -632,7 +592,6 @@ final class PerformanceTests: XCTestCase {
 
     // MARK: - Baseline Recording & Comparison
 
-    @MainActor
     func testRecordPerformanceBaseline() throws {
         print("""
 
@@ -643,13 +602,7 @@ final class PerformanceTests: XCTestCase {
 
         // Measure project creation
         let projectStart = Date()
-        _ = ProjectModel(
-            title: "Baseline Project",
-            author: "Test",
-            sourceType: .directory,
-            sourceName: "BaselineProject",
-            sourceRootURL: "file:///test/baseline"
-        )
+        _ = ProjectModel(title: "Baseline Project", author: "Test")
         let projectTime = Date().timeIntervalSince(projectStart)
 
         // Measure file reference creation
