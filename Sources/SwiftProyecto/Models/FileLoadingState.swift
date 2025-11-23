@@ -145,4 +145,24 @@ public extension FileLoadingState {
             return false
         }
     }
+
+    /// Whether the file is currently being loaded
+    var isLoading: Bool {
+        self == .loading
+    }
+
+    /// Whether the file is currently loaded
+    var isLoaded: Bool {
+        self == .loaded
+    }
+
+    /// Whether the file needs to be reloaded
+    var needsReload: Bool {
+        self == .stale
+    }
+
+    /// Whether the file is missing from disk
+    var isMissing: Bool {
+        self == .missing
+    }
 }
