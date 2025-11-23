@@ -233,6 +233,7 @@ final class PerformanceTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testProjectModelInsertionPerformance() throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
@@ -265,6 +266,7 @@ final class PerformanceTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testProjectWithFileReferencesPerformance() throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
@@ -308,6 +310,7 @@ final class PerformanceTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testProjectQueryPerformance() throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
@@ -367,6 +370,7 @@ final class PerformanceTests: XCTestCase {
 
     // MARK: - Relationship Performance
 
+    @MainActor
     func testProjectFileReferenceRelationshipPerformance() throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
@@ -399,6 +403,7 @@ final class PerformanceTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testFileLoadingStateFilteringPerformance() throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
@@ -592,6 +597,7 @@ final class PerformanceTests: XCTestCase {
 
     // MARK: - Baseline Recording & Comparison
 
+    @MainActor
     func testRecordPerformanceBaseline() throws {
         print("""
 
