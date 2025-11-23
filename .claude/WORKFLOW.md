@@ -168,53 +168,14 @@ Follow **Semantic Versioning** (semver):
 
 ## CI/CD Requirements
 
-### Test Pipeline Structure
-
-SwiftProyecto uses a **sequential test pipeline**:
-
-```
-Pull Request/Push
-    ↓
-┌────────────────────────────┐
-│  Tests                     │  ← Unit tests (required)
-│  - iOS Simulator           │
-│  - macOS                   │
-│  - Code Quality            │
-└────────────┬───────────────┘
-             ↓
-        ✅ Success?
-             ↓
-┌────────────────────────────┐
-│  Performance Tests         │  ← Performance benchmarks (informational)
-│  - Runs ONLY after         │
-│    unit tests succeed      │
-└────────────────────────────┘
-```
-
-**Key Points:**
-- **Unit tests run first** - Tests workflow
-- **Performance tests run second** - Only if unit tests pass
-- **Performance tests don't block PRs** - `continue-on-error: true`
-- **Both workflows must complete** for full CI success
-
 ### Before Merging PR
 
 ALL of the following MUST pass:
-- ✅ All unit tests pass (Tests - required)
-- ✅ Performance tests complete (informational only)
+- ✅ All unit tests pass
 - ✅ Code quality checks pass
 - ✅ Build succeeds on all platforms
 - ✅ No new warnings introduced
 - ✅ Test coverage maintains or improves
-
-### Branch Protection Rules
-
-Configure the following **required status checks** on `main`:
-
-1. **Tests / test-ios**
-2. **Tests / test-macos**
-3. **Tests / lint**
-4. **Performance Tests / performance** (optional - informational)
 
 ### If CI Fails
 
@@ -222,14 +183,6 @@ Configure the following **required status checks** on `main`:
 2. Commit and push the fix
 3. Wait for CI to re-run on the PR
 4. Only merge when green
-
-### Performance Test Failures
-
-Performance tests are **informational only** and will not block PRs even if they fail:
-- They provide baseline comparisons
-- They track performance regressions
-- They update PR comments with metrics
-- Failures are warnings, not blockers
 
 ## Emergency Hotfixes
 
