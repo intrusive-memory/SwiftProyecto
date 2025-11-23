@@ -218,23 +218,24 @@ final class ProjectManagerTests: XCTestCase {
         }
     }
 
-    func testOpenProject_ManifestNotFound() throws {
+    func testOpenProject_AutoCreatesManifest() throws {
+        // Changed from testOpenProject_ManifestNotFound
+        // New behavior: openProject now auto-creates PROJECT.md if it doesn't exist
         let projectURL = tempDirectory.appendingPathComponent("NoManifest")
         try FileManager.default.createDirectory(at: projectURL, withIntermediateDirectories: true)
 
-        XCTAssertThrowsError(try projectManager.openProject(at: projectURL)) { error in
-            guard let projectError = error as? ProjectManager.ProjectError else {
-                XCTFail("Expected ProjectError")
-                return
-            }
+        let manifestURL = projectURL.appendingPathComponent("PROJECT.md")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: manifestURL.path), "PROJECT.md should not exist yet")
 
-            switch projectError {
-            case .projectManifestNotFound:
-                break // Expected
-            default:
-                XCTFail("Expected projectManifestNotFound")
-            }
-        }
+        // Opening folder without PROJECT.md should auto-create it
+        let project = try projectManager.openProject(at: projectURL)
+
+        // Verify PROJECT.md was created
+        XCTAssertTrue(FileManager.default.fileExists(atPath: manifestURL.path), "PROJECT.md should have been created")
+
+        // Verify project was created with folder name as title
+        XCTAssertEqual(project.title, "NoManifest")
+        XCTAssertEqual(project.folderPath, projectURL.path)
     }
 
     // MARK: - File Discovery Tests
