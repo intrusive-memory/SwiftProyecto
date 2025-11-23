@@ -109,19 +109,19 @@ final class PerformanceTests: XCTestCase {
         measure(metrics: [XCTClockMetric()]) {
             for _ in 0..<10000 {
                 fileRef.loadingState = .notLoaded
-                _ = fileRef.canLoad
+                _ = fileRef.loadingState.canLoad
 
                 fileRef.loadingState = .loading
-                _ = fileRef.isLoading
+                _ = fileRef.loadingState.isLoading
 
                 fileRef.loadingState = .loaded
-                _ = fileRef.isLoaded
+                _ = fileRef.loadingState.isLoaded
 
                 fileRef.loadingState = .stale
-                _ = fileRef.needsReload
+                _ = fileRef.loadingState.needsReload
 
                 fileRef.loadingState = .missing
-                _ = fileRef.isMissing
+                _ = fileRef.loadingState.isMissing
             }
         }
     }
@@ -527,6 +527,7 @@ final class PerformanceTests: XCTestCase {
 
     // MARK: - Memory Footprint Tests
 
+    @MainActor
     func testLargeProjectMemoryFootprint() {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
@@ -560,6 +561,7 @@ final class PerformanceTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testMultipleProjectsMemoryFootprint() {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
