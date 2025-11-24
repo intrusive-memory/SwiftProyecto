@@ -87,7 +87,7 @@ final class iCloudProjectSupportTests: XCTestCase {
     // MARK: - Local Project Creation Tests
 
     func testCreateLocalProjectFolder() throws {
-        let projectName = "TestLocalProject-\(UUID().uuidString)"
+        let projectName = "TestLocalProject"
         let projectURL = try support.createLocalProjectFolder(named: projectName)
 
         XCTAssertNotNil(projectURL)
@@ -97,14 +97,10 @@ final class iCloudProjectSupportTests: XCTestCase {
         var isDirectory: ObjCBool = false
         XCTAssertTrue(FileManager.default.fileExists(atPath: projectURL.path, isDirectory: &isDirectory))
         XCTAssertTrue(isDirectory.boolValue)
-
-        // Clean up the unique folder
-        try? FileManager.default.removeItem(at: projectURL)
     }
 
     func testCreateLocalProjectFolder_AlreadyExists() throws {
-        // Use unique name to avoid conflicts with parallel test execution
-        let projectName = "ExistingProject-\(UUID().uuidString)"
+        let projectName = "ExistingProject"
 
         // Create first time
         let projectURL1 = try support.createLocalProjectFolder(named: projectName)
@@ -114,9 +110,6 @@ final class iCloudProjectSupportTests: XCTestCase {
 
         XCTAssertEqual(projectURL1, projectURL2)
         XCTAssertTrue(FileManager.default.fileExists(atPath: projectURL1.path))
-
-        // Clean up the unique folder
-        try? FileManager.default.removeItem(at: projectURL1)
     }
 
     // MARK: - File Copy Tests
@@ -254,20 +247,19 @@ final class iCloudProjectSupportTests: XCTestCase {
     func testDiscoverLocalProjects_WithProjects() throws {
         let projectsFolder = try support.localProjectsFolder()
 
-        // Create test projects with unique names
-        let uuid = UUID().uuidString
-        let project1URL = projectsFolder.appendingPathComponent("Project1-\(uuid)")
+        // Create test projects
+        let project1URL = projectsFolder.appendingPathComponent("Project1")
         try FileManager.default.createDirectory(at: project1URL, withIntermediateDirectories: true)
         let manifest1URL = project1URL.appendingPathComponent("PROJECT.md")
         try "---\ntitle: Project 1\n---".write(to: manifest1URL, atomically: true, encoding: .utf8)
 
-        let project2URL = projectsFolder.appendingPathComponent("Project2-\(uuid)")
+        let project2URL = projectsFolder.appendingPathComponent("Project2")
         try FileManager.default.createDirectory(at: project2URL, withIntermediateDirectories: true)
         let manifest2URL = project2URL.appendingPathComponent("PROJECT.md")
         try "---\ntitle: Project 2\n---".write(to: manifest2URL, atomically: true, encoding: .utf8)
 
         // Create folder without PROJECT.md (should be ignored)
-        let nonProjectURL = projectsFolder.appendingPathComponent("NotAProject-\(uuid)")
+        let nonProjectURL = projectsFolder.appendingPathComponent("NotAProject")
         try FileManager.default.createDirectory(at: nonProjectURL, withIntermediateDirectories: true)
 
         // Discover projects
@@ -275,18 +267,13 @@ final class iCloudProjectSupportTests: XCTestCase {
 
         // Should find at least our 2 test projects
         let testProjects = projects.filter { url in
-            url.lastPathComponent.hasPrefix("Project1-") || url.lastPathComponent.hasPrefix("Project2-")
+            url.lastPathComponent == "Project1" || url.lastPathComponent == "Project2"
         }
-        XCTAssertGreaterThanOrEqual(testProjects.count, 2, "Should find at least our 2 test projects")
+        XCTAssertGreaterThanOrEqual(testProjects.count, 2)
 
         // Should not include non-project folder
-        let nonProject = projects.first { $0.lastPathComponent.hasPrefix("NotAProject-") }
-        XCTAssertNil(nonProject, "Non-project folder should not be discovered")
-
-        // Clean up test folders
-        try? FileManager.default.removeItem(at: project1URL)
-        try? FileManager.default.removeItem(at: project2URL)
-        try? FileManager.default.removeItem(at: nonProjectURL)
+        let nonProject = projects.first { $0.lastPathComponent == "NotAProject" }
+        XCTAssertNil(nonProject)
 
         // Results should be sorted
         let projectNames = projects.map { $0.lastPathComponent }
