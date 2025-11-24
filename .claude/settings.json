@@ -18,6 +18,8 @@
       "Bash(rm :*)",
       "Bash(cat :*)",
       "Bash(ls :*)",
+      "Bash(gh :*)",
+      "Bash(git :*)",
       "Bash(pwd)",
       "Bash(cd :*)",
       "Bash(find :*)",
