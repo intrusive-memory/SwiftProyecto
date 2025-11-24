@@ -26,6 +26,26 @@ This project follows a **strict branch-based workflow**:
 - **NEVER** commit directly to `main`
 - **NEVER** delete the `development` branch
 
+### CI/CD Requirements
+
+**Main branch is protected:**
+- Direct pushes blocked (PRs only)
+- No PR review required
+- GitHub Actions must pass before merge:
+  - Code Quality: Linting and code checks
+  - iOS Unit Tests: Unit tests on iOS Simulator
+  - macOS Unit Tests: Unit tests on macOS
+- Performance tests run after unit tests (informational only, don't block)
+- Tests run on:
+  - Pull requests targeting `main`
+  - Pushes to `main` (after PR merge)
+  - Can be triggered manually via GitHub Actions UI
+
+**Development branch is NOT protected:**
+- Work happens directly on `development`
+- No CI checks required for pushes to `development`
+- CI only runs when creating PR from `development` to `main`
+
 **See [`.claude/WORKFLOW.md`](.claude/WORKFLOW.md) for:**
 - Complete branch strategy
 - Commit message conventions
@@ -61,8 +81,9 @@ gh api --method PATCH repos/intrusive-memory/SwiftProyecto/branches/main/protect
 {
   "strict": true,
   "contexts": [
-    "Fast Tests (iOS)",
-    "Fast Tests (macOS)"
+    "Code Quality",
+    "iOS Unit Tests",
+    "macOS Unit Tests"
   ]
 }
 EOF
