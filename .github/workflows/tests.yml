@@ -68,18 +68,16 @@ jobs:
         run: |
           set +e
 
-          TOTAL_CPUS=$(sysctl -n hw.ncpu)
-          echo "🖥️  Total CPUs: $TOTAL_CPUS"
-          echo "🧪 Running unit tests on iOS Simulator (performance tests disabled)"
+          echo "🧪 Running unit tests on iOS Simulator (performance tests disabled, serial execution)"
 
-          # Run unit tests only - skip performance tests
+          # Run unit tests serially to avoid race conditions
+          # Note: Parallel testing disabled due to test interference issues
           xcodebuild test \
             -scheme SwiftProyecto \
             -sdk iphonesimulator \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
             -enableCodeCoverage YES \
-            -parallel-testing-enabled YES \
-            -maximum-parallel-testing-workers $TOTAL_CPUS \
+            -parallel-testing-enabled NO \
             -skip-testing:SwiftProyectoTests/PerformanceTests \
             CODE_SIGNING_ALLOWED=NO \
             > test_output_ios.txt 2>&1
