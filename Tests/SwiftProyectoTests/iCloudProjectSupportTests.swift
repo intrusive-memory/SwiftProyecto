@@ -19,6 +19,20 @@ final class iCloudProjectSupportTests: XCTestCase {
     override func setUp() async throws {
         try await super.setUp()
 
+        // Clean up any leftover test projects from previous runs
+        if let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+            let projectsFolder = documentsURL.appendingPathComponent("Projects")
+            if FileManager.default.fileExists(atPath: projectsFolder.path) {
+                let contents = try? FileManager.default.contentsOfDirectory(atPath: projectsFolder.path)
+                contents?.forEach { folder in
+                    if folder.contains("Test") || folder.contains("Existing") {
+                        let folderURL = projectsFolder.appendingPathComponent(folder)
+                        try? FileManager.default.removeItem(at: folderURL)
+                    }
+                }
+            }
+        }
+
         // Create a temporary directory for testing
         tempDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("SwiftProyectoiCloudTests-\(UUID().uuidString)")
@@ -32,6 +46,22 @@ final class iCloudProjectSupportTests: XCTestCase {
         if let tempDirectory = tempDirectory {
             try? FileManager.default.removeItem(at: tempDirectory)
         }
+
+        // Clean up any test projects created in Documents/Projects
+        if let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+            let projectsFolder = documentsURL.appendingPathComponent("Projects")
+            // Remove test folders (folders with "Test" or "Existing" in the name)
+            if FileManager.default.fileExists(atPath: projectsFolder.path) {
+                let contents = try? FileManager.default.contentsOfDirectory(atPath: projectsFolder.path)
+                contents?.forEach { folder in
+                    if folder.contains("Test") || folder.contains("Existing") {
+                        let folderURL = projectsFolder.appendingPathComponent(folder)
+                        try? FileManager.default.removeItem(at: folderURL)
+                    }
+                }
+            }
+        }
+
         try await super.tearDown()
     }
 
