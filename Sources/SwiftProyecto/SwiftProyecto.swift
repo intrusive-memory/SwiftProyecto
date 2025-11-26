@@ -19,7 +19,7 @@ import Foundation
 /// - ``FileLoadingState``
 ///
 /// ### Services
-/// - ``ProjectManager``
+/// - ``ProjectService``
 /// - ``ModelContainerFactory``
 public struct SwiftProyecto {
     /// The current version of SwiftProyecto

@@ -68,7 +68,13 @@ public final class ProjectFileReference {
     public var fileExtension: String
 
     /// Last known file modification date from filesystem
+    /// This is updated during every sync operation to reflect current disk state
     public var lastKnownModificationDate: Date?
+
+    /// File modification date at the time it was loaded into SwiftData
+    /// This is set once when the file is loaded and never updated during sync
+    /// Used to detect if file has changed on disk since loading
+    public var lastLoadedModificationDate: Date?
 
     /// Current loading state of the file
     public var loadingState: FileLoadingState

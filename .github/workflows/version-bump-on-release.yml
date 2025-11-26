@@ -20,5 +20,3 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           bump-type: minor
           project-type: swift-package
-          main-branch: master
-          development-branch: development
