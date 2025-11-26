@@ -337,10 +337,12 @@ public final class ProjectService {
         // If PROJECT.md doesn't exist, create it with folder name as title
         if !manifestExists {
             let folderName = folderURL.lastPathComponent
+            // Use system user name, or "Unknown" if unavailable
+            let authorName = NSFullUserName().isEmpty ? "Unknown" : NSFullUserName()
             let frontMatter = ProjectFrontMatter(
                 type: "project",
                 title: folderName,
-                author: NSFullUserName(),  // Use system user name as default
+                author: authorName,
                 created: Date(),
                 description: nil,
                 season: nil,
