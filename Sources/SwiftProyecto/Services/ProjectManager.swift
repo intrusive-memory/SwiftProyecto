@@ -93,38 +93,12 @@ public final class ProjectManager {
         self.fileManager = .default
     }
 
-    // MARK: - Platform-Specific Bookmark Options
-
-    /// Bookmark resolution options appropriate for the current platform.
-    /// macOS uses security-scoped bookmarks, iOS uses standard bookmarks.
-    private var bookmarkResolutionOptions: URL.BookmarkResolutionOptions {
-        #if os(macOS)
-        return .withSecurityScope
-        #else
-        return []
-        #endif
-    }
-
-    /// Bookmark creation options appropriate for the current platform.
-    /// macOS uses security-scoped bookmarks, iOS uses standard bookmarks.
-    private var bookmarkCreationOptions: URL.BookmarkCreationOptions {
-        #if os(macOS)
-        return .withSecurityScope
-        #else
-        return .minimalBookmark
-        #endif
-    }
-
     // MARK: - Security-Scoped Access Helpers
 
     /// Performs an operation with security-scoped access to the project folder.
     ///
-    /// This method:
-    /// 1. Resolves the security-scoped bookmark
-    /// 2. Handles stale bookmarks by recreating them
-    /// 3. Starts accessing the security-scoped resource
-    /// 4. Executes the operation
-    /// 5. Stops accessing the resource (via defer)
+    /// This method uses `BookmarkManager` to handle bookmark resolution,
+    /// stale bookmark recreation, and security-scoped resource access.
     ///
     /// - Parameters:
     ///   - project: The project whose folder to access
@@ -135,45 +109,40 @@ public final class ProjectManager {
         to project: ProjectModel,
         operation: (URL) throws -> T
     ) throws -> T {
-        guard let bookmarkData = project.folderBookmark else {
+        guard var bookmarkData = project.folderBookmark else {
             throw ProjectError.noBookmarkData
         }
 
-        var isStale = false
-        let folderURL: URL
         do {
-            folderURL = try URL(
-                resolvingBookmarkData: bookmarkData,
-                options: bookmarkResolutionOptions,
-                relativeTo: nil,
-                bookmarkDataIsStale: &isStale
-            )
-        } catch {
-            throw ProjectError.bookmarkResolutionFailed(error)
-        }
+            // Resolve and refresh bookmark if stale
+            let folderURL = try BookmarkManager.refreshIfNeeded(&bookmarkData)
 
-        // Handle stale bookmarks by recreating them
-        if isStale {
-            do {
-                let newBookmark = try folderURL.bookmarkData(
-                    options: bookmarkCreationOptions,
-                    includingResourceValuesForKeys: nil,
-                    relativeTo: nil
-                )
-                project.folderBookmark = newBookmark
+            // Update bookmark if it was refreshed
+            if bookmarkData != project.folderBookmark {
+                project.folderBookmark = bookmarkData
                 try modelContext.save()
-            } catch {
-                throw ProjectError.bookmarkCreationFailed(error)
+            }
+
+            // Execute operation with security-scoped access
+            return try BookmarkManager.withAccess(folderURL, bookmarkData: bookmarkData, operation: operation)
+
+        } catch let error as BookmarkManager.BookmarkError {
+            // Map BookmarkManager errors to ProjectManager errors
+            switch error {
+            case .resolutionFailed(let underlyingError):
+                throw ProjectError.bookmarkResolutionFailed(underlyingError)
+            case .creationFailed(let underlyingError):
+                throw ProjectError.bookmarkCreationFailed(underlyingError)
+            case .accessDenied:
+                // Get URL for error message
+                if let url = try? BookmarkManager.resolveBookmark(bookmarkData).url {
+                    throw ProjectError.securityScopedAccessFailed(url)
+                }
+                throw error
+            default:
+                throw error
             }
         }
-
-        // Start accessing security-scoped resource
-        guard folderURL.startAccessingSecurityScopedResource() else {
-            throw ProjectError.securityScopedAccessFailed(folderURL)
-        }
-        defer { folderURL.stopAccessingSecurityScopedResource() }
-
-        return try operation(folderURL)
     }
 
     /// Async version of withSecurityScopedAccess for async operations.
@@ -181,45 +150,48 @@ public final class ProjectManager {
         to project: ProjectModel,
         operation: (URL) async throws -> T
     ) async throws -> T {
-        guard let bookmarkData = project.folderBookmark else {
+        guard var bookmarkData = project.folderBookmark else {
             throw ProjectError.noBookmarkData
         }
 
-        var isStale = false
-        let folderURL: URL
         do {
-            folderURL = try URL(
-                resolvingBookmarkData: bookmarkData,
-                options: bookmarkResolutionOptions,
-                relativeTo: nil,
-                bookmarkDataIsStale: &isStale
-            )
-        } catch {
-            throw ProjectError.bookmarkResolutionFailed(error)
-        }
+            // Resolve and refresh bookmark if stale
+            let folderURL = try BookmarkManager.refreshIfNeeded(&bookmarkData)
 
-        // Handle stale bookmarks by recreating them
-        if isStale {
-            do {
-                let newBookmark = try folderURL.bookmarkData(
-                    options: bookmarkCreationOptions,
-                    includingResourceValuesForKeys: nil,
-                    relativeTo: nil
-                )
-                project.folderBookmark = newBookmark
+            // Update bookmark if it was refreshed
+            if bookmarkData != project.folderBookmark {
+                project.folderBookmark = bookmarkData
                 try modelContext.save()
-            } catch {
-                throw ProjectError.bookmarkCreationFailed(error)
+            }
+
+            // Execute operation with security-scoped access
+            // Note: Manual implementation to avoid Swift 6 concurrency issues with nonisolated closures
+            #if os(macOS)
+            guard folderURL.startAccessingSecurityScopedResource() else {
+                throw ProjectError.securityScopedAccessFailed(folderURL)
+            }
+            defer { folderURL.stopAccessingSecurityScopedResource() }
+            #endif
+
+            return try await operation(folderURL)
+
+        } catch let error as BookmarkManager.BookmarkError {
+            // Map BookmarkManager errors to ProjectManager errors
+            switch error {
+            case .resolutionFailed(let underlyingError):
+                throw ProjectError.bookmarkResolutionFailed(underlyingError)
+            case .creationFailed(let underlyingError):
+                throw ProjectError.bookmarkCreationFailed(underlyingError)
+            case .accessDenied:
+                // Get URL for error message
+                if let url = try? BookmarkManager.resolveBookmark(bookmarkData).url {
+                    throw ProjectError.securityScopedAccessFailed(url)
+                }
+                throw error
+            default:
+                throw error
             }
         }
-
-        // Start accessing security-scoped resource
-        guard folderURL.startAccessingSecurityScopedResource() else {
-            throw ProjectError.securityScopedAccessFailed(folderURL)
-        }
-        defer { folderURL.stopAccessingSecurityScopedResource() }
-
-        return try await operation(folderURL)
     }
 
     // MARK: - Project Creation
@@ -247,70 +219,67 @@ public final class ProjectManager {
         genre: String? = nil,
         tags: [String]? = nil
     ) throws -> ProjectModel {
-        // Start accessing security-scoped resource
-        // On macOS, the folderURL comes from NSOpenPanel and needs explicit access
-        let didStartAccessing = folderURL.startAccessingSecurityScopedResource()
-        defer {
-            if didStartAccessing {
-                folderURL.stopAccessingSecurityScopedResource()
-            }
-        }
-
-        // Check if folder already exists
-        var isDirectory: ObjCBool = false
-        if fileManager.fileExists(atPath: folderURL.path, isDirectory: &isDirectory) {
-            if isDirectory.boolValue {
-                // Folder exists - check if it already has PROJECT.md
-                let manifestURL = folderURL.appendingPathComponent("PROJECT.md")
-                if fileManager.fileExists(atPath: manifestURL.path) {
-                    throw ProjectError.projectAlreadyExists(folderURL)
-                }
-            } else {
-                throw ProjectError.projectAlreadyExists(folderURL)
-            }
-        } else {
-            // Create project folder
-            try fileManager.createDirectory(at: folderURL, withIntermediateDirectories: true)
-        }
-
-        // Create PROJECT.md front matter
-        let frontMatter = ProjectFrontMatter(
-            type: "project",
-            title: title,
-            author: author,
-            created: Date(),
-            description: description,
-            season: season,
-            episodes: episodes,
-            genre: genre,
-            tags: tags
-        )
-
-        // Generate PROJECT.md content
-        let parser = ProjectMarkdownParser()
-        let markdownContent = parser.generate(frontMatter: frontMatter, body: "")
-
-        // Write PROJECT.md to disk
-        let manifestURL = folderURL.appendingPathComponent("PROJECT.md")
-        try markdownContent.write(to: manifestURL, atomically: true, encoding: .utf8)
-
-        // Create security-scoped bookmark
+        // Use BookmarkManager for security-scoped access
         let bookmarkData: Data
         do {
-            bookmarkData = try folderURL.bookmarkData(
-                options: bookmarkCreationOptions,
-                includingResourceValuesForKeys: nil,
-                relativeTo: nil
-            )
-        } catch {
-            throw ProjectError.bookmarkCreationFailed(error)
+            bookmarkData = try BookmarkManager.withAccess(folderURL) { url in
+                // Check if folder already exists
+                var isDirectory: ObjCBool = false
+                if fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory) {
+                    if isDirectory.boolValue {
+                        // Folder exists - check if it already has PROJECT.md
+                        let manifestURL = url.appendingPathComponent("PROJECT.md")
+                        if fileManager.fileExists(atPath: manifestURL.path) {
+                            throw ProjectError.projectAlreadyExists(url)
+                        }
+                    } else {
+                        throw ProjectError.projectAlreadyExists(url)
+                    }
+                } else {
+                    // Create project folder
+                    try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+                }
+
+                // Create PROJECT.md front matter
+                let frontMatter = ProjectFrontMatter(
+                    type: "project",
+                    title: title,
+                    author: author,
+                    created: Date(),
+                    description: description,
+                    season: season,
+                    episodes: episodes,
+                    genre: genre,
+                    tags: tags
+                )
+
+                // Generate PROJECT.md content
+                let parser = ProjectMarkdownParser()
+                let markdownContent = parser.generate(frontMatter: frontMatter, body: "")
+
+                // Write PROJECT.md to disk
+                let manifestURL = url.appendingPathComponent("PROJECT.md")
+                try markdownContent.write(to: manifestURL, atomically: true, encoding: .utf8)
+
+                // Create and return security-scoped bookmark
+                return try BookmarkManager.createBookmark(for: url)
+            }
+        } catch let error as BookmarkManager.BookmarkError {
+            switch error {
+            case .creationFailed(let underlyingError):
+                throw ProjectError.bookmarkCreationFailed(underlyingError)
+            case .accessDenied:
+                throw ProjectError.securityScopedAccessFailed(folderURL)
+            default:
+                throw error
+            }
         }
 
         // Create ProjectModel
         let project = ProjectModel(
             title: title,
             author: author,
-            created: frontMatter.created,
+            created: Date(),
             projectDescription: description,
             season: season,
             episodes: episodes,
@@ -398,16 +367,17 @@ public final class ProjectManager {
             throw ProjectError.projectManifestInvalid(error.localizedDescription)
         }
 
-        // Create security-scoped bookmark
+        // Create security-scoped bookmark using BookmarkManager
         let bookmarkData: Data
         do {
-            bookmarkData = try folderURL.bookmarkData(
-                options: bookmarkCreationOptions,
-                includingResourceValuesForKeys: nil,
-                relativeTo: nil
-            )
-        } catch {
-            throw ProjectError.bookmarkCreationFailed(error)
+            bookmarkData = try BookmarkManager.createBookmark(for: folderURL)
+        } catch let error as BookmarkManager.BookmarkError {
+            switch error {
+            case .creationFailed(let underlyingError):
+                throw ProjectError.bookmarkCreationFailed(underlyingError)
+            default:
+                throw error
+            }
         }
 
         // Create ProjectModel
@@ -621,11 +591,7 @@ public final class ProjectManager {
                     rawContent: nil,
                     suppressSceneNumbers: false
                 )
-                document.sourceFileBookmark = try fileURL.bookmarkData(
-                    options: bookmarkCreationOptions,
-                    includingResourceValuesForKeys: nil,
-                    relativeTo: nil
-                )
+                document.sourceFileBookmark = try BookmarkManager.createBookmark(for: fileURL)
                 document.lastImportDate = Date()
 
                 modelContext.insert(document)
@@ -872,175 +838,4 @@ public final class ProjectManager {
         try discoverFiles(for: project)
     }
 
-    // MARK: - iOS-Specific Project Management
-
-    #if os(iOS)
-    /// Creates a new project in iCloud Drive (iOS only).
-    ///
-    /// This method creates a project folder in the app's iCloud container and
-    /// initializes it with a PROJECT.md manifest. The project is automatically
-    /// synced to iCloud Drive.
-    ///
-    /// - Parameters:
-    ///   - title: Project title
-    ///   - author: Project author
-    ///   - description: Optional project description
-    ///   - season: Optional season number
-    ///   - episodes: Optional episode count
-    ///   - genre: Optional genre
-    ///   - tags: Optional tags
-    /// - Returns: The created ProjectModel
-    /// - Throws: ProjectError if creation fails
-    public func createICloudProject(
-        title: String,
-        author: String,
-        description: String? = nil,
-        season: Int? = nil,
-        episodes: Int? = nil,
-        genre: String? = nil,
-        tags: [String]? = nil
-    ) async throws -> ProjectModel {
-        let support = iCloudProjectSupport()
-
-        // Create project folder in iCloud
-        let projectURL = try support.createICloudProjectFolder(named: title)
-
-        // Use the standard createProject method with the iCloud URL
-        return try await createProject(
-            at: projectURL,
-            title: title,
-            author: author,
-            description: description,
-            season: season,
-            episodes: episodes,
-            genre: genre,
-            tags: tags
-        )
-    }
-
-    /// Creates a new project in local Documents directory (iOS only).
-    ///
-    /// This method creates a project folder in the app's local Documents directory.
-    /// The project is stored on-device and not synced to iCloud.
-    ///
-    /// - Parameters:
-    ///   - title: Project title
-    ///   - author: Project author
-    ///   - description: Optional project description
-    ///   - season: Optional season number
-    ///   - episodes: Optional episode count
-    ///   - genre: Optional genre
-    ///   - tags: Optional tags
-    /// - Returns: The created ProjectModel
-    /// - Throws: ProjectError if creation fails
-    public func createLocalProject(
-        title: String,
-        author: String,
-        description: String? = nil,
-        season: Int? = nil,
-        episodes: Int? = nil,
-        genre: String? = nil,
-        tags: [String]? = nil
-    ) async throws -> ProjectModel {
-        let support = iCloudProjectSupport()
-
-        // Create project folder locally
-        let projectURL = try support.createLocalProjectFolder(named: title)
-
-        // Use the standard createProject method with the local URL
-        return try await createProject(
-            at: projectURL,
-            title: title,
-            author: author,
-            description: description,
-            season: season,
-            episodes: episodes,
-            genre: genre,
-            tags: tags
-        )
-    }
-
-    /// Imports a screenplay file into a project by copying it (iOS only).
-    ///
-    /// This method copies an external screenplay file into the project folder,
-    /// then loads it into SwiftData. The original file is not modified.
-    ///
-    /// This is the iOS workflow for importing files from the document picker.
-    ///
-    /// - Parameters:
-    ///   - sourceURL: URL of the file to import
-    ///   - project: The project to import into
-    ///   - replaceExisting: If `true`, replaces existing file with same name
-    /// - Returns: The created ProjectFileReference
-    /// - Throws: ProjectError if import fails
-    public func importFileToProject(
-        from sourceURL: URL,
-        into project: ProjectModel,
-        replaceExisting: Bool = false
-    ) async throws -> ProjectFileReference {
-        let support = iCloudProjectSupport()
-
-        // Resolve project folder URL from bookmark
-        let projectURL = try resolveProjectURL(for: project)
-
-        // Copy file into project folder
-        let copiedURL = try support.copyFileToProject(
-            from: sourceURL,
-            to: projectURL,
-            replaceExisting: replaceExisting
-        )
-
-        // Discover files to add the new file reference
-        try discoverFiles(for: project)
-
-        // Find the file reference for the copied file
-        let filename = copiedURL.lastPathComponent
-        guard let fileReference = project.fileReferences.first(where: { $0.filename == filename }) else {
-            throw ProjectError.fileNotFound(copiedURL)
-        }
-
-        // Load the file
-        try await loadFile(fileReference, in: project)
-
-        return fileReference
-    }
-
-    /// Resolves the project folder URL from its bookmark.
-    ///
-    /// Helper method for iOS file operations.
-    ///
-    /// - Parameter project: The project model
-    /// - Returns: Resolved URL to the project folder
-    /// - Throws: ProjectError if resolution fails
-    private func resolveProjectURL(for project: ProjectModel) throws -> URL {
-        guard let bookmarkData = project.folderBookmark else {
-            throw ProjectError.noBookmarkData
-        }
-
-        var isStale = false
-        do {
-            let url = try URL(
-                resolvingBookmarkData: bookmarkData,
-                options: bookmarkResolutionOptions,
-                relativeTo: nil,
-                bookmarkDataIsStale: &isStale
-            )
-
-            // Recreate bookmark if stale
-            if isStale {
-                let newBookmark = try url.bookmarkData(
-                    options: bookmarkCreationOptions,
-                    includingResourceValuesForKeys: nil,
-                    relativeTo: nil
-                )
-                project.folderBookmark = newBookmark
-                try modelContext.save()
-            }
-
-            return url
-        } catch {
-            throw ProjectError.bookmarkResolutionFailed(error)
-        }
-    }
-    #endif
 }
