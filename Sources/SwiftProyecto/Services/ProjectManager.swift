@@ -109,7 +109,7 @@ public final class ProjectManager {
         to project: ProjectModel,
         operation: (URL) throws -> T
     ) throws -> T {
-        guard var bookmarkData = project.folderBookmark else {
+        guard var bookmarkData = project.sourceBookmarkData else {
             throw ProjectError.noBookmarkData
         }
 
@@ -118,8 +118,8 @@ public final class ProjectManager {
             let folderURL = try BookmarkManager.refreshIfNeeded(&bookmarkData)
 
             // Update bookmark if it was refreshed
-            if bookmarkData != project.folderBookmark {
-                project.folderBookmark = bookmarkData
+            if bookmarkData != project.sourceBookmarkData {
+                project.sourceBookmarkData = bookmarkData
                 try modelContext.save()
             }
 
@@ -150,7 +150,7 @@ public final class ProjectManager {
         to project: ProjectModel,
         operation: (URL) async throws -> T
     ) async throws -> T {
-        guard var bookmarkData = project.folderBookmark else {
+        guard var bookmarkData = project.sourceBookmarkData else {
             throw ProjectError.noBookmarkData
         }
 
@@ -159,8 +159,8 @@ public final class ProjectManager {
             let folderURL = try BookmarkManager.refreshIfNeeded(&bookmarkData)
 
             // Update bookmark if it was refreshed
-            if bookmarkData != project.folderBookmark {
-                project.folderBookmark = bookmarkData
+            if bookmarkData != project.sourceBookmarkData {
+                project.sourceBookmarkData = bookmarkData
                 try modelContext.save()
             }
 
@@ -285,8 +285,10 @@ public final class ProjectManager {
             episodes: episodes,
             genre: genre,
             tags: tags,
-            folderBookmark: bookmarkData,
-            folderPath: folderURL.standardized.path,
+            sourceType: .directory,
+            sourceName: folderURL.lastPathComponent,
+            sourceRootURL: folderURL.standardized.absoluteString,
+            sourceBookmarkData: bookmarkData,
             lastSyncDate: Date(),
             projectMarkdownContent: ""
         )
@@ -323,7 +325,8 @@ public final class ProjectManager {
         // Check if project already exists in SwiftData
         let descriptor = FetchDescriptor<ProjectModel>()
         let existingProjects = try modelContext.fetch(descriptor)
-        if let existing = existingProjects.first(where: { $0.folderPath == folderURL.path }) {
+        let folderURLString = folderURL.standardized.absoluteString
+        if let existing = existingProjects.first(where: { $0.sourceRootURL == folderURLString }) {
             return existing
         }
 
@@ -390,8 +393,10 @@ public final class ProjectManager {
             episodes: frontMatter.episodes,
             genre: frontMatter.genre,
             tags: frontMatter.tags,
-            folderBookmark: bookmarkData,
-            folderPath: folderURL.standardized.path,
+            sourceType: .directory,
+            sourceName: folderURL.lastPathComponent,
+            sourceRootURL: folderURL.standardized.absoluteString,
+            sourceBookmarkData: bookmarkData,
             lastSyncDate: nil,
             projectMarkdownContent: body
         )

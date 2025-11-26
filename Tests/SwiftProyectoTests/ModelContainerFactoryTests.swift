@@ -132,7 +132,13 @@ final class ModelContainerFactoryTests: XCTestCase {
         let modelContext = container.mainContext
 
         // Create and save a project
-        let project = ProjectModel(title: "Test", author: "Author")
+        let project = ProjectModel(
+            title: "Test",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "test.fountain",
+            sourceRootURL: fileURL.absoluteString
+        )
         modelContext.insert(project)
         try modelContext.save()
 
@@ -150,7 +156,13 @@ final class ModelContainerFactoryTests: XCTestCase {
         let modelContext = container.mainContext
 
         // Create and save a project
-        let project = ProjectModel(title: "Test", author: "Author")
+        let project = ProjectModel(
+            title: "Test",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "Test",
+            sourceRootURL: projectURL.absoluteString
+        )
         modelContext.insert(project)
         try modelContext.save()
 
@@ -166,7 +178,13 @@ final class ModelContainerFactoryTests: XCTestCase {
         let modelContext = container.mainContext
 
         // Create and save data
-        let project = ProjectModel(title: "Test", author: "Author")
+        let project = ProjectModel(
+            title: "Test",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "Test",
+            sourceRootURL: fileURL.absoluteString
+        )
         modelContext.insert(project)
         try modelContext.save()
 
@@ -189,7 +207,13 @@ final class ModelContainerFactoryTests: XCTestCase {
         let modelContext = container.mainContext
 
         // Create and save data
-        let project = ProjectModel(title: "Test", author: "Author")
+        let project = ProjectModel(
+            title: "Test",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "Test",
+            sourceRootURL: projectURL.absoluteString
+        )
         modelContext.insert(project)
         try modelContext.save()
 
@@ -232,12 +256,24 @@ final class ModelContainerFactoryTests: XCTestCase {
 
         // Save data to both
         let singleFileModelContext = singleFileContainer.mainContext
-        let singleFileProject = ProjectModel(title: "Single File", author: "Author1")
+        let singleFileProject = ProjectModel(
+            title: "Single File",
+            author: "Author1",
+            sourceType: .directory,
+            sourceName: "test.fountain",
+            sourceRootURL: fileURL.absoluteString
+        )
         singleFileModelContext.insert(singleFileProject)
         try singleFileModelContext.save()
 
         let projectModelContext = projectContainer.mainContext
-        let projectProject = ProjectModel(title: "Project", author: "Author2")
+        let projectProject = ProjectModel(
+            title: "Project",
+            author: "Author2",
+            sourceType: .directory,
+            sourceName: "TestProject",
+            sourceRootURL: projectURL.absoluteString
+        )
         projectModelContext.insert(projectProject)
         try projectModelContext.save()
 

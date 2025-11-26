@@ -66,8 +66,10 @@ final class ProjectManagerTests: XCTestCase {
         XCTAssertEqual(project.title, "My Series")
         XCTAssertEqual(project.author, "Jane Showrunner")
         XCTAssertNotNil(project.created)
-        XCTAssertNotNil(project.folderBookmark)
-        XCTAssertEqual(project.folderPath, projectURL.path)
+        XCTAssertNotNil(project.sourceBookmarkData)
+        XCTAssertEqual(project.sourceType, .directory)
+        XCTAssertEqual(project.sourceName, projectURL.lastPathComponent)
+        XCTAssertEqual(project.sourceRootURL, projectURL.standardized.absoluteString)
         XCTAssertNotNil(project.lastSyncDate)
 
         // Verify folder was created
@@ -172,7 +174,7 @@ final class ProjectManagerTests: XCTestCase {
         XCTAssertEqual(opened.author, "Test Author")
         XCTAssertEqual(opened.projectDescription, "Test description")
         XCTAssertEqual(opened.season, 1)
-        XCTAssertEqual(opened.folderPath, projectURL.path)
+        XCTAssertEqual(opened.sourceRootURL, projectURL.standardized.absoluteString)
 
         // Verify saved to SwiftData
         let fetchedAfter = try modelContext.fetch(FetchDescriptor<ProjectModel>())
@@ -235,7 +237,7 @@ final class ProjectManagerTests: XCTestCase {
 
         // Verify project was created with folder name as title
         XCTAssertEqual(project.title, "NoManifest")
-        XCTAssertEqual(project.folderPath, projectURL.path)
+        XCTAssertEqual(project.sourceRootURL, projectURL.standardized.absoluteString)
     }
 
     // MARK: - File Discovery Tests

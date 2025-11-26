@@ -81,7 +81,10 @@ final class PerformanceTests: XCTestCase {
             for i in 0..<100 {
                 _ = ProjectModel(
                     title: "Test Project \(i)",
-                    author: "Test Author"
+                    author: "Test Author",
+                    sourceType: .directory,
+                    sourceName: "TestProject\(i)",
+                    sourceRootURL: "file:///test/project\(i)"
                 )
             }
         }
@@ -254,7 +257,10 @@ final class PerformanceTests: XCTestCase {
             for i in 0..<50 {
                 let project = ProjectModel(
                     title: "Project \(i)",
-                    author: "Author \(i)"
+                    author: "Author \(i)",
+                    sourceType: .directory,
+                    sourceName: "Project\(i)",
+                    sourceRootURL: "file:///test/project\(i)"
                 )
                 container.mainContext.insert(project)
             }
@@ -287,7 +293,10 @@ final class PerformanceTests: XCTestCase {
             for projIndex in 0..<10 {
                 let project = ProjectModel(
                     title: "Series \(projIndex)",
-                    author: "Showrunner"
+                    author: "Showrunner",
+                    sourceType: .directory,
+                    sourceName: "Series\(projIndex)",
+                    sourceRootURL: "file:///test/series\(projIndex)"
                 )
                 container.mainContext.insert(project)
 
@@ -322,7 +331,10 @@ final class PerformanceTests: XCTestCase {
         for i in 0..<100 {
             let project = ProjectModel(
                 title: "Project \(i)",
-                author: i % 2 == 0 ? "Author A" : "Author B"
+                author: i % 2 == 0 ? "Author A" : "Author B",
+                sourceType: .directory,
+                sourceName: "Project\(i)",
+                sourceRootURL: "file:///test/project\(i)"
             )
             container.mainContext.insert(project)
 
@@ -378,7 +390,13 @@ final class PerformanceTests: XCTestCase {
             configurations: config
         )
 
-        let project = ProjectModel(title: "Test Project", author: "Test Author")
+        let project = ProjectModel(
+            title: "Test Project",
+            author: "Test Author",
+            sourceType: .directory,
+            sourceName: "TestProject",
+            sourceRootURL: "file:///test/project"
+        )
         container.mainContext.insert(project)
 
         // Add 1000 file references
@@ -411,7 +429,13 @@ final class PerformanceTests: XCTestCase {
             configurations: config
         )
 
-        let project = ProjectModel(title: "Test Project", author: "Test Author")
+        let project = ProjectModel(
+            title: "Test Project",
+            author: "Test Author",
+            sourceType: .directory,
+            sourceName: "TestProject",
+            sourceRootURL: "file:///test/project"
+        )
         container.mainContext.insert(project)
 
         let loadingStates: [FileLoadingState] = [.notLoaded, .loading, .loaded, .stale, .missing]
@@ -465,7 +489,10 @@ final class PerformanceTests: XCTestCase {
                         group.addTask {
                             let project = ProjectModel(
                                 title: "Concurrent Project \(i)",
-                                author: "Author \(i)"
+                                author: "Author \(i)",
+                                sourceType: .directory,
+                                sourceName: "ConcurrentProject\(i)",
+                                sourceRootURL: "file:///test/concurrent\(i)"
                             )
                             await MainActor.run {
                                 container.mainContext.insert(project)
@@ -539,7 +566,10 @@ final class PerformanceTests: XCTestCase {
             // Create a project with 10,000 file references
             let project = ProjectModel(
                 title: "Large TV Series",
-                author: "Prolific Writer"
+                author: "Prolific Writer",
+                sourceType: .directory,
+                sourceName: "LargeTVSeries",
+                sourceRootURL: "file:///test/large-series"
             )
             container.mainContext.insert(project)
 
@@ -574,7 +604,10 @@ final class PerformanceTests: XCTestCase {
             for i in 0..<1000 {
                 let project = ProjectModel(
                     title: "Project \(i)",
-                    author: "Author \(i % 100)"
+                    author: "Author \(i % 100)",
+                    sourceType: .directory,
+                    sourceName: "Project\(i)",
+                    sourceRootURL: "file:///test/project\(i)"
                 )
                 container.mainContext.insert(project)
 
@@ -610,7 +643,13 @@ final class PerformanceTests: XCTestCase {
 
         // Measure project creation
         let projectStart = Date()
-        _ = ProjectModel(title: "Baseline Project", author: "Test")
+        _ = ProjectModel(
+            title: "Baseline Project",
+            author: "Test",
+            sourceType: .directory,
+            sourceName: "BaselineProject",
+            sourceRootURL: "file:///test/baseline"
+        )
         let projectTime = Date().timeIntervalSince(projectStart)
 
         // Measure file reference creation

@@ -33,7 +33,10 @@ final class ProjectModelTests: XCTestCase {
     func testMinimalInitialization() {
         let project = ProjectModel(
             title: "My Project",
-            author: "John Doe"
+            author: "John Doe",
+            sourceType: .directory,
+            sourceName: "MyProject",
+            sourceRootURL: "file:///path/to/project"
         )
 
         XCTAssertNotNil(project.id)
@@ -45,8 +48,10 @@ final class ProjectModelTests: XCTestCase {
         XCTAssertNil(project.episodes)
         XCTAssertNil(project.genre)
         XCTAssertNil(project.tags)
-        XCTAssertNil(project.folderBookmark)
-        XCTAssertNil(project.folderPath)
+        XCTAssertEqual(project.sourceType, .directory)
+        XCTAssertEqual(project.sourceName, "MyProject")
+        XCTAssertEqual(project.sourceRootURL, "file:///path/to/project")
+        XCTAssertNil(project.sourceBookmarkData)
         XCTAssertNil(project.lastSyncDate)
         XCTAssertNil(project.projectMarkdownContent)
         XCTAssertTrue(project.fileReferences.isEmpty)
@@ -56,6 +61,7 @@ final class ProjectModelTests: XCTestCase {
         let id = UUID()
         let created = Date()
         let bookmarkData = Data("bookmark".utf8)
+        let sourceURL = "file:///Users/jane/Projects/my-series"
 
         let project = ProjectModel(
             id: id,
@@ -67,8 +73,10 @@ final class ProjectModelTests: XCTestCase {
             episodes: 12,
             genre: "Science Fiction",
             tags: ["sci-fi", "drama"],
-            folderBookmark: bookmarkData,
-            folderPath: "/Users/jane/Projects/my-series",
+            sourceType: .directory,
+            sourceName: "my-series",
+            sourceRootURL: sourceURL,
+            sourceBookmarkData: bookmarkData,
             lastSyncDate: Date(),
             projectMarkdownContent: "# Notes\n\nProduction info"
         )
@@ -82,8 +90,10 @@ final class ProjectModelTests: XCTestCase {
         XCTAssertEqual(project.episodes, 12)
         XCTAssertEqual(project.genre, "Science Fiction")
         XCTAssertEqual(project.tags, ["sci-fi", "drama"])
-        XCTAssertEqual(project.folderBookmark, bookmarkData)
-        XCTAssertEqual(project.folderPath, "/Users/jane/Projects/my-series")
+        XCTAssertEqual(project.sourceType, .directory)
+        XCTAssertEqual(project.sourceName, "my-series")
+        XCTAssertEqual(project.sourceRootURL, sourceURL)
+        XCTAssertEqual(project.sourceBookmarkData, bookmarkData)
         XCTAssertNotNil(project.lastSyncDate)
         XCTAssertEqual(project.projectMarkdownContent, "# Notes\n\nProduction info")
     }
@@ -91,7 +101,13 @@ final class ProjectModelTests: XCTestCase {
     // MARK: - Convenience Property Tests
 
     func testFileCountProperties() {
-        let project = ProjectModel(title: "Test", author: "Author")
+        let project = ProjectModel(
+            title: "Test",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "Test",
+            sourceRootURL: "file:///test"
+        )
 
         // No files
         XCTAssertEqual(project.totalFileCount, 0)
@@ -144,7 +160,13 @@ final class ProjectModelTests: XCTestCase {
     }
 
     func testDisplayTitle() {
-        let project = ProjectModel(title: "My Project", author: "Author")
+        let project = ProjectModel(
+            title: "My Project",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "MyProject",
+            sourceRootURL: "file:///test"
+        )
         XCTAssertEqual(project.displayTitle, "My Project")
 
         project.season = 2
@@ -153,13 +175,25 @@ final class ProjectModelTests: XCTestCase {
         project.episodes = 10
         XCTAssertEqual(project.displayTitle, "My Project - Season 2 (10 episodes)")
 
-        let project2 = ProjectModel(title: "Another", author: "Author")
+        let project2 = ProjectModel(
+            title: "Another",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "Another",
+            sourceRootURL: "file:///another"
+        )
         project2.episodes = 8
         XCTAssertEqual(project2.displayTitle, "Another (8 episodes)")
     }
 
     func testSortedFileReferences() {
-        let project = ProjectModel(title: "Test", author: "Author")
+        let project = ProjectModel(
+            title: "Test",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "Test",
+            sourceRootURL: "file:///test"
+        )
 
         let file1 = ProjectFileReference(relativePath: "z-file.fountain", filename: "z-file.fountain", fileExtension: "fountain")
         let file2 = ProjectFileReference(relativePath: "a-file.fountain", filename: "a-file.fountain", fileExtension: "fountain")
@@ -177,7 +211,13 @@ final class ProjectModelTests: XCTestCase {
     // MARK: - Query Method Tests
 
     func testFileReferencesInState() {
-        let project = ProjectModel(title: "Test", author: "Author")
+        let project = ProjectModel(
+            title: "Test",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "Test",
+            sourceRootURL: "file:///test"
+        )
 
         let notLoaded1 = ProjectFileReference(relativePath: "file1.fountain", filename: "file1.fountain", fileExtension: "fountain", loadingState: .notLoaded)
         let notLoaded2 = ProjectFileReference(relativePath: "file2.fountain", filename: "file2.fountain", fileExtension: "fountain", loadingState: .notLoaded)
@@ -200,7 +240,13 @@ final class ProjectModelTests: XCTestCase {
     }
 
     func testFileReferenceAtPath() {
-        let project = ProjectModel(title: "Test", author: "Author")
+        let project = ProjectModel(
+            title: "Test",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "Test",
+            sourceRootURL: "file:///test"
+        )
 
         let file1 = ProjectFileReference(relativePath: "file1.fountain", filename: "file1.fountain", fileExtension: "fountain")
         let file2 = ProjectFileReference(relativePath: "season-01/file2.fountain", filename: "file2.fountain", fileExtension: "fountain")
@@ -220,7 +266,13 @@ final class ProjectModelTests: XCTestCase {
     }
 
     func testNeedsSync() {
-        let project = ProjectModel(title: "Test", author: "Author")
+        let project = ProjectModel(
+            title: "Test",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "Test",
+            sourceRootURL: "file:///test"
+        )
 
         // Never synced
         XCTAssertTrue(project.needsSync)
@@ -243,7 +295,13 @@ final class ProjectModelTests: XCTestCase {
     // MARK: - Relationship Tests
 
     func testFileReferenceRelationship() throws {
-        let project = ProjectModel(title: "Test", author: "Author")
+        let project = ProjectModel(
+            title: "Test",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "Test",
+            sourceRootURL: "file:///test"
+        )
         modelContext.insert(project)
 
         let fileRef = ProjectFileReference(
@@ -263,7 +321,13 @@ final class ProjectModelTests: XCTestCase {
     }
 
     func testCascadeDelete() throws {
-        let project = ProjectModel(title: "Test", author: "Author")
+        let project = ProjectModel(
+            title: "Test",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "Test",
+            sourceRootURL: "file:///test"
+        )
         modelContext.insert(project)
 
         let fileRef1 = ProjectFileReference(relativePath: "file1.fountain", filename: "file1.fountain", fileExtension: "fountain")
@@ -292,7 +356,10 @@ final class ProjectModelTests: XCTestCase {
             title: "My Project",
             author: "Author",
             projectDescription: "Test project",
-            season: 1
+            season: 1,
+            sourceType: .directory,
+            sourceName: "MyProject",
+            sourceRootURL: "file:///test/project"
         )
 
         modelContext.insert(project)
@@ -310,7 +377,13 @@ final class ProjectModelTests: XCTestCase {
     }
 
     func testUpdate() throws {
-        let project = ProjectModel(title: "Original", author: "Author")
+        let project = ProjectModel(
+            title: "Original",
+            author: "Author",
+            sourceType: .directory,
+            sourceName: "Original",
+            sourceRootURL: "file:///test/original"
+        )
 
         modelContext.insert(project)
         try modelContext.save()
