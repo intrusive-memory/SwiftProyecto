@@ -4,33 +4,33 @@ import SwiftCompartido
 
 /// Service for managing project lifecycle, file discovery, and synchronization.
 ///
-/// ProjectManager handles:
+/// ProjectService handles:
 /// - Creating new projects with PROJECT.md manifest
 /// - Opening existing projects and loading metadata
-/// - Discovering screenplay files in project folders
+/// - Discovering files in project folders
 /// - Synchronizing file state with filesystem
 /// - Loading and unloading individual files
 ///
 /// ## Usage
 ///
 /// ```swift
-/// let manager = ProjectManager(modelContext: context)
+/// let service = ProjectService(modelContext: context)
 ///
 /// // Create a new project
-/// let project = try await manager.createProject(
+/// let project = try await service.createProject(
 ///     at: projectURL,
 ///     title: "My Series",
 ///     author: "Jane Showrunner"
 /// )
 ///
 /// // Discover files in project folder
-/// try await manager.discoverFiles(for: project)
+/// try await service.discoverFiles(for: project)
 ///
 /// // Load a specific file
-/// try await manager.loadFile(fileReference, in: project)
+/// try await service.loadFile(fileReference, in: project)
 /// ```
 @MainActor
-public final class ProjectManager {
+public final class ProjectService {
 
     // MARK: - Properties
 
@@ -414,22 +414,15 @@ public final class ProjectManager {
 
     // MARK: - File Discovery
 
-    /// Discovers all screenplay files in the project folder.
+    /// Discovers files in the project folder.
     ///
-    /// Supported extensions: .fountain, .fdx, .highland, .md, .markdown, .textbundle, .docx, .odt, .rtf, .pdf
-    ///
-    /// - Parameter project: The project to discover files for
+    /// - Parameters:
+    ///   - project: The project to discover files for
+    ///   - allowedExtensions: Optional array of file extensions to filter by (e.g., ["fountain", "fdx"]). If nil, discovers ALL files.
     /// - Throws: ProjectError if discovery fails
-    public func discoverFiles(for project: ProjectModel) throws {
+    public func discoverFiles(for project: ProjectModel, allowedExtensions: [String]? = nil) throws {
         // Use security-scoped access to enumerate folder
         try withSecurityScopedAccess(to: project) { folderURL in
-            // Supported screenplay file extensions
-            let supportedExtensions = [
-                "fountain", "fdx", "highland",
-                "md", "markdown", "textbundle",
-                "docx", "odt", "rtf", "pdf"
-            ]
-
             // Recursively find all files and calculate relative paths
             let enumerator = fileManager.enumerator(
                 at: folderURL,
@@ -464,10 +457,12 @@ public final class ProjectManager {
                 continue
             }
 
-            // Check extension
-            let ext = fileURL.pathExtension.lowercased()
-            guard supportedExtensions.contains(ext) else {
-                continue
+            // Check extension (if filter is provided)
+            if let allowedExtensions = allowedExtensions {
+                let ext = fileURL.pathExtension.lowercased()
+                guard allowedExtensions.contains(ext) else {
+                    continue
+                }
             }
 
             // Calculate relative path using path components
