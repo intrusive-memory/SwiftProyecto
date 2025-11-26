@@ -314,4 +314,46 @@ public extension ProjectModel {
         // Check for stale files
         return fileReferences.contains { $0.loadingState == .stale }
     }
+
+    /// Creates a hierarchical file tree from the project's file references.
+    ///
+    /// This method builds a tree structure suitable for displaying files in a
+    /// hierarchical view (e.g., folder tree, outline view, etc.). The root node
+    /// contains all files and directories.
+    ///
+    /// ## Usage
+    ///
+    /// ```swift
+    /// let tree = project.fileTree()
+    ///
+    /// // Display tree
+    /// for child in tree.sortedChildren {
+    ///     if child.isDirectory {
+    ///         print("📁 \(child.name)/")
+    ///     } else {
+    ///         print("📄 \(child.name)")
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// ## Tree Structure
+    ///
+    /// Given files:
+    /// - `README.md`
+    /// - `Season 1/Episode 1.fountain`
+    /// - `Season 1/Episode 2.fountain`
+    ///
+    /// Returns:
+    /// ```
+    /// Root (virtual)
+    /// ├── README.md (file)
+    /// └── Season 1/ (directory)
+    ///     ├── Episode 1.fountain (file)
+    ///     └── Episode 2.fountain (file)
+    /// ```
+    ///
+    /// - Returns: Root node of the file tree
+    func fileTree() -> FileNode {
+        return FileNode.buildTree(from: fileReferences)
+    }
 }
