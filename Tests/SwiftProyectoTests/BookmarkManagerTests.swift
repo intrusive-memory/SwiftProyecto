@@ -56,20 +56,14 @@ final class BookmarkManagerTests: XCTestCase {
         // Given: A nonexistent path
         let nonexistentPath = tempDirectory.appendingPathComponent("nonexistent")
 
-        // When/Then: On macOS, security-scoped bookmarks require existing paths
-        // On iOS, standard bookmarks may succeed
-        #if os(macOS)
+        // When/Then: Both macOS and iOS should fail for nonexistent paths
+        // Security-scoped bookmarks require existing paths on both platforms
         XCTAssertThrowsError(try BookmarkManager.createBookmark(for: nonexistentPath)) { error in
             guard case BookmarkManager.BookmarkError.creationFailed = error else {
                 XCTFail("Expected creationFailed error, got \(error)")
                 return
             }
         }
-        #else
-        // iOS may allow bookmarks for nonexistent paths
-        let bookmarkData = try BookmarkManager.createBookmark(for: nonexistentPath)
-        XCTAssertFalse(bookmarkData.isEmpty)
-        #endif
     }
 
     // MARK: - Bookmark Resolution Tests
