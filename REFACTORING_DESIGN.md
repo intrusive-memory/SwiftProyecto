@@ -623,8 +623,8 @@ public final class ProjectService {
 **Risk:** Low (additive feature)
 **Status:** ✅ Finalized
 
-### Phase 6: Update Produciesta App (External)
-**Goal:** Move iOS/platform-specific logic to app
+### Phase 6: Update Produciesta App and Documentation (External)
+**Goal:** Move iOS/platform-specific logic to app and update documentation
 
 **Tasks:**
 1. Create `ProjectStorageService` in Produciesta
@@ -633,8 +633,11 @@ public final class ProjectService {
 4. Update UI to use new `ProjectService` API
 5. Update app to handle document picker → file source creation
 6. Test on iOS and macOS
+7. **Update CLAUDE.md** with current architecture and removed features
+8. **Update README.md** with accurate API examples and usage
+9. **Review and remove obsolete tests** that no longer align with library focus
 
-**Effort:** 12-16 hours (in Produciesta repo)
+**Effort:** 12-16 hours (in Produciesta repo) + 2-4 hours (documentation)
 **Risk:** Medium (cross-repo coordination)
 **Status:** ✅ Finalized (external task)
 
