@@ -223,8 +223,11 @@ public extension ProjectModel {
             )
 
         case .gitRepository:
-            // TODO: Implement in Phase 3
-            return nil
+            return try? GitRepositoryFileSource(
+                url: rootURL,
+                name: sourceName,
+                bookmarkData: sourceBookmarkData
+            )
 
         case .packageBundle:
             // TODO: Future implementation
