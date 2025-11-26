@@ -7,18 +7,19 @@
     <img src="https://img.shields.io/badge/Version-0.5.0-blue.svg" />
 </p>
 
-**SwiftProyecto** is a Swift package for managing screenplay projects in Produciesta. It provides data models, business logic, and services for folder-based project management with lazy loading and isolated SwiftData containers.
+**SwiftProyecto** is a Swift package providing a file source abstraction layer for screenplay project management. It offers flexible file access through protocols, supporting both local directories and git repositories with security-scoped bookmarks for sandboxed environments.
 
 ## Overview
 
-SwiftProyecto handles:
-- Project metadata management via PROJECT.md manifest files
-- File discovery and state tracking (loaded, unloaded, stale, missing)
-- Dual SwiftData container strategy (app-wide vs project-local)
-- Project lifecycle operations (create, open, sync, load files)
-- **iOS iCloud Drive integration** with local storage fallback
-- **macOS security-scoped bookmark** management for sandboxed access
-- Platform-specific file operations (import, export, copy)
+SwiftProyecto provides:
+- **FileSource Protocol**: Abstraction for different file storage backends (directories, git repos)
+- **DirectoryFileSource**: Local folder access with security-scoped bookmarks
+- **GitRepositoryFileSource**: Git repository support with `.git` detection
+- **ProjectService**: Project lifecycle management (create, open, sync, load files)
+- **BookmarkManager**: Centralized security-scoped bookmark management
+- **FileNode**: Hierarchical file tree structure for UI display
+- **Project Models**: SwiftData models for project metadata and file references
+- **File State Tracking**: Monitor loaded, unloaded, stale, and missing files
 
 ## Architecture
 
@@ -27,7 +28,7 @@ SwiftProyecto sits between SwiftCompartido (data structures & parsing) and Produ
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ Produciesta (iOS/macOS App)                             │
-│ - UI Views (ProjectView, SingleFileView)                │
+│ - UI Views (ProjectView, FileTreeView)                  │
 │ - SwiftUI integration                                   │
 └─────────────────┬───────────────────────────────────────┘
                   │
@@ -37,56 +38,58 @@ SwiftProyecto sits between SwiftCompartido (data structures & parsing) and Produ
 │ SwiftProyecto  │  │ SwiftCompartido │  │ SwiftHablare│
 │ (THIS)         │  │                 │  │             │
 │                │  │ - GuionDocument │  │ - Voice Gen │
-│ - ProjectModel │  │ - Parsing       │  │ - Providers │
-│ - File State   │  │ - PROJECT.md    │  └─────────────┘
-│ - Container    │  │   Parser        │
-│   Factory      │  │                 │
+│ - FileSource   │  │ - Parsing       │  │ - Providers │
+│ - ProjectModel │  │ - PROJECT.md    │  └─────────────┘
+│ - FileNode     │  │   Parser        │
+│ - Bookmark     │  │                 │
+│   Manager      │  │                 │
 │ - Project      │  │                 │
 │   Service      │  │                 │
 └────────────────┘  └─────────────────┘
 ```
 
-## Features (Roadmap)
+## Features
 
-### ✅ Phase 0: Foundation (Complete)
-- [x] Package structure and dependencies
-- [x] Basic documentation
-- [x] GitHub repository published
+### ✅ Core Refactoring (Phases 1-5 Complete)
 
-### ✅ Phase 1: SwiftData Models (Complete)
-- [x] `ProjectModel` - Project metadata and relationships
-- [x] `ProjectFileReference` - File discovery and state tracking
-- [x] `FileLoadingState` enum - File state transitions
-- [x] 32 tests, all passing (100%)
-- [x] ~95% test coverage
+#### Phase 1: BookmarkManager Extraction
+- [x] Extract centralized `BookmarkManager` utility
+- [x] Remove iOS-specific code (iCloudProjectSupport, SingleFileManager)
+- [x] Consolidate bookmark operations
+- [x] 21 tests for BookmarkManager (100% passing)
 
-### ✅ Phase 2: Container Strategy (Complete)
-- [x] `DocumentContext` enum - Single file vs project context
-- [x] `ModelContainerFactory` - Dual container selection logic
-- [x] SwiftCompartido dependency integration
-- [x] GuionDocumentModel relationship integration
-- [x] 55 tests total, all passing (100%)
-- [x] ~95% test coverage maintained
+#### Phase 2: FileSource Protocol
+- [x] Define `FileSource` protocol for file access abstraction
+- [x] Implement `DirectoryFileSource` for local folders
+- [x] Security-scoped bookmark integration
+- [x] File discovery and content reading
+- [x] 20 tests for DirectoryFileSource (100% passing)
 
-### ✅ Phase 3: Service Layer (Complete)
-- [x] `ProjectManager` - Project CRUD operations
-- [x] Project lifecycle management (create, open, close)
-- [x] File discovery and synchronization
-- [x] File loading/unloading operations
-- [x] Security-scoped bookmark management (iOS/macOS)
-- [x] Stale bookmark detection and recreation
-- [x] 73 tests total, all passing (100%)
-- [x] ~95% test coverage maintained
+#### Phase 3: Git Repository Support
+- [x] Implement `GitRepositoryFileSource` with `.git` detection
+- [x] Git-aware file filtering (ignore `.git/` directory)
+- [x] Full FileSource protocol compliance
+- [x] 22 tests for GitRepositoryFileSource (100% passing)
 
-### ✅ Phase 4: Single File Service Layer (Complete)
-- [x] `SingleFileManager` - Single file operations
-- [x] File import with security-scoped bookmarks
-- [x] File reload/refresh functionality
-- [x] Stale file detection (modification date tracking)
-- [x] Bookmark resolution with stale handling
-- [x] Document deletion (preserves source files)
-- [x] 88 tests total, all passing (100%)
-- [x] ~95% test coverage maintained
+#### Phase 4: Service Layer Refactor
+- [x] Rename `ProjectManager` → `ProjectService`
+- [x] Remove hard-coded file filtering (.fountain, .fdx)
+- [x] Return all discovered files (let consumer filter)
+- [x] Update ProjectModel to use FileSource
+- [x] 20 tests for ProjectService (100% passing)
+
+#### Phase 5: File Tree Helper
+- [x] Create `FileNode` struct for hierarchical display
+- [x] Tree building from flat file references
+- [x] Navigation methods (findNode, allFiles, allDirectories)
+- [x] Add `ProjectModel.fileTree()` convenience method
+- [x] Sorted children support (directories first)
+- [x] 22 tests for FileNode (100% passing)
+
+### Test Coverage
+- **177 total tests** (171 passing, 6 pre-existing failures in ModelContainerFactory)
+- **~95% code coverage** for refactored components
+- All FileSource, ProjectService, and FileNode tests: 100% passing
 
 ## Installation
 
@@ -145,90 +148,95 @@ tags: [sci-fi, drama]
 Additional notes and production information go here...
 ```
 
-### iOS-Specific Features
+### Basic Usage
 
-SwiftProyecto provides iOS-native project management with **iCloud Drive integration** and **local storage** support.
-
-#### iCloud Projects
-
-Projects are automatically synced across devices via iCloud Drive:
+#### Opening a Project
 
 ```swift
-let manager = ProjectManager(modelContext: modelContext)
+import SwiftProyecto
 
-// Check if iCloud is available
-let support = iCloudProjectSupport()
-if support.isICloudAvailable {
-    // Create project in iCloud Drive
-    let project = try await manager.createICloudProject(
-        title: "My Series",
-        author: "Jane Showrunner",
-        description: "A multi-episode series"
-    )
+// Create ProjectService instance
+let service = ProjectService(modelContext: context)
+
+// Open existing project folder
+let projectURL = URL(fileURLWithPath: "/path/to/my-series-project")
+let project = try await service.openProject(at: projectURL)
+
+// Project metadata from PROJECT.md
+print(project.title) // "My Series"
+print(project.author) // "Jane Showrunner"
+print(project.totalFileCount) // Number of discovered files
+```
+
+#### Working with Files
+
+```swift
+// Discover files (automatically syncs on open)
+// Files are discovered but NOT loaded until explicitly requested
+
+for fileRef in project.fileReferences {
+    print(fileRef.filename) // "episode-01.fountain"
+    print(fileRef.loadingState) // .notLoaded
+}
+
+// Load a specific file on demand
+let fileRef = project.fileReferences.first!
+try await service.loadFile(fileRef, in: project)
+
+// Now the screenplay is loaded
+if let screenplay = fileRef.loadedDocument {
+    print(screenplay.elements.count) // Access parsed content
 }
 ```
 
-**iCloud Structure:**
-```
-iCloud Drive/
-└── Produciesta/
-    └── Documents/
-        └── Projects/
-            ├── My Series/
-            │   ├── PROJECT.md
-            │   └── episode-01.fountain
-            └── Another Project/
-```
-
-#### Local Projects
-
-For offline work or when iCloud is unavailable:
+#### File Tree Display
 
 ```swift
-// Create project in local Documents directory
-let project = try await manager.createLocalProject(
-    title: "Local Project",
-    author: "John Writer"
-)
+// Get hierarchical tree structure
+let tree = project.fileTree()
+
+// Display in UI
+func displayTree(_ node: FileNode, indent: Int = 0) {
+    let prefix = String(repeating: "  ", count: indent)
+
+    if node.isDirectory {
+        print("\(prefix)📁 \(node.name)/")
+        for child in node.sortedChildren {
+            displayTree(child, indent: indent + 1)
+        }
+    } else {
+        print("\(prefix)📄 \(node.name)")
+    }
+}
+
+displayTree(tree)
+// Output:
+// 📄 README.md
+// 📁 Season 1/
+//   📄 Episode 1.fountain
+//   📄 Episode 2.fountain
 ```
 
-**Local Structure:**
-```
-Documents/
-└── Projects/
-    └── Local Project/
-        ├── PROJECT.md
-        └── screenplay.fountain
-```
-
-#### Importing Files on iOS
-
-Files are **copied** into the project folder (original preserved):
+#### Using FileSource Directly
 
 ```swift
-// User selects file from document picker
-let sourceURL = ... // From UIDocumentPickerViewController
-
-// Copy file into project and load it
-let fileRef = try await manager.importFileToProject(
-    from: sourceURL,
-    into: project,
-    replaceExisting: false
+// Direct directory access
+let dirSource = DirectoryFileSource(
+    url: projectURL,
+    name: "My Project"
 )
 
-// File is now part of the project
-print(fileRef.filename) // "imported-screenplay.fountain"
+// Discover all files
+let files = try await dirSource.discoverFiles()
+
+// Read a specific file
+let content = try await dirSource.readFile(at: "episode-01.fountain")
+
+// Git repository support
+if let gitSource = try? GitRepositoryFileSource(url: repoURL, name: "Repo") {
+    let files = try await gitSource.discoverFiles() // Excludes .git/
+}
 ```
-
-#### Platform Differences
-
-| Feature | macOS | iOS |
-|---------|-------|-----|
-| **Project Location** | User-selected folder | iCloud Drive or local Documents |
-| **File Access** | Security-scoped bookmarks | Standard bookmarks |
-| **Import** | Direct file access | Copy to project folder |
-| **Export** | Direct file access | Share sheet / Files app |
-| **Sync** | Manual (user manages location) | Automatic (iCloud) or manual (local) |
 
 ## Development
 
@@ -306,6 +314,13 @@ SwiftProyecto is released under the MIT License. See [LICENSE](./LICENSE) for de
 
 ## Status
 
-🚧 **In Development** - Phase 4 (Single File Service Layer) Complete
+✅ **Refactoring Complete** - Phases 1-5 Complete
 
-SwiftProyecto is under active development as part of the Produciesta Projects feature. Core functionality (models, containers, project service, and single-file service) is complete with 88 passing tests. APIs may change until version 1.0.0.
+SwiftProyecto has completed its core refactoring to become a focused file source abstraction layer. The library now provides:
+- FileSource protocol with DirectoryFileSource and GitRepositoryFileSource implementations
+- Centralized BookmarkManager for security-scoped access
+- ProjectService for project lifecycle management
+- FileNode for hierarchical file tree display
+- 171 passing tests (177 total, 6 pre-existing failures)
+
+APIs are stable for 0.5.x releases. Breaking changes may occur before 1.0.0.

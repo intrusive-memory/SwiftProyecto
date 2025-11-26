@@ -7,7 +7,110 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### iOS iCloud Support (In Progress)
+---
+
+## [0.6.0] - 2025-11-26
+
+### Core Refactoring: File Source Abstraction Layer (Phases 1-5)
+
+This release completes a major refactoring that transforms SwiftProyecto into a focused file source abstraction layer. The library now provides flexible file access through protocols while removing iOS-specific code and file format filtering.
+
+####Added
+
+**Phase 1: BookmarkManager Extraction**
+- **BookmarkManager** utility for centralized security-scoped bookmark management
+  - `createBookmark(for:)`: Create security-scoped bookmarks for URLs
+  - `resolveBookmark(_:)`: Resolve bookmarks to URLs
+  - `withAccess(_:bookmarkData:operation:)`: Execute operations with security-scoped access
+  - `refreshIfNeeded(_:url:)`: Refresh stale bookmarks
+  - Proper error handling with `BookmarkError` enum
+  - 21 comprehensive tests (100% passing)
+
+**Phase 2: FileSource Protocol**
+- **FileSource** protocol for file access abstraction
+  - `discoverFiles()`: Discover files in source
+  - `readFile(at:)`: Read file content
+  - `modificationDate(for:)`: Get file modification date
+  - Properties: `rootURL`, `name`, `bookmarkData`, `type`
+- **DirectoryFileSource** implementation for local folders
+  - Security-scoped bookmark integration
+  - Automatic hidden and system file filtering
+  - Support for nested directory structures
+  - 20 comprehensive tests (100% passing)
+- **DiscoveredFile** model for file discovery results
+  - Relative path tracking
+  - Modification date
+  - File size
+  - Equatable and Hashable conformance
+
+**Phase 3: Git Repository Support**
+- **GitRepositoryFileSource** implementation
+  - Automatic `.git` directory detection
+  - Git-aware file filtering (excludes `.git/`)
+  - Support for git worktrees and submodules
+  - Initialization throws if not a git repository
+  - 22 comprehensive tests (100% passing)
+- **FileSourceType** enum for source type tracking
+  - `.directory`: Local folder
+  - `.gitRepository`: Git repository
+  - `.packageBundle`: Package bundle (future)
+
+**Phase 4: Service Layer Refactor**
+- **ProjectService** (renamed from ProjectManager)
+  - Removed hard-coded file filtering (.fountain, .fdx)
+  - Returns all discovered files (consumer filters)
+  - Updated to use FileSource protocol
+  - ProjectModel integration with FileSource
+  - 20 comprehensive tests (100% passing)
+
+**Phase 5: File Tree Helper**
+- **FileNode** struct for hierarchical file display
+  - Sendable, Identifiable, Hashable conformance
+  - Tree building from flat file references
+  - Navigation methods: `findNode(atPath:)`, `allFiles`, `allDirectories`
+  - `sortedChildren`: Directories first, then alphabetical
+  - Computed properties: `fileCount`, `totalNodeCount`, `childCount`
+  - `fileReference(in:)` extension for ProjectModel integration
+  - 22 comprehensive tests (100% passing)
+- **ProjectModel.fileTree()** convenience method
+  - Easy tree generation: `project.fileTree()`
+  - Returns root FileNode with full hierarchy
+
+#### Changed
+- **BREAKING**: Renamed `ProjectManager` to `ProjectService`
+- **BREAKING**: `ProjectService.discoverFiles()` now returns ALL files (no format filtering)
+- **BREAKING**: ProjectModel now uses FileSource protocol instead of direct URLs
+  - Added `sourceType`, `sourceName`, `sourceRootURL` properties
+  - Added `fileSource()` method to reconstruct FileSource instance
+- **BREAKING**: FileNode stores `fileReferenceID: UUID?` instead of `ProjectFileReference?` for Sendable conformance
+
+#### Removed
+- **BREAKING**: Removed iOS-specific code
+  - Removed `iCloudProjectSupport` class
+  - Removed `SingleFileManager` service
+  - Removed iOS-specific ProjectManager methods
+  - Out of scope for this library (moved to app layer)
+- **BREAKING**: Removed hard-coded file format filtering
+  - Consumers now responsible for filtering
+
+#### Tests
+- 177 total tests (171 passing, 6 pre-existing ModelContainerFactory failures)
+- All refactored components: 105/105 tests passing (100%)
+  - BookmarkManager: 21 tests
+  - DirectoryFileSource: 20 tests
+  - GitRepositoryFileSource: 22 tests
+  - ProjectService: 20 tests
+  - FileNode: 22 tests
+- Test coverage: ~95% for refactored components
+
+#### Documentation
+- Updated README with new architecture
+- Updated usage examples for FileSource protocol
+- Updated feature roadmap (Phases 1-5 complete)
+- Comprehensive REFACTORING_DESIGN.md document
+
+---
+
 
 #### Added
 - **iCloudProjectSupport** class for iOS-specific project management
