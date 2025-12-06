@@ -21,11 +21,18 @@ let package = Package(
     targets: [
         .target(
             name: "SwiftProyecto",
-            dependencies: ["SwiftCompartido"]
+            dependencies: ["SwiftCompartido"],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+            ]
         ),
         .testTarget(
             name: "SwiftProyectoTests",
-            dependencies: ["SwiftProyecto"]
+            dependencies: ["SwiftProyecto"],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+            ]
         ),
-    ]
+    ],
+    swiftLanguageModes: [.v6]
 )
