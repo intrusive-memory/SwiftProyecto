@@ -412,107 +412,53 @@ public final class ProjectService {
     ///   - project: The project to discover files for
     ///   - allowedExtensions: Optional array of file extensions to filter by (e.g., ["fountain", "fdx"]). If nil, discovers ALL files.
     /// - Throws: ProjectError if discovery fails
-    public func discoverFiles(for project: ProjectModel, allowedExtensions: [String]? = nil) throws {
-        // Use security-scoped access to enumerate folder
-        try withSecurityScopedAccess(to: project) { folderURL in
-            // Recursively find all files and calculate relative paths
-            let enumerator = fileManager.enumerator(
-                at: folderURL,
-                includingPropertiesForKeys: [.isRegularFileKey, .contentModificationDateKey],
-                options: [.skipsHiddenFiles]
-            )
-
-            guard let enumerator = enumerator else {
-                throw ProjectError.projectFolderNotFound(folderURL)
-            }
-
-            var discoveredFiles: [(url: URL, relativePath: String)] = []
-            var discoveredPaths: Set<String> = []
-
-            // Use standardized paths for consistent comparison
-            let baseComponents = folderURL.standardized.pathComponents
-
-            for case let fileURL as URL in enumerator {
-            // Skip .cache directory
-            if fileURL.path.contains("/.cache") {
-                continue
-            }
-
-            // Skip PROJECT.md
-            if fileURL.lastPathComponent == "PROJECT.md" {
-                continue
-            }
-
-            // Check if file (not directory)
-            let resourceValues = try fileURL.resourceValues(forKeys: [.isRegularFileKey])
-            guard resourceValues.isRegularFile == true else {
-                continue
-            }
-
-            // Check extension (if filter is provided)
-            if let allowedExtensions = allowedExtensions {
-                let ext = fileURL.pathExtension.lowercased()
-                guard allowedExtensions.contains(ext) else {
-                    continue
-                }
-            }
-
-            // Calculate relative path using path components
-            let fileComponents = fileURL.standardized.pathComponents
-            guard fileComponents.count > baseComponents.count else {
-                continue // File is not inside project folder
-            }
-
-            // Get components after the base path
-            let relativeComponents = Array(fileComponents[baseComponents.count...])
-            let relativePath = relativeComponents.joined(separator: "/")
-
-            guard !relativePath.isEmpty else {
-                continue
-            }
-
-            discoveredFiles.append((url: fileURL, relativePath: relativePath))
+    public func discoverFiles(for project: ProjectModel, allowedExtensions: [String]? = nil) async throws {
+        // Get FileSource from project
+        guard let fileSource = project.fileSource() else {
+            throw ProjectError.noBookmarkData
         }
 
+        // Delegate to FileSource for discovery
+        let allFiles = try await fileSource.discoverFiles()
+
+        // Filter by allowed extensions if provided
+        let discoveredFiles: [DiscoveredFile]
+        if let allowedExtensions = allowedExtensions {
+            discoveredFiles = allFiles.filter { file in
+                allowedExtensions.contains(file.fileExtension.lowercased())
+            }
+        } else {
+            discoveredFiles = allFiles
+        }
+
+        // Track discovered paths for cleanup
+        let discoveredPaths = Set(discoveredFiles.map { $0.relativePath })
+
         // Create or update file references
-        for item in discoveredFiles {
-            let relativePath = item.relativePath
-            let fileURL = item.url
-
-            let filename = fileURL.lastPathComponent
-            let fileExtension = fileURL.pathExtension
-
-            // Track discovered path
-            discoveredPaths.insert(relativePath)
-
-            // Get modification date
-            let resourceValues = try fileURL.resourceValues(forKeys: [.contentModificationDateKey])
-            let modDate = resourceValues.contentModificationDate
-
+        for discoveredFile in discoveredFiles {
             // Check if reference already exists
-            if let existing = project.fileReference(atPath: relativePath) {
-                // Update current modification date
-                existing.lastKnownModificationDate = modDate
+            if let existing = project.fileReference(atPath: discoveredFile.relativePath) {
+                // Update modification date
+                existing.lastKnownModificationDate = discoveredFile.modificationDate
             } else {
                 // Create new reference
                 let fileRef = ProjectFileReference(
-                    relativePath: relativePath,
-                    filename: filename,
-                    fileExtension: fileExtension,
-                    lastKnownModificationDate: modDate
+                    relativePath: discoveredFile.relativePath,
+                    filename: discoveredFile.filename,
+                    fileExtension: discoveredFile.fileExtension,
+                    lastKnownModificationDate: discoveredFile.modificationDate
                 )
                 modelContext.insert(fileRef)
                 project.fileReferences.append(fileRef)
             }
         }
 
-            // Remove file references for files that no longer exist on disk
-            let referencesToRemove = project.fileReferences.filter { !discoveredPaths.contains($0.relativePath) }
-            for fileRef in referencesToRemove {
-                project.fileReferences.removeAll { $0.id == fileRef.id }
-                modelContext.delete(fileRef)
-            }
-        } // End of withSecurityScopedAccess
+        // Remove file references for files that no longer exist
+        let referencesToRemove = project.fileReferences.filter { !discoveredPaths.contains($0.relativePath) }
+        for fileRef in referencesToRemove {
+            project.fileReferences.removeAll { $0.id == fileRef.id }
+            modelContext.delete(fileRef)
+        }
 
         // Update last sync date
         project.lastSyncDate = Date()
@@ -615,8 +561,8 @@ public final class ProjectService {
     ///
     /// - Parameter project: The project to synchronize
     /// - Throws: ProjectError if synchronization fails
-    public func syncProject(_ project: ProjectModel) throws {
-        try discoverFiles(for: project)
+    public func syncProject(_ project: ProjectModel) async throws {
+        try await discoverFiles(for: project)
     }
 
 }

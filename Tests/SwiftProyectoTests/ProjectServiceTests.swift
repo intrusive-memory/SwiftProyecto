@@ -236,19 +236,19 @@ final class ProjectServiceTests: XCTestCase {
 
     // MARK: - File Discovery Tests
 
-    func testDiscoverFiles_EmptyProject() throws {
+    func testDiscoverFiles_EmptyProject() async throws {
         let projectURL = tempDirectory.appendingPathComponent("EmptyProject")
         let project = try projectService.createProject(at: projectURL, title: "Empty", author: "Author")
 
         // Discover files
-        try projectService.discoverFiles(for: project)
+        try await projectService.discoverFiles(for: project)
 
         // Should have no file references
         XCTAssertEqual(project.fileReferences.count, 0)
         XCTAssertNotNil(project.lastSyncDate)
     }
 
-    func testDiscoverFiles_WithScreenplays() throws {
+    func testDiscoverFiles_WithScreenplays() async throws {
         let projectURL = tempDirectory.appendingPathComponent("FilesProject")
         let project = try projectService.createProject(at: projectURL, title: "Files", author: "Author")
 
@@ -266,7 +266,7 @@ final class ProjectServiceTests: XCTestCase {
         try "INT. SEASON2 - DAY\n\nAction.".write(to: file3URL, atomically: true, encoding: .utf8)
 
         // Discover files
-        try projectService.discoverFiles(for: project)
+        try await projectService.discoverFiles(for: project)
 
         // Should have 3 file references
         XCTAssertEqual(project.fileReferences.count, 3)
@@ -283,7 +283,7 @@ final class ProjectServiceTests: XCTestCase {
         XCTAssertEqual(sorted[2].relativePath, "season-02/episode-01.fountain")
     }
 
-    func testDiscoverFiles_SkipsHiddenAndCache() throws {
+    func testDiscoverFiles_SkipsHiddenAndCache() async throws {
         let projectURL = tempDirectory.appendingPathComponent("FilterProject")
         let project = try projectService.createProject(at: projectURL, title: "Filter", author: "Author")
 
@@ -298,14 +298,14 @@ final class ProjectServiceTests: XCTestCase {
         try "Cached content".write(to: cacheFileURL, atomically: true, encoding: .utf8)
 
         // Discover files
-        try projectService.discoverFiles(for: project)
+        try await projectService.discoverFiles(for: project)
 
         // Should only have 1 file (not the cached one)
         XCTAssertEqual(project.fileReferences.count, 1)
         XCTAssertEqual(project.fileReferences.first?.filename, "visible.fountain")
     }
 
-    func testDiscoverFiles_SupportedExtensions() throws {
+    func testDiscoverFiles_SupportedExtensions() async throws {
         let projectURL = tempDirectory.appendingPathComponent("ExtProject")
         let project = try projectService.createProject(at: projectURL, title: "Ext", author: "Author")
 
@@ -321,7 +321,7 @@ final class ProjectServiceTests: XCTestCase {
         try "Text content".write(to: unsupportedURL, atomically: true, encoding: .utf8)
 
         // Discover files with extension filter
-        try projectService.discoverFiles(for: project, allowedExtensions: screenplayExtensions)
+        try await projectService.discoverFiles(for: project, allowedExtensions: screenplayExtensions)
 
         // Should have 5 files (not the .txt)
         XCTAssertEqual(project.fileReferences.count, 5)
@@ -330,7 +330,7 @@ final class ProjectServiceTests: XCTestCase {
         XCTAssertEqual(foundExtensions, Set(screenplayExtensions))
     }
 
-    func testDiscoverFiles_AllFiles() throws {
+    func testDiscoverFiles_AllFiles() async throws {
         let projectURL = tempDirectory.appendingPathComponent("AllFilesProject")
         let project = try projectService.createProject(at: projectURL, title: "AllFiles", author: "Author")
 
@@ -342,7 +342,7 @@ final class ProjectServiceTests: XCTestCase {
         }
 
         // Discover ALL files (no filter)
-        try projectService.discoverFiles(for: project, allowedExtensions: nil)
+        try await projectService.discoverFiles(for: project, allowedExtensions: nil)
 
         // Should have all 5 files
         XCTAssertEqual(project.fileReferences.count, 5)
@@ -351,14 +351,14 @@ final class ProjectServiceTests: XCTestCase {
         XCTAssertEqual(foundExtensions, Set(allExtensions))
     }
 
-    func testDiscoverFiles_RemovesDeletedFiles() throws {
+    func testDiscoverFiles_RemovesDeletedFiles() async throws {
         let projectURL = tempDirectory.appendingPathComponent("DeletedProject")
         let project = try projectService.createProject(at: projectURL, title: "Deleted", author: "Author")
 
         // Create file and discover
         let fileURL = projectURL.appendingPathComponent("temp.fountain")
         try "Content".write(to: fileURL, atomically: true, encoding: .utf8)
-        try projectService.discoverFiles(for: project)
+        try await projectService.discoverFiles(for: project)
 
         XCTAssertEqual(project.fileReferences.count, 1)
 
@@ -366,7 +366,7 @@ final class ProjectServiceTests: XCTestCase {
         try FileManager.default.removeItem(at: fileURL)
 
         // Discover again - file should be removed from references
-        try projectService.discoverFiles(for: project)
+        try await projectService.discoverFiles(for: project)
 
         // File reference should be removed since file no longer exists
         XCTAssertEqual(project.fileReferences.count, 0)
@@ -374,7 +374,7 @@ final class ProjectServiceTests: XCTestCase {
 
     // MARK: - File Access Tests
 
-    func testGetSecureURL_Success() throws {
+    func testGetSecureURL_Success() async throws {
         let projectURL = tempDirectory.appendingPathComponent("URLProject")
         let project = try projectService.createProject(at: projectURL, title: "URL", author: "Author")
 
@@ -384,7 +384,7 @@ final class ProjectServiceTests: XCTestCase {
         try content.write(to: fileURL, atomically: true, encoding: .utf8)
 
         // Discover files
-        try projectService.discoverFiles(for: project)
+        try await projectService.discoverFiles(for: project)
 
         XCTAssertEqual(project.fileReferences.count, 1)
         let fileRef = project.fileReferences.first!
@@ -401,7 +401,7 @@ final class ProjectServiceTests: XCTestCase {
         XCTAssertEqual(readContent, content)
     }
 
-    func testGetSecureURL_FileNotFound() throws {
+    func testGetSecureURL_FileNotFound() async throws {
         let projectURL = tempDirectory.appendingPathComponent("NotFoundProject")
         let project = try projectService.createProject(at: projectURL, title: "NotFound", author: "Author")
 
@@ -426,7 +426,7 @@ final class ProjectServiceTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
     }
 
-    func testGetSecureURL_NestedFile() throws {
+    func testGetSecureURL_NestedFile() async throws {
         let projectURL = tempDirectory.appendingPathComponent("NestedProject")
         let project = try projectService.createProject(at: projectURL, title: "Nested", author: "Author")
 
@@ -437,7 +437,7 @@ final class ProjectServiceTests: XCTestCase {
         try "Content".write(to: fileURL, atomically: true, encoding: .utf8)
 
         // Discover files
-        try projectService.discoverFiles(for: project)
+        try await projectService.discoverFiles(for: project)
 
         let fileRef = try XCTUnwrap(project.fileReferences.first)
         XCTAssertEqual(fileRef.relativePath, "season-01/episode.fountain")
@@ -448,7 +448,7 @@ final class ProjectServiceTests: XCTestCase {
         XCTAssertEqual(secureURL.lastPathComponent, "episode.fountain")
     }
 
-    func testCreateFileBookmark_Success() throws {
+    func testCreateFileBookmark_Success() async throws {
         let projectURL = tempDirectory.appendingPathComponent("BookmarkProject")
         let project = try projectService.createProject(at: projectURL, title: "Bookmark", author: "Author")
 
@@ -457,7 +457,7 @@ final class ProjectServiceTests: XCTestCase {
         try "Content".write(to: fileURL, atomically: true, encoding: .utf8)
 
         // Discover files
-        try projectService.discoverFiles(for: project)
+        try await projectService.discoverFiles(for: project)
         let fileRef = try XCTUnwrap(project.fileReferences.first)
 
         // Initially no bookmark
@@ -471,7 +471,7 @@ final class ProjectServiceTests: XCTestCase {
         XCTAssertTrue(fileRef.bookmarkData!.count > 0)
     }
 
-    func testRefreshBookmark_Success() throws {
+    func testRefreshBookmark_Success() async throws {
         let projectURL = tempDirectory.appendingPathComponent("RefreshProject")
         let project = try projectService.createProject(at: projectURL, title: "Refresh", author: "Author")
 
@@ -480,7 +480,7 @@ final class ProjectServiceTests: XCTestCase {
         try "Content".write(to: fileURL, atomically: true, encoding: .utf8)
 
         // Discover files
-        try projectService.discoverFiles(for: project)
+        try await projectService.discoverFiles(for: project)
         let fileRef = try XCTUnwrap(project.fileReferences.first)
 
         // Create initial bookmark
@@ -502,12 +502,12 @@ final class ProjectServiceTests: XCTestCase {
 
     // MARK: - Synchronization Tests
 
-    func testSyncProject() throws {
+    func testSyncProject() async throws {
         let projectURL = tempDirectory.appendingPathComponent("SyncProject")
         let project = try projectService.createProject(at: projectURL, title: "Sync", author: "Author")
 
         // Initial sync - no files
-        try projectService.syncProject(project)
+        try await projectService.syncProject(project)
         XCTAssertEqual(project.fileReferences.count, 0)
 
         // Add files
@@ -515,7 +515,7 @@ final class ProjectServiceTests: XCTestCase {
         try "Content 1".write(to: file1URL, atomically: true, encoding: .utf8)
 
         // Sync again
-        try projectService.syncProject(project)
+        try await projectService.syncProject(project)
         XCTAssertEqual(project.fileReferences.count, 1)
 
         // Add more files
@@ -523,7 +523,7 @@ final class ProjectServiceTests: XCTestCase {
         try "Content 2".write(to: file2URL, atomically: true, encoding: .utf8)
 
         // Sync again
-        try projectService.syncProject(project)
+        try await projectService.syncProject(project)
         XCTAssertEqual(project.fileReferences.count, 2)
 
         // Verify lastSyncDate is updated
