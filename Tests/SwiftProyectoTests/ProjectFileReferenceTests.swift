@@ -14,8 +14,7 @@ final class ProjectFileReferenceTests: XCTestCase {
         // Create in-memory model container for testing
         let schema = Schema([
             ProjectModel.self,
-            ProjectFileReference.self,
-            GuionDocumentModel.self
+            ProjectFileReference.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
@@ -42,15 +41,14 @@ final class ProjectFileReferenceTests: XCTestCase {
         XCTAssertEqual(fileRef.filename, "episode-01.fountain")
         XCTAssertEqual(fileRef.fileExtension, "fountain")
         XCTAssertNil(fileRef.lastKnownModificationDate)
-        XCTAssertEqual(fileRef.loadingState, .notLoaded)
-        XCTAssertNil(fileRef.errorMessage)
-        XCTAssertNil(fileRef.loadedDocument)
+        XCTAssertNil(fileRef.bookmarkData)
         XCTAssertNil(fileRef.project)
     }
 
     func testInitializationWithAllParameters() {
         let id = UUID()
         let modDate = Date()
+        let bookmarkData = Data("bookmark".utf8)
 
         let fileRef = ProjectFileReference(
             id: id,
@@ -58,8 +56,7 @@ final class ProjectFileReferenceTests: XCTestCase {
             filename: "episode-01.fountain",
             fileExtension: "fountain",
             lastKnownModificationDate: modDate,
-            loadingState: .loaded,
-            errorMessage: nil
+            bookmarkData: bookmarkData
         )
 
         XCTAssertEqual(fileRef.id, id)
@@ -67,93 +64,10 @@ final class ProjectFileReferenceTests: XCTestCase {
         XCTAssertEqual(fileRef.filename, "episode-01.fountain")
         XCTAssertEqual(fileRef.fileExtension, "fountain")
         XCTAssertEqual(fileRef.lastKnownModificationDate, modDate)
-        XCTAssertEqual(fileRef.loadingState, .loaded)
-        XCTAssertNil(fileRef.errorMessage)
+        XCTAssertEqual(fileRef.bookmarkData, bookmarkData)
     }
 
     // MARK: - Convenience Property Tests
-
-    func testIsLoaded() {
-        let fileRef = ProjectFileReference(
-            relativePath: "test.fountain",
-            filename: "test.fountain",
-            fileExtension: "fountain"
-        )
-
-        // Not loaded initially
-        XCTAssertFalse(fileRef.isLoaded)
-
-        // Set to loaded state but no document
-        fileRef.loadingState = .loaded
-        XCTAssertFalse(fileRef.isLoaded)
-
-        // Add document
-        let mockDoc = GuionDocumentModel(filename: "test.fountain", rawContent: nil, suppressSceneNumbers: false)
-        modelContext.insert(mockDoc)
-        fileRef.loadedDocument = mockDoc
-        XCTAssertTrue(fileRef.isLoaded)
-
-        // Change state to stale
-        fileRef.loadingState = .stale
-        XCTAssertFalse(fileRef.isLoaded)
-    }
-
-    func testCanOpen() {
-        let fileRef = ProjectFileReference(
-            relativePath: "test.fountain",
-            filename: "test.fountain",
-            fileExtension: "fountain"
-        )
-
-        // Cannot open when not loaded
-        XCTAssertFalse(fileRef.canOpen)
-
-        // Can open when loaded with document
-        fileRef.loadingState = .loaded
-        let mockDoc = GuionDocumentModel(filename: "test.fountain", rawContent: nil, suppressSceneNumbers: false)
-        modelContext.insert(mockDoc)
-        fileRef.loadedDocument = mockDoc
-        XCTAssertTrue(fileRef.canOpen)
-
-        // Can open when stale with document
-        fileRef.loadingState = .stale
-        XCTAssertTrue(fileRef.canOpen)
-
-        // Cannot open with no document
-        fileRef.loadedDocument = nil
-        XCTAssertFalse(fileRef.canOpen)
-    }
-
-    func testCanLoad() {
-        let fileRef = ProjectFileReference(
-            relativePath: "test.fountain",
-            filename: "test.fountain",
-            fileExtension: "fountain"
-        )
-
-        // Can load when not loaded
-        XCTAssertTrue(fileRef.canLoad)
-
-        // Cannot load when loading
-        fileRef.loadingState = .loading
-        XCTAssertFalse(fileRef.canLoad)
-
-        // Cannot load when loaded
-        fileRef.loadingState = .loaded
-        XCTAssertFalse(fileRef.canLoad)
-
-        // Can load when stale
-        fileRef.loadingState = .stale
-        XCTAssertTrue(fileRef.canLoad)
-
-        // Can load when error
-        fileRef.loadingState = .error
-        XCTAssertTrue(fileRef.canLoad)
-
-        // Cannot load when missing
-        fileRef.loadingState = .missing
-        XCTAssertFalse(fileRef.canLoad)
-    }
 
     func testDisplayNameWithPath() {
         // Root level file
@@ -184,12 +98,13 @@ final class ProjectFileReferenceTests: XCTestCase {
     // MARK: - SwiftData Persistence Tests
 
     func testPersistence() throws {
+        let bookmarkData = Data("bookmark".utf8)
         let fileRef = ProjectFileReference(
             relativePath: "test.fountain",
             filename: "test.fountain",
             fileExtension: "fountain",
             lastKnownModificationDate: Date(),
-            loadingState: .loaded
+            bookmarkData: bookmarkData
         )
 
         // Insert
@@ -202,7 +117,7 @@ final class ProjectFileReferenceTests: XCTestCase {
         XCTAssertEqual(fetched.count, 1)
         let fetchedRef = try XCTUnwrap(fetched.first)
         XCTAssertEqual(fetchedRef.relativePath, "test.fountain")
-        XCTAssertEqual(fetchedRef.loadingState, .loaded)
+        XCTAssertEqual(fetchedRef.bookmarkData, bookmarkData)
     }
 
     func testUpdate() throws {
@@ -217,19 +132,18 @@ final class ProjectFileReferenceTests: XCTestCase {
 
         let originalID = fileRef.id
 
-        // Update
-        fileRef.loadingState = .loaded
-        let mockDoc = GuionDocumentModel(filename: "test.fountain", rawContent: nil, suppressSceneNumbers: false)
-        modelContext.insert(mockDoc)
-        fileRef.loadedDocument = mockDoc
+        // Update with bookmark data
+        let bookmarkData = Data("bookmark".utf8)
+        fileRef.bookmarkData = bookmarkData
+        fileRef.lastKnownModificationDate = Date()
         try modelContext.save()
 
         // Fetch all
         let fetched = try modelContext.fetch(FetchDescriptor<ProjectFileReference>())
 
         let fetchedRef = try XCTUnwrap(fetched.first { $0.id == originalID })
-        XCTAssertEqual(fetchedRef.loadingState, .loaded)
-        XCTAssertNotNil(fetchedRef.loadedDocument)
+        XCTAssertEqual(fetchedRef.bookmarkData, bookmarkData)
+        XCTAssertNotNil(fetchedRef.lastKnownModificationDate)
     }
 
     func testDelete() throws {
@@ -252,48 +166,4 @@ final class ProjectFileReferenceTests: XCTestCase {
         XCTAssertTrue(fetched.isEmpty)
     }
 
-    // MARK: - State Transition Tests
-
-    func testStateTransitions() {
-        let fileRef = ProjectFileReference(
-            relativePath: "test.fountain",
-            filename: "test.fountain",
-            fileExtension: "fountain"
-        )
-
-        // notLoaded → loading
-        XCTAssertEqual(fileRef.loadingState, .notLoaded)
-        fileRef.loadingState = .loading
-        XCTAssertEqual(fileRef.loadingState, .loading)
-
-        // loading → loaded
-        fileRef.loadingState = .loaded
-        let mockDoc = GuionDocumentModel(filename: "test.fountain", rawContent: nil, suppressSceneNumbers: false)
-        modelContext.insert(mockDoc)
-        fileRef.loadedDocument = mockDoc
-        XCTAssertEqual(fileRef.loadingState, .loaded)
-        XCTAssertTrue(fileRef.isLoaded)
-
-        // loaded → stale
-        fileRef.loadingState = .stale
-        XCTAssertEqual(fileRef.loadingState, .stale)
-        XCTAssertFalse(fileRef.isLoaded)
-
-        // stale → loading → loaded
-        fileRef.loadingState = .loading
-        fileRef.loadingState = .loaded
-        XCTAssertTrue(fileRef.isLoaded)
-
-        // loaded → missing
-        fileRef.loadingState = .missing
-        XCTAssertEqual(fileRef.loadingState, .missing)
-        XCTAssertFalse(fileRef.canLoad)
-
-        // Error state
-        fileRef.loadingState = .error
-        fileRef.errorMessage = "Parse failed"
-        XCTAssertEqual(fileRef.loadingState, .error)
-        XCTAssertEqual(fileRef.errorMessage, "Parse failed")
-        XCTAssertTrue(fileRef.canLoad)  // Can retry after error
-    }
 }
