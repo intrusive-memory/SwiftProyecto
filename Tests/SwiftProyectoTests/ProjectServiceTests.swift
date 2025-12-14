@@ -1,7 +1,6 @@
 import XCTest
 import SwiftData
 import Foundation
-import SwiftCompartido
 @testable import SwiftProyecto
 
 @MainActor

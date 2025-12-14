@@ -1,15 +1,14 @@
 import Foundation
 import SwiftData
-import SwiftCompartido
 
-/// Service for managing project lifecycle, file discovery, and synchronization.
+/// Service for managing project lifecycle, file discovery, and security-scoped access.
 ///
 /// ProjectService handles:
 /// - Creating new projects with PROJECT.md manifest
 /// - Opening existing projects and loading metadata
 /// - Discovering files in project folders
 /// - Synchronizing file state with filesystem
-/// - Loading and unloading individual files
+/// - Providing security-scoped URLs for file access
 ///
 /// ## Usage
 ///
@@ -24,10 +23,10 @@ import SwiftCompartido
 /// )
 ///
 /// // Discover files in project folder
-/// try await service.discoverFiles(for: project)
+/// try service.discoverFiles(for: project)
 ///
-/// // Load a specific file
-/// try await service.loadFile(fileReference, in: project)
+/// // Get secure URL for a file (for parsing by the app)
+/// let url = try service.getSecureURL(for: fileReference, in: project)
 /// ```
 @MainActor
 public final class ProjectService {
@@ -45,13 +44,10 @@ public final class ProjectService {
         case projectManifestNotFound(URL)
         case projectManifestInvalid(String)
         case fileNotFound(URL)
-        case fileAlreadyLoaded(String)
-        case unsupportedFileType(String)
         case bookmarkCreationFailed(Error)
         case bookmarkResolutionFailed(Error)
         case securityScopedAccessFailed(URL)
         case noBookmarkData
-        case parsingFailed(String, Error)
         case saveError(Error)
 
         public var errorDescription: String? {
@@ -66,10 +62,6 @@ public final class ProjectService {
                 return "Invalid PROJECT.md: \(reason)"
             case .fileNotFound(let url):
                 return "File not found at \(url.path)"
-            case .fileAlreadyLoaded(let filename):
-                return "File already loaded: \(filename)"
-            case .unsupportedFileType(let ext):
-                return "Unsupported file type: .\(ext)"
             case .bookmarkCreationFailed(let error):
                 return "Failed to create security-scoped bookmark: \(error.localizedDescription)"
             case .bookmarkResolutionFailed(let error):
@@ -78,8 +70,6 @@ public final class ProjectService {
                 return "Failed to start accessing security-scoped resource at \(url.path)"
             case .noBookmarkData:
                 return "No security-scoped bookmark data available for project"
-            case .parsingFailed(let filename, let error):
-                return "Failed to parse \(filename): \(error.localizedDescription)"
             case .saveError(let error):
                 return "Failed to save to SwiftData: \(error.localizedDescription)"
             }
@@ -503,34 +493,24 @@ public final class ProjectService {
             if let existing = project.fileReference(atPath: relativePath) {
                 // Update current modification date
                 existing.lastKnownModificationDate = modDate
-
-                // Check if file is stale (loaded but modified since load time)
-                // Compare current disk mod date with the date when file was loaded
-                if existing.isLoaded,
-                   let loadedDate = existing.lastLoadedModificationDate,
-                   let currentDate = modDate,
-                   currentDate > loadedDate {
-                    existing.loadingState = .stale
-                }
             } else {
                 // Create new reference
                 let fileRef = ProjectFileReference(
                     relativePath: relativePath,
                     filename: filename,
                     fileExtension: fileExtension,
-                    lastKnownModificationDate: modDate,
-                    loadingState: .notLoaded
+                    lastKnownModificationDate: modDate
                 )
                 modelContext.insert(fileRef)
                 project.fileReferences.append(fileRef)
             }
         }
 
-            // Mark missing files (in SwiftData but not discovered on disk)
-            for fileRef in project.fileReferences {
-                if !discoveredPaths.contains(fileRef.relativePath) {
-                    fileRef.loadingState = .missing
-                }
+            // Remove file references for files that no longer exist on disk
+            let referencesToRemove = project.fileReferences.filter { !discoveredPaths.contains($0.relativePath) }
+            for fileRef in referencesToRemove {
+                project.fileReferences.removeAll { $0.id == fileRef.id }
+                modelContext.delete(fileRef)
             }
         } // End of withSecurityScopedAccess
 
@@ -545,286 +525,85 @@ public final class ProjectService {
         }
     }
 
-    // MARK: - File Loading
+    // MARK: - Bookmark Management
 
-    /// Loads a screenplay file into SwiftData.
+    /// Gets a security-scoped URL for a file reference.
+    ///
+    /// This method tries file-level bookmark first, then falls back to
+    /// project bookmark + relative path construction.
     ///
     /// - Parameters:
-    ///   - fileReference: The file reference to load
+    ///   - fileReference: The file reference to get URL for
     ///   - project: The project containing the file
-    ///   - progress: Optional progress callback for parsing updates
-    /// - Throws: ProjectError if loading fails
-    public func loadFile(
-        _ fileReference: ProjectFileReference,
-        in project: ProjectModel,
-        progress: OperationProgress? = nil
-    ) async throws {
-        // Verify file can be loaded
-        guard fileReference.canLoad else {
-            if fileReference.isLoaded {
-                throw ProjectError.fileAlreadyLoaded(fileReference.filename)
+    /// - Returns: Security-scoped URL for the file
+    /// - Throws: ProjectError if URL cannot be resolved
+    public func getSecureURL(
+        for fileReference: ProjectFileReference,
+        in project: ProjectModel
+    ) throws -> URL {
+        // Try file-level bookmark first
+        if let fileBookmark = fileReference.bookmarkData {
+            do {
+                let result = try BookmarkManager.resolveBookmark(fileBookmark)
+                return result.url
+            } catch {
+                // File bookmark stale or invalid, fall through to project bookmark
             }
-            throw ProjectError.unsupportedFileType(fileReference.fileExtension)
         }
 
-        // Set loading state
-        fileReference.loadingState = .loading
-        try modelContext.save()
+        // Fall back to project bookmark + relative path
+        guard let projectBookmark = project.sourceBookmarkData else {
+            throw ProjectError.noBookmarkData
+        }
 
         do {
-            // Use security-scoped access to read file
-            try await withSecurityScopedAccess(to: project) { folderURL in
-                let fileURL = folderURL.appendingPathComponent(fileReference.relativePath)
-
-                // Verify file exists
-                guard fileManager.fileExists(atPath: fileURL.path) else {
-                    throw ProjectError.fileNotFound(fileURL)
-                }
-
-                // Parse file using SwiftCompartido
-                let parsedCollection = try await GuionParsedElementCollection(
-                    file: fileURL.path,
-                    progress: progress
-                )
-
-                // Create GuionDocumentModel
-                let document = GuionDocumentModel(
-                    filename: fileReference.filename,
-                    rawContent: nil,
-                    suppressSceneNumbers: false
-                )
-                document.sourceFileBookmark = try BookmarkManager.createBookmark(for: fileURL)
-                document.lastImportDate = Date()
-
-                modelContext.insert(document)
-
-                // Add parsed elements
-                for (index, element) in parsedCollection.elements.enumerated() {
-                    let elementModel = GuionElementModel(
-                        from: element,
-                        chapterIndex: 0,
-                        orderIndex: index
-                    )
-                    document.elements.append(elementModel)
-                    modelContext.insert(elementModel)
-                }
-
-                // Link to file reference
-                fileReference.loadedDocument = document
-                fileReference.loadingState = .loaded
-
-                // Set both modification dates when loading
-                let modDate = try fileURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
-                fileReference.lastKnownModificationDate = modDate
-                fileReference.lastLoadedModificationDate = modDate
-
-                // Save all changes
-                try modelContext.save()
-            } // End of withSecurityScopedAccess
-
-        } catch let error as ProjectError {
-            // Handle known ProjectErrors differently
-            switch error {
-            case .fileNotFound:
-                // File not found - mark as missing
-                fileReference.loadingState = .missing
-                try modelContext.save()
-                throw error
-            default:
-                // Other errors - mark as error
-                fileReference.loadingState = .error
-                fileReference.errorMessage = error.localizedDescription
-                try modelContext.save()
-                throw error
-            }
+            let result = try BookmarkManager.resolveBookmark(projectBookmark)
+            let projectURL = result.url
+            return projectURL.appendingPathComponent(fileReference.relativePath)
         } catch {
-            // Unknown errors - wrap in parsingFailed
-            fileReference.loadingState = .error
-            fileReference.errorMessage = error.localizedDescription
-            try modelContext.save()
-            throw ProjectError.parsingFailed(fileReference.filename, error)
+            throw ProjectError.bookmarkResolutionFailed(error)
         }
     }
 
-    // MARK: - File Unloading
-
-    /// Unloads a screenplay file from SwiftData while keeping the file reference.
+    /// Refreshes a stale file bookmark.
     ///
-    /// - Parameter fileReference: The file reference to unload
-    /// - Throws: ProjectError if unloading fails
-    public func unloadFile(_ fileReference: ProjectFileReference) throws {
-        guard let document = fileReference.loadedDocument else {
-            // Already unloaded
-            return
-        }
+    /// - Parameters:
+    ///   - fileReference: The file reference whose bookmark to refresh
+    ///   - project: The project containing the file
+    /// - Throws: ProjectError if refresh fails
+    public func refreshBookmark(
+        for fileReference: ProjectFileReference,
+        in project: ProjectModel
+    ) throws {
+        let url = try getSecureURL(for: fileReference, in: project)
 
-        // Delete the document (cascade deletes elements)
-        modelContext.delete(document)
-
-        // Update file reference
-        fileReference.loadedDocument = nil
-        fileReference.loadingState = .notLoaded
-
-        // Save changes
         do {
+            let newBookmark = try BookmarkManager.createBookmark(for: url)
+            fileReference.bookmarkData = newBookmark
             try modelContext.save()
         } catch {
-            throw ProjectError.saveError(error)
+            throw ProjectError.bookmarkCreationFailed(error)
         }
     }
 
-    // MARK: - File Re-Import
-
-    /// Re-imports a screenplay file, updating elements while preserving user data.
-    ///
-    /// This method re-parses the screenplay file from disk and intelligently updates
-    /// the existing document. Unlike `reloadFile`, this method preserves:
-    /// - Generated audio (TypedDataStorage) for unchanged elements
-    /// - Custom elements (CustomOutlineElement) attached to scenes/sections
-    /// - Character voice mappings
-    ///
-    /// ## Element Matching Strategy
-    ///
-    /// Elements are matched by their stable IDs. When an element with the same ID
-    /// exists in both old and new parses:
-    /// - The element's text content is updated
-    /// - Generated audio and custom elements are preserved
-    ///
-    /// New elements are created fresh. Deleted elements (not in new parse) are removed.
+    /// Creates a security-scoped bookmark for a specific file.
     ///
     /// - Parameters:
-    ///   - fileReference: The file reference to re-import
+    ///   - fileReference: The file reference to create bookmark for
     ///   - project: The project containing the file
-    ///   - progress: Optional progress callback for parsing updates
-    /// - Throws: ProjectError if re-import fails
-    public func reimportFile(
-        _ fileReference: ProjectFileReference,
-        in project: ProjectModel,
-        progress: OperationProgress? = nil
-    ) async throws {
-        // If file not loaded, just load it normally
-        guard let existingDocument = fileReference.loadedDocument else {
-            try await loadFile(fileReference, in: project, progress: progress)
-            return
-        }
-
-        // Set loading state
-        fileReference.loadingState = .loading
-        try modelContext.save()
+    /// - Throws: ProjectError if bookmark creation fails
+    public func createFileBookmark(
+        for fileReference: ProjectFileReference,
+        in project: ProjectModel
+    ) throws {
+        let url = try getSecureURL(for: fileReference, in: project)
 
         do {
-            // Use security-scoped access to read file
-            try await withSecurityScopedAccess(to: project) { folderURL in
-                let fileURL = folderURL.appendingPathComponent(fileReference.relativePath)
-
-                // Verify file exists
-                guard fileManager.fileExists(atPath: fileURL.path) else {
-                    throw ProjectError.fileNotFound(fileURL)
-                }
-
-                // Re-parse file using SwiftCompartido
-                let parsedCollection = try await GuionParsedElementCollection(
-                    file: fileURL.path,
-                    progress: progress
-                )
-
-                // Create content hash for matching elements
-                func elementHash(_ type: ElementType, _ text: String, _ sceneId: String?) -> String {
-                    // Use sceneId for scene headings if available, otherwise use type+text
-                    if type == .sceneHeading, let sceneId = sceneId {
-                        return "scene:\(sceneId)"
-                    }
-                    return "\(type.description):\(text)"
-                }
-
-                // Build mapping of old elements by content hash
-                var oldElementsByHash: [String: GuionElementModel] = [:]
-                for element in existingDocument.elements {
-                    let hash = elementHash(element.elementType, element.elementText, element.sceneId)
-                    // For duplicates, prefer first occurrence
-                    if oldElementsByHash[hash] == nil {
-                        oldElementsByHash[hash] = element
-                    }
-                }
-
-                // Track which old elements we've matched (to detect deletions)
-                var matchedOldElements: Set<PersistentIdentifier> = []
-
-                // Process new elements
-                var updatedElements: [GuionElementModel] = []
-
-                for (index, parsedElement) in parsedCollection.elements.enumerated() {
-                    let hash = elementHash(parsedElement.elementType, parsedElement.elementText, parsedElement.sceneId)
-
-                    if let existingElement = oldElementsByHash[hash] {
-                        // Element matched by content - update it
-                        existingElement.elementType = parsedElement.elementType
-                        existingElement.elementText = parsedElement.elementText
-                        existingElement.orderIndex = index
-                        existingElement.sceneId = parsedElement.sceneId
-                        existingElement.sceneNumber = parsedElement.sceneNumber
-                        existingElement.isCentered = parsedElement.isCentered
-                        existingElement.isDualDialogue = parsedElement.isDualDialogue
-                        // Note: generatedContent and customElements are NOT touched
-                        matchedOldElements.insert(existingElement.persistentModelID)
-                        updatedElements.append(existingElement)
-                    } else {
-                        // New element - create it
-                        let newElement = GuionElementModel(
-                            from: parsedElement,
-                            chapterIndex: 0,
-                            orderIndex: index
-                        )
-                        modelContext.insert(newElement)
-                        updatedElements.append(newElement)
-                    }
-                }
-
-                // Remove elements that were deleted from file
-                for oldElement in existingDocument.elements {
-                    if !matchedOldElements.contains(oldElement.persistentModelID) {
-                        // Element no longer in file - delete it (cascade deletes audio/custom elements)
-                        modelContext.delete(oldElement)
-                    }
-                }
-
-                // Update document's elements array
-                existingDocument.elements = updatedElements
-
-                // Update metadata
-                existingDocument.lastImportDate = Date()
-
-                // Set both modification dates to current disk value
-                let modDate = try fileURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
-                fileReference.lastKnownModificationDate = modDate
-                fileReference.lastLoadedModificationDate = modDate
-                fileReference.loadingState = .loaded
-
-                // Save all changes
-                try modelContext.save()
-            } // End of withSecurityScopedAccess
-
-        } catch let error as ProjectError {
-            // Handle known ProjectErrors
-            switch error {
-            case .fileNotFound:
-                // File not found - mark as missing
-                fileReference.loadingState = .missing
-                try modelContext.save()
-                throw error
-            default:
-                // Other errors - mark as error
-                fileReference.loadingState = .error
-                fileReference.errorMessage = error.localizedDescription
-                try modelContext.save()
-                throw error
-            }
-        } catch {
-            // Unknown errors - wrap in parsingFailed
-            fileReference.loadingState = .error
-            fileReference.errorMessage = error.localizedDescription
+            let bookmark = try BookmarkManager.createBookmark(for: url)
+            fileReference.bookmarkData = bookmark
             try modelContext.save()
-            throw ProjectError.parsingFailed(fileReference.filename, error)
+        } catch {
+            throw ProjectError.bookmarkCreationFailed(error)
         }
     }
 

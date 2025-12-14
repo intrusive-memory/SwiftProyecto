@@ -1,12 +1,15 @@
 import Foundation
 import SwiftData
-import SwiftCompartido
 
 /// Factory for creating SwiftData ModelContainers with context-aware storage strategies.
 ///
 /// This factory implements the dual container strategy:
 /// - **Single File Context**: App-wide container in ~/Library/Application Support
 /// - **Project Context**: Project-local container in <project>/.cache/
+///
+/// The container only stores project metadata (ProjectModel) and file references
+/// (ProjectFileReference). Document parsing and storage is handled by the app
+/// using SwiftCompartido.
 ///
 /// ## Usage
 ///
@@ -54,15 +57,10 @@ public final class ModelContainerFactory {
         // Get the store URL
         let storeURL = context.storeURL
 
-        // Create schema
+        // Create schema (only project metadata models)
         let schema = Schema([
             ProjectModel.self,
-            ProjectFileReference.self,
-            GuionDocumentModel.self,
-            GuionElementModel.self,
-            TypedDataStorage.self,
-            TitlePageEntryModel.self,
-            CustomOutlineElement.self
+            ProjectFileReference.self
         ])
 
         // Create configuration

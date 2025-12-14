@@ -244,21 +244,6 @@ public extension ProjectModel {
         return fileReferences.count
     }
 
-    /// Number of loaded files
-    var loadedFileCount: Int {
-        return fileReferences.filter { $0.isLoaded }.count
-    }
-
-    /// Number of files not yet loaded
-    var unloadedFileCount: Int {
-        return fileReferences.filter { $0.loadingState == .notLoaded }.count
-    }
-
-    /// Whether all files in project have been loaded
-    var allFilesLoaded: Bool {
-        return !fileReferences.isEmpty && unloadedFileCount == 0
-    }
-
     /// File references sorted by relative path
     var sortedFileReferences: [ProjectFileReference] {
         return fileReferences.sorted { $0.relativePath < $1.relativePath }
@@ -280,14 +265,6 @@ public extension ProjectModel {
 // MARK: - Queries
 
 public extension ProjectModel {
-    /// Get file references in a specific state
-    ///
-    /// - Parameter state: The loading state to filter by
-    /// - Returns: Array of file references in that state
-    func fileReferences(in state: FileLoadingState) -> [ProjectFileReference] {
-        return fileReferences.filter { $0.loadingState == state }
-    }
-
     /// Get file reference by relative path
     ///
     /// - Parameter path: Relative path from project root
@@ -301,18 +278,12 @@ public extension ProjectModel {
     /// Returns true if:
     /// - Never synced before
     /// - Last sync was more than 1 hour ago
-    /// - Any files are in .stale state
     var needsSync: Bool {
         guard let lastSync = lastSyncDate else { return true }
 
         // Check if synced more than 1 hour ago
         let hourAgo = Date().addingTimeInterval(-3600)
-        if lastSync < hourAgo {
-            return true
-        }
-
-        // Check for stale files
-        return fileReferences.contains { $0.loadingState == .stale }
+        return lastSync < hourAgo
     }
 
     /// Creates a hierarchical file tree from the project's file references.

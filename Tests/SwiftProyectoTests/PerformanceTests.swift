@@ -9,7 +9,6 @@
 import XCTest
 import SwiftData
 @testable import SwiftProyecto
-import SwiftCompartido
 
 /// Performance test suite for SwiftProyecto library
 ///

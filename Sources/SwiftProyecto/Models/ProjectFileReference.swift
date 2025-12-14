@@ -25,22 +25,12 @@
 
 import Foundation
 import SwiftData
-import SwiftCompartido
 
 /// A reference to a screenplay file within a project.
 ///
-/// ProjectFileReference tracks discovered files in a project folder, tracking their
-/// loading state and metadata. Files can be loaded lazily - they appear in the project
-/// file list but aren't imported to SwiftData until the user requests it.
-///
-/// ## File States
-///
-/// - **notLoaded**: File exists in folder but not in SwiftData (greyed out in UI)
-/// - **loading**: File is currently being parsed
-/// - **loaded**: File fully imported and available (linked to GuionDocumentModel)
-/// - **stale**: File modified on disk since last load
-/// - **missing**: File deleted from disk but still in SwiftData
-/// - **error**: File failed to load
+/// ProjectFileReference tracks discovered files in a project folder, storing their
+/// metadata and providing security-scoped access. Files are discovered during project
+/// sync operations and tracked for modification detection.
 ///
 /// ## Usage
 ///
@@ -51,6 +41,9 @@ import SwiftCompartido
 ///     fileExtension: "fountain"
 /// )
 /// project.fileReferences.append(fileRef)
+///
+/// // Get secure URL for file access
+/// let url = try projectService.getSecureURL(for: fileRef, in: project)
 /// ```
 ///
 @Model
@@ -71,28 +64,9 @@ public final class ProjectFileReference {
     /// This is updated during every sync operation to reflect current disk state
     public var lastKnownModificationDate: Date?
 
-    /// File modification date at the time it was loaded into SwiftData
-    /// This is set once when the file is loaded and never updated during sync
-    /// Used to detect if file has changed on disk since loading
-    public var lastLoadedModificationDate: Date?
-
-    /// Current loading state of the file
-    public var loadingState: FileLoadingState
-
-    /// Optional error message if loadingState is .error
-    public var errorMessage: String?
-
-    /// The loaded GuionDocumentModel (if file has been imported)
-    ///
-    /// This relationship is set when the file is successfully parsed and imported to SwiftData.
-    /// It's nil for unloaded files (state = .notLoaded).
-    ///
-    /// - When file is loaded: This links to the GuionDocumentModel in the same container
-    /// - When file is unloaded: This is nil (file exists but not parsed)
-    ///
-    /// **Delete Rule**: `.nullify` - Deleting the document unlinks it but doesn't delete the reference
-    @Relationship(deleteRule: .nullify)
-    public var loadedDocument: GuionDocumentModel?
+    /// Security-scoped bookmark data for direct file access
+    /// If nil, the file URL is constructed from project bookmark + relative path
+    public var bookmarkData: Data?
 
     /// Parent project this file belongs to
     @Relationship(inverse: \ProjectModel.fileReferences)
@@ -106,45 +80,27 @@ public final class ProjectFileReference {
     ///   - filename: Display filename
     ///   - fileExtension: File extension without dot
     ///   - lastKnownModificationDate: Optional modification date
-    ///   - loadingState: Initial loading state (defaults to .notLoaded)
-    ///   - errorMessage: Optional error message
+    ///   - bookmarkData: Optional security-scoped bookmark data
     public init(
         id: UUID = UUID(),
         relativePath: String,
         filename: String,
         fileExtension: String,
         lastKnownModificationDate: Date? = nil,
-        loadingState: FileLoadingState = .notLoaded,
-        errorMessage: String? = nil
+        bookmarkData: Data? = nil
     ) {
         self.id = id
         self.relativePath = relativePath
         self.filename = filename
         self.fileExtension = fileExtension
         self.lastKnownModificationDate = lastKnownModificationDate
-        self.loadingState = loadingState
-        self.errorMessage = errorMessage
+        self.bookmarkData = bookmarkData
     }
 }
 
 // MARK: - Convenience Properties
 
 public extension ProjectFileReference {
-    /// Whether this file is currently loaded in SwiftData
-    var isLoaded: Bool {
-        return loadingState == .loaded && loadedDocument != nil
-    }
-
-    /// Whether this file can be opened for editing
-    var canOpen: Bool {
-        return loadingState.canOpen && loadedDocument != nil
-    }
-
-    /// Whether this file can be loaded
-    var canLoad: Bool {
-        return loadingState.canLoad
-    }
-
     /// Display name with folder context for disambiguation
     ///
     /// For files in root: "episode-01.fountain"
