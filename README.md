@@ -4,92 +4,123 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-0.5.0-blue.svg" />
+    <img src="https://img.shields.io/badge/Version-2.0.0--beta-blue.svg" />
 </p>
 
-**SwiftProyecto** is a Swift package providing a file source abstraction layer for screenplay project management. It offers flexible file access through protocols, supporting both local directories and git repositories with security-scoped bookmarks for sandboxed environments.
+**SwiftProyecto** is a Swift package providing **file discovery and secure access** for screenplay project management. It discovers files in local directories or git repositories, manages security-scoped bookmarks for sandboxed environments, and provides secure URLs for apps to load and parse files using their own parsers.
 
 ## Overview
 
 SwiftProyecto provides:
-- **FileSource Protocol**: Abstraction for different file storage backends (directories, git repos)
-- **DirectoryFileSource**: Local folder access with security-scoped bookmarks
-- **GitRepositoryFileSource**: Git repository support with `.git` detection
-- **ProjectService**: Project lifecycle management (create, open, sync, load files)
-- **BookmarkManager**: Centralized security-scoped bookmark management
-- **FileNode**: Hierarchical file tree structure for UI display
+- **File Discovery**: Recursively discover files in project folders or git repositories via FileSource abstraction
+- **Secure File Access**: Security-scoped bookmarks for sandboxed macOS/iOS apps
+- **PROJECT.md Parsing**: YAML front matter parser using UNIVERSAL library for spec-compliant parsing
 - **Project Models**: SwiftData models for project metadata and file references
-- **File State Tracking**: Monitor loaded, unloaded, stale, and missing files
+- **FileNode**: Hierarchical file tree structure for UI display
+- **ProjectService**: Project lifecycle management (create, open, sync, get file URLs)
+- **BookmarkManager**: Centralized security-scoped bookmark management
+
+**What SwiftProyecto Does NOT Do:**
+- ❌ Parse screenplay files (no SwiftCompartido dependency)
+- ❌ Load document content into memory automatically
+- ❌ Manage loading state or caching
+
+**Integration Pattern:**
+Apps using SwiftProyecto call `getSecureURL(for:in:)` to get a file URL, then parse it with their own parsers (e.g., SwiftCompartido). See the "Integration with Document Parsers" section for details.
 
 ## Architecture
 
-SwiftProyecto sits between SwiftCompartido (data structures & parsing) and Produciesta (UI layer):
+SwiftProyecto provides file discovery and secure access. Apps integrate it with their own document parsers:
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│ Produciesta (iOS/macOS App)                             │
-│ - UI Views (ProjectView, FileTreeView)                  │
-│ - SwiftUI integration                                   │
-└─────────────────┬───────────────────────────────────────┘
-                  │
-        ┌─────────┴──────────┬──────────────────┐
-        │                    │                  │
-┌───────▼────────┐  ┌────────▼────────┐  ┌─────▼──────┐
-│ SwiftProyecto  │  │ SwiftCompartido │  │ SwiftHablare│
-│ (THIS)         │  │                 │  │             │
-│                │  │ - GuionDocument │  │ - Voice Gen │
-│ - FileSource   │  │ - Parsing       │  │ - Providers │
-│ - ProjectModel │  │ - PROJECT.md    │  └─────────────┘
-│ - FileNode     │  │   Parser        │
-│ - Bookmark     │  │                 │
-│   Manager      │  │                 │
-│ - Project      │  │                 │
-│   Service      │  │                 │
-└────────────────┘  └─────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│ Produciesta (iOS/macOS App)                               │
+│ - UI Views (ProjectBrowserView, DocumentLoader)           │
+│ - DocumentRegistry (integration layer)                    │
+│ - Calls getSecureURL() → Parses with SwiftCompartido      │
+└──────┬────────────────────────────────┬───────────────────┘
+       │                                │
+       ▼                                ▼
+┌──────────────────┐          ┌─────────────────┐
+│ SwiftProyecto    │          │ SwiftCompartido │
+│ (THIS)           │          │                 │
+│                  │          │ - GuionDocument │
+│ - File Discovery │          │ - Parsing       │
+│ - ProjectModel   │          │ - AST           │
+│ - FileNode       │          └─────────────────┘
+│ - BookmarkMgr    │
+│ - getSecureURL() │          (No direct dependency)
+│   ↑              │
+│   Provides URLs  │
+└──────────────────┘
+
+Flow:
+1. SwiftProyecto discovers files → ProjectFileReference
+2. App calls getSecureURL(for: fileRef, in: project)
+3. App parses URL with SwiftCompartido
+4. App stores result in DocumentRegistry
 ```
+
+### FileSource Abstraction
+
+SwiftProyecto uses a pluggable FileSource abstraction for discovering files:
+
+```
+┌─────────────────────────────────────────┐
+│ ProjectService                          │
+│ - discoverFiles(for: project)           │
+│   ↓ delegates to                        │
+│ - project.fileSource()                  │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────┐
+│ FileSource Protocol                      │
+│ - discoverFiles() -> [DiscoveredFile]    │
+└──────────┬───────────────┬───────────────┘
+           │               │
+           ▼               ▼
+┌──────────────────┐  ┌─────────────────────┐
+│ DirectoryFile    │  │ GitRepositoryFile   │
+│ Source           │  │ Source              │
+│                  │  │                     │
+│ - Enumerates     │  │ - Validates .git/   │
+│   local files    │  │ - Same discovery    │
+│ - Excludes       │  │   as Directory      │
+│   system files   │  │                     │
+│ - Returns        │  │                     │
+│   DiscoveredFile │  │                     │
+└──────────────────┘  └─────────────────────┘
+```
+
+**Benefits**:
+- Clean separation between business logic (ProjectService) and file enumeration (FileSource)
+- Easy to add new source types (iCloud, remote servers, archives, etc.)
+- Testable with mock FileSource implementations
+- ~100 lines of code deduplication
 
 ## Features
 
-### ✅ Core Refactoring (Phases 1-5 Complete)
+### ✅ v2.0: File Discovery Focus
 
-#### Phase 1: BookmarkManager Extraction
-- [x] Extract centralized `BookmarkManager` utility
-- [x] Remove iOS-specific code (iCloudProjectSupport, SingleFileManager)
-- [x] Consolidate bookmark operations
-- [x] 21 tests for BookmarkManager (100% passing)
+- **FileSource Abstraction**: Pluggable file discovery via `DirectoryFileSource` and `GitRepositoryFileSource`
+- **File Discovery**: Recursively discover all files in project directories or git repos
+- **PROJECT.md Parser**: YAML front matter parser using UNIVERSAL library for spec-compliant parsing
+- **Security-Scoped Bookmarks**: Per-project AND per-file bookmark support for sandboxed apps
+- **FileNode Tree**: Hierarchical file tree with sorted children (directories first)
+- **SwiftData Models**: `ProjectModel` and `ProjectFileReference` with cascade delete
+- **Git Repository Support**: Automatic `.git` directory exclusion and validation
+- **Bookmark Refresh**: Automatic stale bookmark detection and recreation
 
-#### Phase 2: FileSource Protocol
-- [x] Define `FileSource` protocol for file access abstraction
-- [x] Implement `DirectoryFileSource` for local folders
-- [x] Security-scoped bookmark integration
-- [x] File discovery and content reading
-- [x] 20 tests for DirectoryFileSource (100% passing)
+### 🔄 v2.0 Breaking Changes
 
-#### Phase 3: Git Repository Support
-- [x] Implement `GitRepositoryFileSource` with `.git` detection
-- [x] Git-aware file filtering (ignore `.git/` directory)
-- [x] Full FileSource protocol compliance
-- [x] 22 tests for GitRepositoryFileSource (100% passing)
+- **Removed SwiftCompartido dependency** - No more screenplay parsing in this library
+- **Removed document loading** - `loadFile()`, `unloadFile()`, `reimportFile()` methods removed
+- **Removed loading state** - No `FileLoadingState` enum, `loadingState` property, or `loadedDocument`
+- **New API**: Use `getSecureURL(for:in:)` to get file URLs for parsing in your app
+- **Simplified models**: `ProjectFileReference` now only stores metadata, not loaded documents
 
-#### Phase 4: Service Layer Refactor
-- [x] Rename `ProjectManager` → `ProjectService`
-- [x] Remove hard-coded file filtering (.fountain, .fdx)
-- [x] Return all discovered files (let consumer filter)
-- [x] Update ProjectModel to use FileSource
-- [x] 20 tests for ProjectService (100% passing)
-
-#### Phase 5: File Tree Helper
-- [x] Create `FileNode` struct for hierarchical display
-- [x] Tree building from flat file references
-- [x] Navigation methods (findNode, allFiles, allDirectories)
-- [x] Add `ProjectModel.fileTree()` convenience method
-- [x] Sorted children support (directories first)
-- [x] 22 tests for FileNode (100% passing)
-
-### Test Coverage
-- **177 total tests** (171 passing, 6 pre-existing failures in ModelContainerFactory)
-- **~95% code coverage** for refactored components
-- All FileSource, ProjectService, and FileNode tests: 100% passing
+See "Migration from v1.x" section below for upgrade guide.
 
 ## Installation
 
@@ -99,14 +130,16 @@ Add SwiftProyecto to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "0.1.0")
+    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "2.0.0")
 ]
 ```
 
 Or add it in Xcode:
 1. File > Add Package Dependencies
 2. Enter: `https://github.com/intrusive-memory/SwiftProyecto.git`
-3. Select version: `0.1.0` or later
+3. Select version: `2.0.0` or later
+
+**Note**: Version 2.0.0 has breaking changes. If you're upgrading from v1.x, see the "Migration from v1.x" section below.
 
 ## Usage
 
@@ -172,21 +205,25 @@ print(project.totalFileCount) // Number of discovered files
 
 ```swift
 // Discover files (automatically syncs on open)
-// Files are discovered but NOT loaded until explicitly requested
+// Files are discovered and metadata is stored
 
 for fileRef in project.fileReferences {
     print(fileRef.filename) // "episode-01.fountain"
-    print(fileRef.loadingState) // .notLoaded
+    print(fileRef.relativePath) // "season-01/episode-01.fountain"
+    print(fileRef.fileExtension) // "fountain"
 }
 
-// Load a specific file on demand
+// Get secure URL for a specific file
 let fileRef = project.fileReferences.first!
-try await service.loadFile(fileRef, in: project)
+let fileURL = try service.getSecureURL(for: fileRef, in: project)
 
-// Now the screenplay is loaded
-if let screenplay = fileRef.loadedDocument {
-    print(screenplay.elements.count) // Access parsed content
-}
+// Now parse the file with your own parser (e.g., SwiftCompartido)
+// This example assumes you have SwiftCompartido imported
+// let parser = FountainParser()
+// let screenplay = try await parser.parse(fileURL: fileURL)
+// print(screenplay.elements.count)
+
+// Access is automatically stopped when fileURL goes out of scope
 ```
 
 #### File Tree Display
@@ -217,26 +254,83 @@ displayTree(tree)
 //   📄 Episode 2.fountain
 ```
 
-#### Using FileSource Directly
+### Integration with Document Parsers
+
+SwiftProyecto v2.0 focuses on **file discovery**, not document parsing. To integrate with a parser like SwiftCompartido, create an integration layer in your app:
 
 ```swift
-// Direct directory access
-let dirSource = DirectoryFileSource(
-    url: projectURL,
-    name: "My Project"
-)
+import SwiftData
+import SwiftProyecto
+// import SwiftCompartido // Your parser
 
-// Discover all files
-let files = try await dirSource.discoverFiles()
+@Model
+final class DocumentRegistry {
+    var id: UUID = UUID()
+    var projectID: UUID?
+    var fileReferenceID: UUID?
+    var fileURL: URL
+    var lastOpenedDate: Date?
 
-// Read a specific file
-let content = try await dirSource.readFile(at: "episode-01.fountain")
+    @Relationship(deleteRule: .cascade)
+    var document: GuionDocumentModel? // Your parsed document type
+}
 
-// Git repository support
-if let gitSource = try? GitRepositoryFileSource(url: repoURL, name: "Repo") {
-    let files = try await gitSource.discoverFiles() // Excludes .git/
+// Document loader component
+struct DocumentLoader<Content: View>: View {
+    let fileReference: ProjectFileReference
+    let project: ProjectModel
+    let content: (GuionDocumentModel) -> Content
+
+    @State private var loadedDocument: GuionDocumentModel?
+    @State private var error: Error?
+
+    var body: some View {
+        Group {
+            if let doc = loadedDocument {
+                content(doc)
+            } else if let error = error {
+                ErrorView(error: error)
+            } else {
+                ProgressView()
+            }
+        }
+        .task {
+            await loadDocument()
+        }
+    }
+
+    private func loadDocument() async {
+        do {
+            // 1. Get secure URL from SwiftProyecto
+            let fileURL = try projectService.getSecureURL(
+                for: fileReference,
+                in: project
+            )
+
+            // 2. Parse with your parser (e.g., SwiftCompartido)
+            let parser = FountainParser()
+            let document = try await parser.parse(fileURL: fileURL)
+
+            // 3. Store in DocumentRegistry for caching
+            let registry = DocumentRegistry()
+            registry.projectID = project.id
+            registry.fileReferenceID = fileReference.id
+            registry.fileURL = fileURL
+            registry.document = document
+            registry.lastOpenedDate = Date()
+
+            modelContext.insert(registry)
+            try modelContext.save()
+
+            loadedDocument = document
+        } catch {
+            self.error = error
+        }
+    }
 }
 ```
+
+See `.claude/PHASE2_IMPLEMENTATION.md` in the Produciesta repository for a complete integration example.
 
 ## Development
 
@@ -258,16 +352,118 @@ swift build
 swift test
 ```
 
-### Test Coverage Target
+**Status**: All 184 tests passing with v2.0 API. Test suite includes:
+- FileSource abstraction tests (DirectoryFileSource, GitRepositoryFileSource)
+- ProjectMarkdownParser tests with UNIVERSAL library
+- ProjectService tests for async file discovery
+- BookmarkManager tests for security-scoped access
+- ProjectModel and ProjectFileReference tests
 
-SwiftProyecto aims for **80%+ test coverage** to ensure reliability and regression safety.
+## Migration from v1.x to v2.0
 
-## Documentation
+SwiftProyecto v2.0 introduces breaking changes focused on simplifying the library to **file discovery only**.
 
-Detailed documentation is available in the `/Docs` directory:
+### What Changed
 
-- [Implementation Strategy](./Docs/IMPLEMENTATION_STRATEGY.md) - Phased development plan
-- [API Documentation](./Docs/API.md) - (Coming in Phase 1)
+| v1.x API | v2.0 API | Notes |
+|----------|----------|-------|
+| `loadFile(_:in:progress:)` | `getSecureURL(for:in:)` | Returns URL instead of loading document |
+| `unloadFile(_:)` | ❌ Removed | Apps manage their own document lifecycle |
+| `reimportFile(_:in:progress:)` | ❌ Removed | Apps re-parse as needed |
+| `fileRef.loadingState` | ❌ Removed | No loading state tracking |
+| `fileRef.loadedDocument` | ❌ Removed | No document storage |
+| `fileRef.errorMessage` | ❌ Removed | Apps handle their own errors |
+| `project.loadedFileCount` | ❌ Removed | Apps track loaded documents |
+| `project.allFilesLoaded` | ❌ Removed | Apps track loaded documents |
+| `FileLoadingState` enum | ❌ Removed | No loading state |
+
+### Migration Steps
+
+1. **Remove SwiftCompartido** from SwiftProyecto imports:
+   ```swift
+   // OLD:
+   import SwiftProyecto
+   // SwiftProyecto had SwiftCompartido dependency
+
+   // NEW:
+   import SwiftProyecto
+   import SwiftCompartido // Import separately in your app
+   ```
+
+2. **Replace `loadFile()` calls** with `getSecureURL()`:
+   ```swift
+   // OLD:
+   try await projectService.loadFile(fileRef, in: project)
+   if let doc = fileRef.loadedDocument {
+       // Use doc
+   }
+
+   // NEW:
+   let fileURL = try projectService.getSecureURL(for: fileRef, in: project)
+   let parser = FountainParser()
+   let doc = try await parser.parse(fileURL: fileURL)
+   // Store doc in your own DocumentRegistry
+   ```
+
+3. **Create DocumentRegistry** model in your app:
+   ```swift
+   @Model
+   final class DocumentRegistry {
+       var id: UUID = UUID()
+       var projectID: UUID?
+       var fileReferenceID: UUID?
+       var fileURL: URL
+       var lastOpenedDate: Date?
+
+       @Relationship(deleteRule: .cascade)
+       var document: GuionDocumentModel?
+   }
+   ```
+
+4. **Update SwiftData schema** in your app:
+   ```swift
+   // OLD:
+   let schema = Schema([
+       ProjectModel.self,
+       ProjectFileReference.self,
+       GuionDocumentModel.self,
+       GuionElementModel.self
+   ])
+
+   // NEW:
+   let schema = Schema([
+       ProjectModel.self,
+       ProjectFileReference.self,
+       DocumentRegistry.self,  // Your integration model
+       GuionDocumentModel.self,
+       GuionElementModel.self
+   ])
+   ```
+
+5. **Remove references to removed properties**:
+   ```swift
+   // OLD:
+   if fileRef.loadingState == .loaded {
+       // ...
+   }
+
+   // NEW:
+   // Check your DocumentRegistry instead
+   let registry = documentRegistries.first {
+       $0.fileReferenceID == fileRef.id
+   }
+   if let doc = registry?.document {
+       // ...
+   }
+   ```
+
+### Benefits of v2.0
+
+- ✅ **Clearer separation of concerns** - File discovery vs. document parsing
+- ✅ **No circular dependencies** - SwiftProyecto doesn't depend on SwiftCompartido
+- ✅ **Smaller library** - ~300 fewer lines of code
+- ✅ **More flexible** - Apps choose their own parsing and caching strategies
+- ✅ **Better testability** - Each library has a single responsibility
 
 ## Development Workflow
 
@@ -314,13 +510,25 @@ SwiftProyecto is released under the MIT License. See [LICENSE](./LICENSE) for de
 
 ## Status
 
-✅ **Refactoring Complete** - Phases 1-5 Complete
+### ✅ v2.0.0-beta - File Discovery Focus
 
-SwiftProyecto has completed its core refactoring to become a focused file source abstraction layer. The library now provides:
-- FileSource protocol with DirectoryFileSource and GitRepositoryFileSource implementations
-- Centralized BookmarkManager for security-scoped access
-- ProjectService for project lifecycle management
-- FileNode for hierarchical file tree display
-- 171 passing tests (177 total, 6 pre-existing failures)
+SwiftProyecto v2.0 is a major refactoring focused on **file discovery and secure access only**. Document parsing has been removed to eliminate the circular dependency with SwiftCompartido.
 
-APIs are stable for 0.5.x releases. Breaking changes may occur before 1.0.0.
+**Current Status**:
+- ✅ SwiftCompartido dependency removed
+- ✅ Document loading methods removed (~300 LOC)
+- ✅ FileSource abstraction implemented (DirectoryFileSource, GitRepositoryFileSource)
+- ✅ PROJECT.md parser using UNIVERSAL library (spec-compliant YAML)
+- ✅ Per-file bookmark support added
+- ✅ FileNode tree structure complete
+- ✅ All 184 tests passing with v2.0 API
+- 🔄 Awaiting PR merge and v2.0.0 release
+- 🔄 Produciesta integration layer ready (currently disabled)
+
+**Stability**: v2.0 introduces breaking changes. See "Migration from v1.x" section above.
+
+**Next Steps**:
+1. ~~Update test suite to match v2.0 API~~ ✅ Complete (184 tests passing)
+2. Merge PR and tag v2.0.0
+3. Activate integration layer in Produciesta
+4. Update dependent apps

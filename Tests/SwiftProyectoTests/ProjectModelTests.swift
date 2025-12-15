@@ -1,6 +1,5 @@
 import XCTest
 import SwiftData
-import SwiftCompartido
 @testable import SwiftProyecto
 
 @MainActor
@@ -14,8 +13,7 @@ final class ProjectModelTests: XCTestCase {
 
         let schema = Schema([
             ProjectModel.self,
-            ProjectFileReference.self,
-            GuionDocumentModel.self
+            ProjectFileReference.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
@@ -111,52 +109,31 @@ final class ProjectModelTests: XCTestCase {
 
         // No files
         XCTAssertEqual(project.totalFileCount, 0)
-        XCTAssertEqual(project.loadedFileCount, 0)
-        XCTAssertEqual(project.unloadedFileCount, 0)
-        XCTAssertFalse(project.allFilesLoaded)
 
-        // Add unloaded file
+        // Add files
         let file1 = ProjectFileReference(
             relativePath: "file1.fountain",
             filename: "file1.fountain",
-            fileExtension: "fountain",
-            loadingState: .notLoaded
+            fileExtension: "fountain"
         )
         project.fileReferences.append(file1)
 
         XCTAssertEqual(project.totalFileCount, 1)
-        XCTAssertEqual(project.loadedFileCount, 0)
-        XCTAssertEqual(project.unloadedFileCount, 1)
-        XCTAssertFalse(project.allFilesLoaded)
 
-        // Add loaded file
+        // Add more files
         let file2 = ProjectFileReference(
             relativePath: "file2.fountain",
             filename: "file2.fountain",
-            fileExtension: "fountain",
-            loadingState: .loaded
+            fileExtension: "fountain"
         )
-        // Create a mock document for testing
-        let mockDoc = GuionDocumentModel(filename: "file2.fountain", rawContent: nil, suppressSceneNumbers: false)
-        modelContext.insert(mockDoc)
-        file2.loadedDocument = mockDoc
         project.fileReferences.append(file2)
 
         XCTAssertEqual(project.totalFileCount, 2)
-        XCTAssertEqual(project.loadedFileCount, 1)
-        XCTAssertEqual(project.unloadedFileCount, 1)
-        XCTAssertFalse(project.allFilesLoaded)
 
-        // Load first file
-        file1.loadingState = .loaded
-        let mockDoc1 = GuionDocumentModel(filename: "file1.fountain", rawContent: nil, suppressSceneNumbers: false)
-        modelContext.insert(mockDoc1)
-        file1.loadedDocument = mockDoc1
-
-        XCTAssertEqual(project.totalFileCount, 2)
-        XCTAssertEqual(project.loadedFileCount, 2)
-        XCTAssertEqual(project.unloadedFileCount, 0)
-        XCTAssertTrue(project.allFilesLoaded)
+        // Verify file references are accessible
+        XCTAssertEqual(project.fileReferences.count, 2)
+        XCTAssertTrue(project.fileReferences.contains(where: { $0.filename == "file1.fountain" }))
+        XCTAssertTrue(project.fileReferences.contains(where: { $0.filename == "file2.fountain" }))
     }
 
     func testDisplayTitle() {
@@ -210,35 +187,6 @@ final class ProjectModelTests: XCTestCase {
 
     // MARK: - Query Method Tests
 
-    func testFileReferencesInState() {
-        let project = ProjectModel(
-            title: "Test",
-            author: "Author",
-            sourceType: .directory,
-            sourceName: "Test",
-            sourceRootURL: "file:///test"
-        )
-
-        let notLoaded1 = ProjectFileReference(relativePath: "file1.fountain", filename: "file1.fountain", fileExtension: "fountain", loadingState: .notLoaded)
-        let notLoaded2 = ProjectFileReference(relativePath: "file2.fountain", filename: "file2.fountain", fileExtension: "fountain", loadingState: .notLoaded)
-        let loaded = ProjectFileReference(relativePath: "file3.fountain", filename: "file3.fountain", fileExtension: "fountain", loadingState: .loaded)
-        let stale = ProjectFileReference(relativePath: "file4.fountain", filename: "file4.fountain", fileExtension: "fountain", loadingState: .stale)
-
-        project.fileReferences.append(contentsOf: [notLoaded1, notLoaded2, loaded, stale])
-
-        let notLoadedFiles = project.fileReferences(in: .notLoaded)
-        XCTAssertEqual(notLoadedFiles.count, 2)
-
-        let loadedFiles = project.fileReferences(in: .loaded)
-        XCTAssertEqual(loadedFiles.count, 1)
-
-        let staleFiles = project.fileReferences(in: .stale)
-        XCTAssertEqual(staleFiles.count, 1)
-
-        let missingFiles = project.fileReferences(in: .missing)
-        XCTAssertEqual(missingFiles.count, 0)
-    }
-
     func testFileReferenceAtPath() {
         let project = ProjectModel(
             title: "Test",
@@ -283,12 +231,6 @@ final class ProjectModelTests: XCTestCase {
 
         // Synced more than 1 hour ago
         project.lastSyncDate = Date().addingTimeInterval(-3700)  // 1 hour + 100 seconds
-        XCTAssertTrue(project.needsSync)
-
-        // Recent sync but has stale files
-        project.lastSyncDate = Date()
-        let staleFile = ProjectFileReference(relativePath: "file.fountain", filename: "file.fountain", fileExtension: "fountain", loadingState: .stale)
-        project.fileReferences.append(staleFile)
         XCTAssertTrue(project.needsSync)
     }
 

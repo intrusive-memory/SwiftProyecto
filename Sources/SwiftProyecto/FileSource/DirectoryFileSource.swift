@@ -16,7 +16,7 @@ import Foundation
 /// // Read a specific file
 /// let data = try await source.readFile(at: "Season 1/Episode 1.fountain")
 /// ```
-public final class DirectoryFileSource: FileSource {
+public final class DirectoryFileSource: FileSource, @unchecked Sendable {
     /// Unique identifier
     public let id: UUID
 

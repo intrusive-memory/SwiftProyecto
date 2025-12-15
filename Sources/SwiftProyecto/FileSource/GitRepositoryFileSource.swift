@@ -28,7 +28,7 @@ import Foundation
 ///
 /// For git operations (status, commit, push, etc.), use a dedicated git library
 /// like SwiftGit2 or shell commands.
-public final class GitRepositoryFileSource: FileSource {
+public final class GitRepositoryFileSource: FileSource, @unchecked Sendable {
     /// Unique identifier
     public let id: UUID
 

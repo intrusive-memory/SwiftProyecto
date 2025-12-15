@@ -30,7 +30,7 @@ public enum FileSourceType: String, Codable, Sendable {
 /// // Read a file
 /// let data = try await source.readFile(at: "Episode 1.fountain")
 /// ```
-public protocol FileSource {
+public protocol FileSource: Sendable {
     /// Unique identifier for this source instance
     var id: UUID { get }
 

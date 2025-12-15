@@ -15,17 +15,25 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/intrusive-memory/SwiftCompartido.git", branch: "development"),
-        .package(url: "https://github.com/groue/GRMustache.swift.git", from: "7.0.0" )
+        .package(url: "https://github.com/marcprux/universal.git", from: "5.0.5")
     ],
     targets: [
         .target(
             name: "SwiftProyecto",
-            dependencies: ["SwiftCompartido"]
+            dependencies: [
+                .product(name: "Universal", package: "universal")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+            ]
         ),
         .testTarget(
             name: "SwiftProyectoTests",
-            dependencies: ["SwiftProyecto"]
+            dependencies: ["SwiftProyecto"],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+            ]
         ),
-    ]
+    ],
+    swiftLanguageModes: [.v6]
 )
