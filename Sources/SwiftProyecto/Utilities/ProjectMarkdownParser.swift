@@ -24,6 +24,7 @@
 //
 
 import Foundation
+import Universal
 
 /// Parser for PROJECT.md files with YAML front matter.
 ///
@@ -146,72 +147,33 @@ public struct ProjectMarkdownParser {
     // MARK: - Private Helpers
 
     private func parseYAML(_ yaml: String) throws -> ProjectFrontMatter {
-        var fields: [String: String] = [:]
+        do {
+            // Parse YAML to native structure
+            let yamlData = try YAML.parse(Data(yaml.utf8))
 
-        for line in yaml.split(separator: "\n") {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard !trimmed.isEmpty else { continue }
+            // Convert to JSON for Decodable
+            let json = try yamlData.json()
 
-            // Split on first colon
-            guard let colonIndex = trimmed.firstIndex(of: ":") else {
-                continue
+            // Decode to ProjectFrontMatter using UNIVERSAL's Decodable extension
+            let options = JSONDecodingOptions(dateDecodingStrategy: .iso8601)
+            return try ProjectFrontMatter(json: json, options: options)
+
+        } catch let error as DecodingError {
+            // Handle missing required fields
+            switch error {
+            case .keyNotFound(let key, _):
+                throw ParserError.missingRequiredField(key.stringValue)
+            case .dataCorrupted(let context):
+                throw ParserError.invalidYAML(context.debugDescription)
+            case .typeMismatch(_, let context):
+                throw ParserError.invalidYAML(context.debugDescription)
+            case .valueNotFound(let type, let context):
+                throw ParserError.invalidYAML("Missing value of type \(type): \(context.debugDescription)")
+            @unknown default:
+                throw ParserError.invalidYAML(error.localizedDescription)
             }
-
-            let key = trimmed[..<colonIndex].trimmingCharacters(in: .whitespaces)
-            let value = trimmed[trimmed.index(after: colonIndex)...].trimmingCharacters(in: .whitespaces)
-
-            fields[key] = value
+        } catch {
+            throw ParserError.invalidYAML(error.localizedDescription)
         }
-
-        // Extract required fields
-        guard let type = fields["type"] else {
-            throw ParserError.missingRequiredField("type")
-        }
-        guard let title = fields["title"] else {
-            throw ParserError.missingRequiredField("title")
-        }
-        guard let author = fields["author"] else {
-            throw ParserError.missingRequiredField("author")
-        }
-
-        // Parse date
-        let created: Date
-        if let createdString = fields["created"] {
-            let formatter = ISO8601DateFormatter()
-            guard let date = formatter.date(from: createdString) else {
-                throw ParserError.invalidDateFormat(createdString)
-            }
-            created = date
-        } else {
-            created = Date()
-        }
-
-        // Parse optional fields
-        let description = fields["description"]
-        let season = fields["season"].flatMap { Int($0) }
-        let episodes = fields["episodes"].flatMap { Int($0) }
-        let genre = fields["genre"]
-
-        // Parse tags (simple array format: [tag1, tag2])
-        let tags: [String]? = fields["tags"].flatMap { value in
-            // Remove brackets and split by comma
-            let cleaned = value
-                .trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
-                .split(separator: ",")
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-            return cleaned.isEmpty ? nil : cleaned
-        }
-
-        return ProjectFrontMatter(
-            type: type,
-            title: title,
-            author: author,
-            created: created,
-            description: description,
-            season: season,
-            episodes: episodes,
-            genre: genre,
-            tags: tags
-        )
     }
 }

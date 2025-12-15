@@ -131,10 +131,10 @@ final class ProjectMarkdownParserTests: XCTestCase {
 
         let (frontMatter, _) = try parser.parse(content: content)
 
-        // Parser includes quotes in the value
-        XCTAssertEqual(frontMatter.title, "\"Quoted Title: With Colon\"")
-        XCTAssertEqual(frontMatter.author, "\"Jane Doe\"")
-        XCTAssertEqual(frontMatter.description, "\"A description with: colons and special chars!\"")
+        // UNIVERSAL correctly strips quotes from values
+        XCTAssertEqual(frontMatter.title, "Quoted Title: With Colon")
+        XCTAssertEqual(frontMatter.author, "Jane Doe")
+        XCTAssertEqual(frontMatter.description, "A description with: colons and special chars!")
     }
 
     func testParse_TagsWithSpaces() throws {
@@ -297,13 +297,17 @@ final class ProjectMarkdownParserTests: XCTestCase {
 
         XCTAssertThrowsError(try parser.parse(content: content)) { error in
             guard let parserError = error as? ProjectMarkdownParser.ParserError else {
-                XCTFail("Expected ParserError")
+                XCTFail("Expected ParserError, got \(error)")
                 return
             }
-            if case .invalidDateFormat = parserError {
-                // Expected
-            } else {
-                XCTFail("Expected invalidDateFormat error")
+            // UNIVERSAL returns invalidYAML for date parsing errors
+            // (dates that don't match ISO8601 format)
+            switch parserError {
+            case .invalidDateFormat, .invalidYAML:
+                // Expected - either error type is acceptable
+                break
+            default:
+                XCTFail("Expected invalidDateFormat or invalidYAML error, got \(parserError)")
             }
         }
     }
