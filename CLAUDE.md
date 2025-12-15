@@ -176,10 +176,29 @@ EOF
 - Schema: `ProjectModel`, `ProjectFileReference`
 - Supports both app-wide and project-local storage
 
-**ProjectMarkdownParser** - Simple YAML front matter parser
+**FileSource Protocol** - Abstraction for file discovery
+- Protocol for discovering files from different source types
+- Implementations: `DirectoryFileSource`, `GitRepositoryFileSource`
+- Handles file enumeration, filtering, and metadata extraction
+- ProjectService delegates discovery to FileSource implementations
+
+**DirectoryFileSource** - Local directory file discovery
+- Discovers files in a local directory recursively
+- Excludes system files (.DS_Store, Thumbs.db, etc.)
+- Excludes build artifacts (.build, .cache, DerivedData)
+- Excludes PROJECT.md from file listings
+
+**GitRepositoryFileSource** - Git repository file discovery
+- Extends DirectoryFileSource with git repository validation
+- Validates `.git/` directory exists
+- Same exclusion patterns as DirectoryFileSource
+- Does NOT perform git operations (use git library for that)
+
+**ProjectMarkdownParser** - YAML front matter parser using UNIVERSAL
 - Parses PROJECT.md files with YAML front matter
 - Generates PROJECT.md content from ProjectFrontMatter
-- No external YAML dependency (lightweight ~200 LOC)
+- Uses UNIVERSAL library for spec-compliant YAML parsing
+- Properly handles quoted strings, colons in values, and complex arrays
 
 **BookmarkManager** - Security-scoped bookmark utilities
 - Cross-platform (macOS/iOS)
@@ -196,7 +215,7 @@ let projectService = ProjectService(modelContext: context)
 let project = try await projectService.openProject(at: folderURL)
 
 // 2. Discover files
-try projectService.discoverFiles(for: project)
+try await projectService.discoverFiles(for: project)
 
 // 3. Get security-scoped URL for a file
 let fileRef = project.fileReferences.first!
@@ -214,6 +233,10 @@ let document = await GuionDocumentModel.from(parsed, in: context)
 ## Dependencies
 
 **Current**:
+- **UNIVERSAL** (v5.2.7): Zero-dependency YAML/JSON/XML parser for PROJECT.md parsing
+  - Spec-compliant YAML parsing
+  - Handles quoted strings, colons in values, complex arrays
+  - Used by ProjectMarkdownParser
 - **GRMustache.swift**: Template rendering (currently unused, may be removed)
 
 **Removed** (v2.0+):

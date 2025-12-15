@@ -12,9 +12,9 @@
 ## Overview
 
 SwiftProyecto provides:
-- **File Discovery**: Recursively discover files in project folders or git repositories
+- **File Discovery**: Recursively discover files in project folders or git repositories via FileSource abstraction
 - **Secure File Access**: Security-scoped bookmarks for sandboxed macOS/iOS apps
-- **PROJECT.md Parsing**: Built-in YAML front matter parser for project metadata
+- **PROJECT.md Parsing**: YAML front matter parser using UNIVERSAL library for spec-compliant parsing
 - **Project Models**: SwiftData models for project metadata and file references
 - **FileNode**: Hierarchical file tree structure for UI display
 - **ProjectService**: Project lifecycle management (create, open, sync, get file URLs)
@@ -61,16 +61,55 @@ Flow:
 4. App stores result in DocumentRegistry
 ```
 
+### FileSource Abstraction
+
+SwiftProyecto uses a pluggable FileSource abstraction for discovering files:
+
+```
+┌─────────────────────────────────────────┐
+│ ProjectService                          │
+│ - discoverFiles(for: project)           │
+│   ↓ delegates to                        │
+│ - project.fileSource()                  │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────┐
+│ FileSource Protocol                      │
+│ - discoverFiles() -> [DiscoveredFile]    │
+└──────────┬───────────────┬───────────────┘
+           │               │
+           ▼               ▼
+┌──────────────────┐  ┌─────────────────────┐
+│ DirectoryFile    │  │ GitRepositoryFile   │
+│ Source           │  │ Source              │
+│                  │  │                     │
+│ - Enumerates     │  │ - Validates .git/   │
+│   local files    │  │ - Same discovery    │
+│ - Excludes       │  │   as Directory      │
+│   system files   │  │                     │
+│ - Returns        │  │                     │
+│   DiscoveredFile │  │                     │
+└──────────────────┘  └─────────────────────┘
+```
+
+**Benefits**:
+- Clean separation between business logic (ProjectService) and file enumeration (FileSource)
+- Easy to add new source types (iCloud, remote servers, archives, etc.)
+- Testable with mock FileSource implementations
+- ~100 lines of code deduplication
+
 ## Features
 
 ### ✅ v2.0: File Discovery Focus
 
+- **FileSource Abstraction**: Pluggable file discovery via `DirectoryFileSource` and `GitRepositoryFileSource`
 - **File Discovery**: Recursively discover all files in project directories or git repos
-- **PROJECT.md Parser**: Built-in YAML front matter parser (no external dependencies)
+- **PROJECT.md Parser**: YAML front matter parser using UNIVERSAL library for spec-compliant parsing
 - **Security-Scoped Bookmarks**: Per-project AND per-file bookmark support for sandboxed apps
 - **FileNode Tree**: Hierarchical file tree with sorted children (directories first)
 - **SwiftData Models**: `ProjectModel` and `ProjectFileReference` with cascade delete
-- **Git Repository Support**: Automatic `.git` directory exclusion
+- **Git Repository Support**: Automatic `.git` directory exclusion and validation
 - **Bookmark Refresh**: Automatic stale bookmark detection and recreation
 
 ### 🔄 v2.0 Breaking Changes
@@ -313,7 +352,12 @@ swift build
 swift test
 ```
 
-**Note**: Tests are currently being updated to match v2.0 API changes. Some tests may fail until the migration is complete.
+**Status**: All 184 tests passing with v2.0 API. Test suite includes:
+- FileSource abstraction tests (DirectoryFileSource, GitRepositoryFileSource)
+- ProjectMarkdownParser tests with UNIVERSAL library
+- ProjectService tests for async file discovery
+- BookmarkManager tests for security-scoped access
+- ProjectModel and ProjectFileReference tests
 
 ## Migration from v1.x to v2.0
 
@@ -473,17 +517,18 @@ SwiftProyecto v2.0 is a major refactoring focused on **file discovery and secure
 **Current Status**:
 - ✅ SwiftCompartido dependency removed
 - ✅ Document loading methods removed (~300 LOC)
-- ✅ PROJECT.md parser added (self-contained)
+- ✅ FileSource abstraction implemented (DirectoryFileSource, GitRepositoryFileSource)
+- ✅ PROJECT.md parser using UNIVERSAL library (spec-compliant YAML)
 - ✅ Per-file bookmark support added
 - ✅ FileNode tree structure complete
-- 🔄 Tests being updated to match new API
+- ✅ All 184 tests passing with v2.0 API
 - 🔄 Awaiting PR merge and v2.0.0 release
 - 🔄 Produciesta integration layer ready (currently disabled)
 
 **Stability**: v2.0 introduces breaking changes. See "Migration from v1.x" section above.
 
 **Next Steps**:
-1. Update test suite to match v2.0 API
+1. ~~Update test suite to match v2.0 API~~ ✅ Complete (184 tests passing)
 2. Merge PR and tag v2.0.0
 3. Activate integration layer in Produciesta
 4. Update dependent apps
