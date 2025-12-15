@@ -15,7 +15,6 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/groue/GRMustache.swift.git", from: "7.0.0"),
         .package(url: "https://github.com/marcprux/universal.git", from: "5.0.5")
     ],
     targets: [

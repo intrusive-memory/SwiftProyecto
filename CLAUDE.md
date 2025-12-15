@@ -237,10 +237,10 @@ let document = await GuionDocumentModel.from(parsed, in: context)
   - Spec-compliant YAML parsing
   - Handles quoted strings, colons in values, complex arrays
   - Used by ProjectMarkdownParser
-- **GRMustache.swift**: Template rendering (currently unused, may be removed)
 
 **Removed** (v2.0+):
 - ~~SwiftCompartido~~ - Apps integrate directly
+- ~~GRMustache.swift~~ - Template rendering was never used, removed in v2.0
 
 ---
 
