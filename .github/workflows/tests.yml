@@ -70,6 +70,7 @@ jobs:
 
           # Run unit tests serially to avoid race conditions
           # Note: Parallel testing disabled due to test interference issues
+          # Skip performance tests and integration tests (run separately)
           xcodebuild test \
             -scheme SwiftProyecto \
             -sdk iphonesimulator \
@@ -77,6 +78,7 @@ jobs:
             -enableCodeCoverage YES \
             -parallel-testing-enabled NO \
             -skip-testing:SwiftProyectoTests/PerformanceTests \
+            -skip-testing:ProyectoIntegrationTests \
             CODE_SIGNING_ALLOWED=NO \
             > test_output_ios.txt 2>&1
           TEST_EXIT_CODE=$?
@@ -131,7 +133,7 @@ jobs:
           echo "🖥️  Total CPUs: $TOTAL_CPUS"
           echo "🧪 Running unit tests on macOS (performance tests disabled)"
 
-          # Run unit tests only - skip performance tests
+          # Run unit tests only - skip performance tests and integration tests (run separately)
           xcodebuild test \
             -scheme SwiftProyecto \
             -destination 'platform=macOS' \
@@ -139,6 +141,7 @@ jobs:
             -parallel-testing-enabled YES \
             -maximum-parallel-testing-workers $TOTAL_CPUS \
             -skip-testing:SwiftProyectoTests/PerformanceTests \
+            -skip-testing:ProyectoIntegrationTests \
             CODE_SIGNING_ALLOWED=NO \
             > test_output_macos.txt 2>&1
           TEST_EXIT_CODE=$?
@@ -161,7 +164,72 @@ jobs:
           path: test_output_macos.txt
           retention-days: 7
 
-  # Step 3: Performance Tests (runs after unit tests pass)
+  # Step 3: Integration Tests (runs after unit tests pass)
+  # Tests end-to-end PROJECT.md generation using real podcast repositories
+  integration-tests:
+    name: Integration Tests
+    runs-on: macos-26
+    needs: [unit-tests-ios, unit-tests-macos]
+    # Integration tests validate CLI functionality - required for PRs
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build proyecto CLI (Release)
+        run: |
+          echo "🔨 Building proyecto CLI with Metal shaders"
+          make release
+          echo "✅ Binary built: $(./bin/proyecto --version 2>&1 || echo 'version check failed')"
+          ls -la ./bin/
+
+      - name: Download LLM model
+        run: |
+          echo "📥 Downloading default LLM model for inference"
+          ./bin/proyecto download --quiet
+          echo "✅ Model downloaded"
+
+      - name: Run integration tests
+        run: |
+          set +e
+
+          echo "🧪 Running integration tests (PROJECT.md generation)"
+
+          # Run only integration tests (separate test target)
+          xcodebuild test \
+            -scheme SwiftProyecto \
+            -destination 'platform=macOS' \
+            -only-testing:ProyectoIntegrationTests \
+            CODE_SIGNING_ALLOWED=NO \
+            > integration_output.txt 2>&1
+          TEST_EXIT_CODE=$?
+          cat integration_output.txt
+
+          # Check if tests passed
+          if grep -q "Test run with .* tests in .* suites passed\|TEST SUCCEEDED" integration_output.txt; then
+            echo "✅ All integration tests passed"
+            exit 0
+          else
+            echo "❌ Integration tests failed"
+            exit $TEST_EXIT_CODE
+          fi
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: integration_output.txt
+          retention-days: 7
+
+  # Step 4: Performance Tests (runs after unit tests pass)
   performance-tests:
     name: Performance Tests
     runs-on: macos-26
