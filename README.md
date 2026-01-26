@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="SwiftProyecto.png" alt="SwiftProyecto" width="200" height="200">
+  <img src="SwiftProyecto.jpg" alt="SwiftProyecto" width="200" height="200">
 </p>
 
 # SwiftProyecto
