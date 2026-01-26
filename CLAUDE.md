@@ -195,37 +195,106 @@ EOF
 - Does NOT perform git operations (use git library for that)
 
 **ProjectMarkdownParser** - YAML front matter parser using UNIVERSAL
-- Parses PROJECT.md files with YAML front matter
+- Parses PROJECT.md files with YAML front matter (delimited by `---`)
 - Generates PROJECT.md content from ProjectFrontMatter
 - Uses UNIVERSAL library for spec-compliant YAML parsing
-- Properly handles quoted strings, colons in values, and complex arrays
+- Properly handles quoted strings, colons in values, complex arrays, and ISO8601 dates
+- Supports lazy loading: parse PROJECT.md only when needed
+- Two parsing methods: `parse(fileURL:)` and `parse(content:)`
+- Returns tuple of `(ProjectFrontMatter, String)` - front matter and body content
 
 **BookmarkManager** - Security-scoped bookmark utilities
 - Cross-platform (macOS/iOS)
 - Handles bookmark creation, resolution, refresh
 - Platform-specific: macOS uses `.withSecurityScope`, iOS uses `.minimalBookmark`
 
-### File Discovery Pattern
+### PROJECT.md Parsing Pattern
 
-SwiftProyecto discovers files but does NOT load them:
+SwiftProyecto uses **lazy loading** for PROJECT.md parsing. Metadata is only parsed when needed:
 
 ```swift
-// 1. Open/create project
+// 1. Parse PROJECT.md from file URL
+let parser = ProjectMarkdownParser()
+let (frontMatter, body) = try parser.parse(fileURL: projectURL.appendingPathComponent("PROJECT.md"))
+
+// 2. Or parse from string content (for in-memory operations)
+let content = """
+---
+type: project
+title: My Series
+author: Jane Doe
+created: 2025-11-17T10:30:00Z
+season: 1
+episodes: 12
+genre: Science Fiction
+tags: [sci-fi, drama]
+---
+
+# Production Notes
+Additional notes here...
+"""
+let (frontMatter, body) = try parser.parse(content: content)
+
+// 3. Access front matter fields
+print(frontMatter.title)       // "My Series"
+print(frontMatter.author)      // "Jane Doe"
+print(frontMatter.season)      // Optional(1)
+print(frontMatter.episodes)    // Optional(12)
+print(frontMatter.tags)        // Optional(["sci-fi", "drama"])
+print(body)                    // "# Production Notes\nAdditional notes here..."
+
+// 4. Generate PROJECT.md content
+let newFrontMatter = ProjectFrontMatter(
+    title: "New Project",
+    author: "John Writer",
+    season: 2,
+    episodes: 10
+)
+let markdown = parser.generate(frontMatter: newFrontMatter, body: "# Notes")
+// Produces valid PROJECT.md with YAML front matter
+```
+
+**Key Points**:
+- **Lazy**: PROJECT.md is only parsed when you call `parse()`, not automatically on project open
+- **Stateless**: ProjectMarkdownParser is a stateless utility - no caching, just pure parsing
+- **YAML Front Matter**: Must be delimited by `---` markers
+- **Required Fields**: `type`, `title`, `author`, `created` (validated during parsing)
+- **Optional Fields**: `description`, `season`, `episodes`, `genre`, `tags`
+- **Date Format**: ISO8601 format for `created` field (e.g., `2025-11-17T10:30:00Z`)
+- **Error Handling**: Throws `ProjectMarkdownParser.ParserError` with detailed error messages
+
+### File Discovery Pattern
+
+SwiftProyecto discovers files and parses PROJECT.md metadata but does NOT load screenplay documents:
+
+```swift
+// 1. Open/create project (automatically parses PROJECT.md)
 let projectService = ProjectService(modelContext: context)
 let project = try await projectService.openProject(at: folderURL)
+// Project metadata is now available (title, author, season, etc.)
 
-// 2. Discover files
+// 2. Discover files (lazy - call when needed)
 try await projectService.discoverFiles(for: project)
 
-// 3. Get security-scoped URL for a file
+// 3. Access PROJECT.md metadata (already parsed during openProject)
+print(project.title)       // From PROJECT.md front matter
+print(project.author)      // From PROJECT.md front matter
+print(project.season)      // Optional field
+
+// 4. Get security-scoped URL for a screenplay file
 let fileRef = project.fileReferences.first!
 let url = try projectService.getSecureURL(for: fileRef, in: project)
 
-// 4. App parses file (using SwiftCompartido or other parser)
+// 5. App parses screenplay file (using SwiftCompartido or other parser)
 let parsed = try await GuionParsedElementCollection(file: url.path)
 
-// 5. App stores document (apps manage integration)
+// 6. App stores document (apps manage integration)
 let document = await GuionDocumentModel.from(parsed, in: context)
+
+// 7. (Optional) Manually parse or regenerate PROJECT.md
+let parser = ProjectMarkdownParser()
+let projectMdURL = folderURL.appendingPathComponent("PROJECT.md")
+let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
 ```
 
 ---
@@ -293,51 +362,3 @@ See `.claude/REFACTORING_PLAN.md` for complete Produciesta integration guide.
 - **SwiftHablare**: TTS and voice provider integration
 - **Produciesta**: macOS/iOS application integrating these libraries
 
----
-
-## 📝 NOTE: Activating in Produciesta
-
-**Current Status** (2025-12-14): Phase 2 integration code exists in Produciesta but is **temporarily disabled** with `#if false` blocks.
-
-### To Enable SwiftProyecto Integration in Produciesta:
-
-1. **Remove `#if false` blocks** from:
-   - `Produciesta/Views/DocumentLoader.swift`
-   - `Produciesta/Views/ProjectBrowserView.swift`
-   - `Produciesta/Views/ProjectFileTreeView.swift`
-
-2. **Uncomment SwiftProyecto** in `ProduciestaApp.swift`:
-   ```swift
-   // Change this:
-   // import SwiftProyecto
-
-   // To this:
-   import SwiftProyecto
-
-   // And uncomment in schema:
-   Schema([
-       // ... existing models
-       ProjectModel.self,
-       ProjectFileReference.self,
-       DocumentRegistry.self
-   ])
-   ```
-
-3. **Add "Open Folder" to WelcomeView**:
-   - Implement folder picker (NSOpenPanel/UIDocumentPickerViewController)
-   - Call `ProjectService.openProject(at:)` and `discoverFiles(for:)`
-   - Navigate to `ProjectBrowserView`
-
-4. **Update Navigation**:
-   - Add `.project(ProjectModel)` route to AppRoute enum
-   - Wire up in MacOSNavigationRoot and IOSNavigationRoot
-
-5. **Test**:
-   - Open folder
-   - Browse file tree
-   - Load documents
-   - Verify caching via DocumentRegistry
-
-See `Produciesta/.claude/PHASE2_IMPLEMENTATION.md` for complete details.
-
-**Why Disabled**: Waiting for SwiftProyecto v2.0 to be merged and released before activating in Produciesta.
