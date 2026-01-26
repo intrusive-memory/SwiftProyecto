@@ -419,9 +419,10 @@ See `.claude/PHASE2_IMPLEMENTATION.md` in the Produciesta repository for a compl
 
 ### Requirements
 
-- Swift 6.2+
+- **macOS 26.0+** or **iOS 26.0+**
+- **Apple Silicon only** (M1/M2/M3/M4) - NO Intel support
+- **Swift 6.2+**
 - Xcode 16.0+
-- macOS 26.0+ or iOS 26.0+
 
 ### Building
 
