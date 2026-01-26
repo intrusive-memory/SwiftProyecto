@@ -78,6 +78,28 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     /// Optional tags
     public let tags: [String]?
 
+    // MARK: - Generation Configuration Fields
+
+    /// Relative path to episode/screenplay files (default: "episodes")
+    public let episodesDir: String?
+
+    /// Relative path for audio output (default: "audio")
+    public let audioDir: String?
+
+    /// Glob pattern(s) or explicit file list for file discovery
+    public let filePattern: FilePattern?
+
+    /// Audio export format (default: "m4a")
+    public let exportFormat: String?
+
+    // MARK: - Hook Fields
+
+    /// Shell command to run BEFORE generation
+    public let preGenerateHook: String?
+
+    /// Shell command to run AFTER generation
+    public let postGenerateHook: String?
+
     /// Create a new ProjectFrontMatter instance.
     ///
     /// - Parameters:
@@ -90,6 +112,12 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     ///   - episodes: Optional episode count
     ///   - genre: Optional genre
     ///   - tags: Optional tags
+    ///   - episodesDir: Relative path to episode files (default: "episodes")
+    ///   - audioDir: Relative path for audio output (default: "audio")
+    ///   - filePattern: Glob pattern(s) for file discovery
+    ///   - exportFormat: Audio export format (default: "m4a")
+    ///   - preGenerateHook: Shell command to run before generation
+    ///   - postGenerateHook: Shell command to run after generation
     public init(
         type: String = "project",
         title: String,
@@ -99,7 +127,13 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
         season: Int? = nil,
         episodes: Int? = nil,
         genre: String? = nil,
-        tags: [String]? = nil
+        tags: [String]? = nil,
+        episodesDir: String? = nil,
+        audioDir: String? = nil,
+        filePattern: FilePattern? = nil,
+        exportFormat: String? = nil,
+        preGenerateHook: String? = nil,
+        postGenerateHook: String? = nil
     ) {
         self.type = type
         self.title = title
@@ -110,6 +144,12 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
         self.episodes = episodes
         self.genre = genre
         self.tags = tags
+        self.episodesDir = episodesDir
+        self.audioDir = audioDir
+        self.filePattern = filePattern
+        self.exportFormat = exportFormat
+        self.preGenerateHook = preGenerateHook
+        self.postGenerateHook = postGenerateHook
     }
 }
 
@@ -123,5 +163,39 @@ public extension ProjectFrontMatter {
         return type.lowercased() == "project"
             && !title.isEmpty
             && !author.isEmpty
+    }
+}
+
+// MARK: - Convenience Accessors with Defaults
+
+public extension ProjectFrontMatter {
+    /// Resolved episodes directory, defaulting to "episodes" if not specified.
+    var resolvedEpisodesDir: String {
+        episodesDir ?? "episodes"
+    }
+
+    /// Resolved audio directory, defaulting to "audio" if not specified.
+    var resolvedAudioDir: String {
+        audioDir ?? "audio"
+    }
+
+    /// Resolved file patterns, defaulting to ["*.fountain"] if not specified.
+    var resolvedFilePatterns: [String] {
+        filePattern?.patterns ?? ["*.fountain"]
+    }
+
+    /// Resolved export format, defaulting to "m4a" if not specified.
+    var resolvedExportFormat: String {
+        exportFormat ?? "m4a"
+    }
+
+    /// Returns true if any generation configuration fields are set.
+    var hasGenerationConfig: Bool {
+        episodesDir != nil ||
+            audioDir != nil ||
+            filePattern != nil ||
+            exportFormat != nil ||
+            preGenerateHook != nil ||
+            postGenerateHook != nil
     }
 }

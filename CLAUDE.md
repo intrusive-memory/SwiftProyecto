@@ -156,7 +156,16 @@ EOF
 **ProjectFrontMatter** - Codable struct for PROJECT.md metadata
 - YAML front matter representation
 - Required fields: type, title, author, created
-- Optional fields: description, season, episodes, genre, tags
+- Optional metadata fields: description, season, episodes, genre, tags
+- Optional generation config: episodesDir, audioDir, filePattern, exportFormat
+- Optional hooks: preGenerateHook, postGenerateHook
+- Convenience accessors: resolvedEpisodesDir, resolvedAudioDir, resolvedFilePatterns, resolvedExportFormat
+
+**FilePattern** - Flexible file pattern type for generation config
+- Accepts single string or array of strings
+- Normalizes to array via `.patterns` property
+- Supports glob patterns (e.g., "*.fountain") and explicit file lists
+- Codable with automatic string/array detection
 
 **FileNode** - Hierarchical tree structure for file navigation
 - Built from flat ProjectFileReference array
@@ -228,6 +237,12 @@ season: 1
 episodes: 12
 genre: Science Fiction
 tags: [sci-fi, drama]
+episodesDir: scripts
+audioDir: output
+filePattern: "*.fountain"
+exportFormat: m4a
+preGenerateHook: "./scripts/prepare.sh"
+postGenerateHook: "./scripts/upload.sh"
 ---
 
 # Production Notes
@@ -243,12 +258,23 @@ print(frontMatter.episodes)    // Optional(12)
 print(frontMatter.tags)        // Optional(["sci-fi", "drama"])
 print(body)                    // "# Production Notes\nAdditional notes here..."
 
-// 4. Generate PROJECT.md content
+// 4. Access generation config with defaults
+print(frontMatter.resolvedEpisodesDir)   // "scripts" (or "episodes" if nil)
+print(frontMatter.resolvedAudioDir)      // "output" (or "audio" if nil)
+print(frontMatter.resolvedFilePatterns)  // ["*.fountain"]
+print(frontMatter.resolvedExportFormat)  // "m4a"
+print(frontMatter.preGenerateHook)       // Optional("./scripts/prepare.sh")
+
+// 5. Generate PROJECT.md content
 let newFrontMatter = ProjectFrontMatter(
     title: "New Project",
     author: "John Writer",
     season: 2,
-    episodes: 10
+    episodes: 10,
+    episodesDir: "episodes",
+    audioDir: "audio",
+    filePattern: .multiple(["*.fountain", "*.fdx"]),
+    exportFormat: "m4a"
 )
 let markdown = parser.generate(frontMatter: newFrontMatter, body: "# Notes")
 // Produces valid PROJECT.md with YAML front matter
@@ -259,9 +285,12 @@ let markdown = parser.generate(frontMatter: newFrontMatter, body: "# Notes")
 - **Stateless**: ProjectMarkdownParser is a stateless utility - no caching, just pure parsing
 - **YAML Front Matter**: Must be delimited by `---` markers
 - **Required Fields**: `type`, `title`, `author`, `created` (validated during parsing)
-- **Optional Fields**: `description`, `season`, `episodes`, `genre`, `tags`
+- **Optional Metadata Fields**: `description`, `season`, `episodes`, `genre`, `tags`
+- **Optional Generation Config**: `episodesDir`, `audioDir`, `filePattern`, `exportFormat`
+- **Optional Hooks**: `preGenerateHook`, `postGenerateHook`
 - **Date Format**: ISO8601 format for `created` field (e.g., `2025-11-17T10:30:00Z`)
 - **Error Handling**: Throws `ProjectMarkdownParser.ParserError` with detailed error messages
+- **Backward Compatible**: All new fields are optional with sensible defaults
 
 ### File Discovery Pattern
 
