@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="SwiftProyecto.png" alt="SwiftProyecto" width="200" height="200">
+</p>
+
 # SwiftProyecto
 
 <p align="center">
@@ -415,6 +419,79 @@ struct DocumentLoader<Content: View>: View {
 
 See `.claude/PHASE2_IMPLEMENTATION.md` in the Produciesta repository for a complete integration example.
 
+## proyecto CLI
+
+SwiftProyecto includes a command-line tool (`proyecto`) that uses local LLM inference to analyze directories and generate PROJECT.md files with appropriate metadata.
+
+### Installation
+
+```bash
+# Build and install to ./bin
+make install
+
+# Or for release build
+make release
+```
+
+### Commands
+
+#### `proyecto init` (default)
+
+Analyzes a directory and generates PROJECT.md using local LLM inference.
+
+```bash
+# Analyze current directory
+proyecto init
+
+# Analyze specific directory
+proyecto init /path/to/podcast
+
+# Override author field
+proyecto init --author "Jane Doe"
+
+# Update existing PROJECT.md (preserves created date, body, hooks)
+proyecto init --update
+
+# Force overwrite existing PROJECT.md
+proyecto init --force
+```
+
+**Options:**
+- `directory` (argument): Directory to analyze (default: current directory)
+- `--model`: Model path or HuggingFace ID (default: mlx-community/Phi-3-mini-4k-instruct-4bit)
+- `--author`: Override the author field
+- `--update`: Update existing PROJECT.md, preserving created date, body content, and hooks
+- `--force`: Completely overwrite existing PROJECT.md
+- `--quiet, -q`: Suppress progress output
+
+**Behavior with existing PROJECT.md:**
+- Default: Error if PROJECT.md exists (prevents accidental overwrites)
+- `--force`: Completely replace existing PROJECT.md
+- `--update`: Preserve created date, body content, and hooks; update other fields
+
+#### `proyecto download`
+
+Downloads an LLM model from HuggingFace.
+
+```bash
+# Download default model
+proyecto download
+
+# Download specific model
+proyecto download --model "mlx-community/Llama-3-8B"
+```
+
+### LLM Analysis
+
+The `init` command analyzes:
+- Folder name and structure
+- README.md content (if present)
+- File patterns (*.fountain, *.mp3, etc.)
+
+And generates PROJECT.md frontmatter with:
+- title, author, description, genre, tags
+- episodesDir, audioDir, filePattern, exportFormat
+
 ## Development
 
 ### Requirements
@@ -427,7 +504,11 @@ See `.claude/PHASE2_IMPLEMENTATION.md` in the Produciesta repository for a compl
 ### Building
 
 ```bash
+# Library only (swift build)
 swift build
+
+# CLI with Metal shaders (xcodebuild)
+make install
 ```
 
 ### Testing
