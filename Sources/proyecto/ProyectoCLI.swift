@@ -288,8 +288,8 @@ func analyzeDirectory(at url: URL) throws -> DirectoryAnalysis {
         }
     }
 
-    // Build file listing (limit to first 100 files for prompt)
-    let limitedFiles = Array(files.prefix(100))
+    // Build file listing (limit to first 50 files for prompt)
+    let limitedFiles = Array(files.prefix(50))
     let fileListing = limitedFiles.joined(separator: "\n")
     let fileCount = files.count
 
@@ -344,53 +344,65 @@ func queryLLMForMetadata(
         You are a podcast/screenplay project metadata analyzer. Given a folder structure,
         generate metadata for a PROJECT.md file.
 
-        Output ONLY valid JSON with these fields:
-        - title: string (inferred from folder name or content, use title case)
-        - author: string (if detectable from README or content, otherwise "Unknown")
-        - description: string (brief 1-2 sentence project description)
-        - genre: string (e.g., "Philosophy", "Education", "Entertainment", "Drama", "Science Fiction")
-        - tags: [string] (3-5 relevant keywords)
-        - episodesDir: string (detected episodes/scripts folder, default "episodes")
-        - audioDir: string (detected audio folder, default "audio")
-        - filePattern: string or null (detected file pattern, e.g., "*.fountain")
-        - exportFormat: string (default "m4a")
+        Output ONLY valid, complete JSON with these exact fields:
+        {
+          "title": "Project Title",
+          "author": "Author Name or Unknown",
+          "description": "Brief 1-2 sentence description",
+          "genre": "Genre",
+          "tags": ["tag1", "tag2", "tag3"],
+          "episodesDir": "episodes",
+          "audioDir": "audio",
+          "filePattern": "*.fountain",
+          "exportFormat": "m4a"
+        }
 
-        Be concise and accurate. Only output the JSON, no explanation.
+        Rules:
+        - title: infer from folder name or content, use title case
+        - author: detect from README or content, use "Unknown" if not found
+        - description: brief 1-2 sentence project description
+        - genre: one of "Philosophy", "Education", "Entertainment", "Drama", "Science Fiction"
+        - tags: exactly 3-5 relevant keywords as an array
+        - episodesDir: detected episodes/scripts folder, default "episodes"
+        - audioDir: detected audio folder, default "audio"
+        - filePattern: detected file pattern like "*.fountain", or null
+        - exportFormat: default "m4a"
+
+        CRITICAL: Output ONLY the JSON object. No markdown, no explanation, no extra text.
+        The JSON must be complete and valid - do not truncate any fields.
         """
 
+    // Build a concise prompt (limit file listing to avoid overwhelming the model)
+    let limitedFileListing = analysis.fileListing
+        .split(separator: "\n")
+        .prefix(30)  // Limit to first 30 files
+        .joined(separator: "\n")
+
     var userPrompt = """
-        Analyze this project folder and generate metadata:
-
         Folder: \(analysis.folderName)
-
-        Contents (\(analysis.fileCount) files):
-        \(analysis.fileListing)
-
+        Total files: \(analysis.fileCount)
+        Sample files:
+        \(limitedFileListing)
         """
 
     if let readme = analysis.readmeContent {
-        userPrompt += """
-
-            README.md content:
-            \(readme)
-            """
+        // Limit README to 1000 chars for concise prompt
+        let limitedReadme = String(readme.prefix(1000))
+        userPrompt += "\n\nREADME:\n\(limitedReadme)"
     }
 
     if !analysis.detectedPatterns.isEmpty {
-        userPrompt += """
-
-            Detected file patterns: \(analysis.detectedPatterns.joined(separator: ", "))
-            """
+        userPrompt += "\n\nFile patterns: \(analysis.detectedPatterns.joined(separator: ", "))"
     }
 
-    userPrompt += "\n\nGenerate JSON with title, author, description, genre, tags, episodesDir, audioDir, filePattern, and exportFormat."
+    userPrompt += "\n\nGenerate the JSON metadata object."
 
     let metadata: LLMProjectMetadata = try await Bruja.query(
         userPrompt,
         as: LLMProjectMetadata.self,
         model: model,
         temperature: 0.3,
-        maxTokens: 1024,
+        maxTokens: 4096,
         system: systemPrompt
     )
 
