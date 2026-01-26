@@ -64,14 +64,13 @@ jobs:
           echo "Total CPUs: $TOTAL_CPUS"
           echo "Running unit tests on macOS"
 
-          # Run unit tests only - skip performance tests and integration tests
+          # Run unit tests only - skip integration tests (run separately)
           xcodebuild test \
             -scheme SwiftProyecto \
             -destination 'platform=macOS' \
             -enableCodeCoverage YES \
             -parallel-testing-enabled YES \
             -maximum-parallel-testing-workers $TOTAL_CPUS \
-            -skip-testing:SwiftProyectoTests/PerformanceTests \
             -skip-testing:ProyectoIntegrationTests \
             CODE_SIGNING_ALLOWED=NO \
             > test_output_macos.txt 2>&1
@@ -159,57 +158,3 @@ jobs:
           path: integration_output.txt
           retention-days: 7
 
-  # Step 4: Performance Tests (runs after unit tests pass)
-  performance-tests:
-    name: Performance Tests
-    runs-on: macos-26
-    needs: [unit-tests-macos]
-    # Performance tests are informational only - don't block PRs
-    continue-on-error: true
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-
-      - name: Show Swift version
-        run: swift --version
-
-      - name: Build for macOS
-        run: |
-          echo "Building for macOS (arm64)"
-          xcodebuild build \
-            -scheme SwiftProyecto \
-            -destination 'platform=macOS' \
-            -configuration Release \
-            -quiet \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Run performance tests
-        run: |
-          echo "Running performance tests only"
-
-          set +e
-          xcodebuild test \
-            -scheme SwiftProyecto \
-            -destination 'platform=macOS' \
-            -configuration Release \
-            -only-testing:SwiftProyectoTests/PerformanceTests \
-            CODE_SIGNING_ALLOWED=NO \
-            > performance_output.txt 2>&1
-          PERF_EXIT_CODE=$?
-
-          cat performance_output.txt
-
-          # Performance tests don't block - always exit 0
-          exit 0
-
-      - name: Upload performance results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: performance-test-results
-          path: performance_output.txt
-          retention-days: 7
