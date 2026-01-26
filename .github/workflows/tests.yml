@@ -47,44 +47,16 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
-      - name: Build for macOS
+      - name: Build library
         run: |
-          echo "Building for macOS (arm64)"
-          xcodebuild build \
-            -scheme SwiftProyecto \
-            -destination 'platform=macOS' \
-            -quiet \
-            CODE_SIGNING_ALLOWED=NO
+          echo "Building SwiftProyecto library"
+          swift build
 
       - name: Run unit tests on macOS
         run: |
-          set +e
-
-          TOTAL_CPUS=$(sysctl -n hw.ncpu)
-          echo "Total CPUs: $TOTAL_CPUS"
           echo "Running unit tests on macOS"
-
-          # Run unit tests only - skip integration tests (run separately)
-          xcodebuild test \
-            -scheme SwiftProyecto \
-            -destination 'platform=macOS' \
-            -enableCodeCoverage YES \
-            -parallel-testing-enabled YES \
-            -maximum-parallel-testing-workers $TOTAL_CPUS \
-            -skip-testing:ProyectoIntegrationTests \
-            CODE_SIGNING_ALLOWED=NO \
-            > test_output_macos.txt 2>&1
-          TEST_EXIT_CODE=$?
-          cat test_output_macos.txt
-
-          # Check if tests passed
-          if grep -q "Test run with .* tests in .* suites passed\|TEST SUCCEEDED" test_output_macos.txt; then
-            echo "All unit tests passed"
-            exit 0
-          else
-            echo "Unit tests failed"
-            exit $TEST_EXIT_CODE
-          fi
+          # Run only unit tests - integration tests require the CLI binary
+          swift test --filter SwiftProyectoTests 2>&1 | tee test_output_macos.txt
 
       - name: Upload test results
         if: always()
@@ -127,28 +99,9 @@ jobs:
 
       - name: Run integration tests
         run: |
-          set +e
-
           echo "Running integration tests (PROJECT.md generation)"
-
-          # Run only integration tests
-          xcodebuild test \
-            -scheme SwiftProyecto \
-            -destination 'platform=macOS' \
-            -only-testing:ProyectoIntegrationTests \
-            CODE_SIGNING_ALLOWED=NO \
-            > integration_output.txt 2>&1
-          TEST_EXIT_CODE=$?
-          cat integration_output.txt
-
-          # Check if tests passed
-          if grep -q "Test run with .* tests in .* suites passed\|TEST SUCCEEDED" integration_output.txt; then
-            echo "All integration tests passed"
-            exit 0
-          else
-            echo "Integration tests failed"
-            exit $TEST_EXIT_CODE
-          fi
+          # Run only integration tests - these spawn the CLI binary as a subprocess
+          swift test --filter ProyectoIntegrationTests 2>&1 | tee integration_output.txt
 
       - name: Upload integration test results
         if: always()
