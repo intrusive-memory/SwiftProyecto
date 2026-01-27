@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.2] - 2026-01-27
+
+### Changed
+
+- **Shared Models Directory** - Updated help text to reference shared model cache at `~/Library/Caches/intrusive-memory/Models/LLM/`
+
+---
+
 ## [2.1.1] - 2026-01-27
 
 ### Fixed
@@ -360,7 +368,8 @@ This release completes a major refactoring that transforms SwiftProyecto into a 
 - Basic tests pass (version check, placeholder test)
 - Repository published to GitHub
 
-[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.1...HEAD
+[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.2...HEAD
+[2.1.2]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.0...v2.1.1
 [0.5.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.3.0...v0.4.0
