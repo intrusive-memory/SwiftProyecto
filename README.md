@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-2.0.0--beta-blue.svg" />
+    <img src="https://img.shields.io/badge/Version-2.2.0-blue.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **file discovery and secure access** for screenplay project management. It discovers files in local directories or git repositories, manages security-scoped bookmarks for sandboxed environments, and provides secure URLs for apps to load and parse files using their own parsers.
@@ -425,13 +425,40 @@ SwiftProyecto includes a command-line tool (`proyecto`) that uses local LLM infe
 
 ### Installation
 
+#### Homebrew (Recommended)
+
 ```bash
-# Build and install to ./bin
+# Add the tap
+brew tap intrusive-memory/tap
+
+# Install proyecto
+brew install proyecto
+
+# Verify installation
+proyecto --version
+```
+
+#### Build from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/intrusive-memory/SwiftProyecto.git
+cd SwiftProyecto
+
+# Build and install to ./bin (Debug)
 make install
 
 # Or for release build
 make release
+
+# Run from local build
+./bin/proyecto --version
 ```
+
+**Requirements for building from source:**
+- macOS 26.0+ (Apple Silicon only)
+- Xcode 16.0+
+- Swift 6.2+
 
 ### Commands
 
