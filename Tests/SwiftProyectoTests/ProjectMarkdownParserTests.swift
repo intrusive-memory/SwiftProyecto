@@ -430,4 +430,298 @@ final class ProjectMarkdownParserTests: XCTestCase {
         XCTAssertNotNil(ProjectMarkdownParser.ParserError.missingRequiredField("test").errorDescription)
         XCTAssertNotNil(ProjectMarkdownParser.ParserError.invalidDateFormat("test").errorDescription)
     }
+
+    // MARK: - Generation Config Parsing Tests
+
+    func testParse_GenerationConfigFields() throws {
+        let content = """
+        ---
+        type: project
+        title: Podcast Project
+        author: Jane Doe
+        created: 2025-11-17T10:30:00Z
+        episodesDir: scripts
+        audioDir: output
+        filePattern: "*.fountain"
+        exportFormat: m4a
+        ---
+        """
+
+        let (frontMatter, _) = try parser.parse(content: content)
+
+        XCTAssertEqual(frontMatter.episodesDir, "scripts")
+        XCTAssertEqual(frontMatter.audioDir, "output")
+        XCTAssertEqual(frontMatter.filePattern?.patterns, ["*.fountain"])
+        XCTAssertEqual(frontMatter.exportFormat, "m4a")
+    }
+
+    func testParse_FilePatternAsArray() throws {
+        let content = """
+        ---
+        type: project
+        title: Multi-Format Project
+        author: Jane Doe
+        created: 2025-11-17T10:30:00Z
+        filePattern: ["*.fountain", "*.fdx", "*.highland"]
+        ---
+        """
+
+        let (frontMatter, _) = try parser.parse(content: content)
+
+        XCTAssertEqual(frontMatter.filePattern?.patterns, ["*.fountain", "*.fdx", "*.highland"])
+    }
+
+    func testParse_FilePatternAsYAMLList() throws {
+        let content = """
+        ---
+        type: project
+        title: Explicit Files Project
+        author: Jane Doe
+        created: 2025-11-17T10:30:00Z
+        filePattern:
+          - "intro.fountain"
+          - "chapter-01.fountain"
+          - "chapter-02.fountain"
+        ---
+        """
+
+        let (frontMatter, _) = try parser.parse(content: content)
+
+        XCTAssertEqual(frontMatter.filePattern?.patterns.count, 3)
+        XCTAssertEqual(frontMatter.filePattern?.patterns[0], "intro.fountain")
+        XCTAssertEqual(frontMatter.filePattern?.patterns[2], "chapter-02.fountain")
+    }
+
+    func testParse_HookFields() throws {
+        let content = """
+        ---
+        type: project
+        title: Hooks Project
+        author: Jane Doe
+        created: 2025-11-17T10:30:00Z
+        preGenerateHook: "./scripts/prepare.sh"
+        postGenerateHook: "./scripts/upload.sh"
+        ---
+        """
+
+        let (frontMatter, _) = try parser.parse(content: content)
+
+        XCTAssertEqual(frontMatter.preGenerateHook, "./scripts/prepare.sh")
+        XCTAssertEqual(frontMatter.postGenerateHook, "./scripts/upload.sh")
+    }
+
+    func testParse_FullGenerationConfig() throws {
+        let content = """
+        ---
+        type: project
+        title: Daily Dao - Tao De Jing Podcast
+        author: Tom Stovall
+        created: 2025-11-21T20:06:59Z
+        description: Daily readings from the Tao De Jing
+        season: 1
+        episodes: 81
+        genre: Philosophy
+        tags: [taoism, philosophy, meditation]
+        episodesDir: episodes
+        audioDir: audio
+        filePattern: "*.fountain"
+        exportFormat: m4a
+        preGenerateHook: "./scripts/generate-fountain.sh"
+        postGenerateHook: "./scripts/upload-to-cdn.sh"
+        ---
+
+        # Production Notes
+
+        This is a daily podcast series.
+        """
+
+        let (frontMatter, body) = try parser.parse(content: content)
+
+        // Basic fields
+        XCTAssertEqual(frontMatter.title, "Daily Dao - Tao De Jing Podcast")
+        XCTAssertEqual(frontMatter.author, "Tom Stovall")
+        XCTAssertEqual(frontMatter.description, "Daily readings from the Tao De Jing")
+        XCTAssertEqual(frontMatter.season, 1)
+        XCTAssertEqual(frontMatter.episodes, 81)
+        XCTAssertEqual(frontMatter.genre, "Philosophy")
+        XCTAssertEqual(frontMatter.tags, ["taoism", "philosophy", "meditation"])
+
+        // Generation config
+        XCTAssertEqual(frontMatter.episodesDir, "episodes")
+        XCTAssertEqual(frontMatter.audioDir, "audio")
+        XCTAssertEqual(frontMatter.filePattern?.patterns, ["*.fountain"])
+        XCTAssertEqual(frontMatter.exportFormat, "m4a")
+
+        // Hooks
+        XCTAssertEqual(frontMatter.preGenerateHook, "./scripts/generate-fountain.sh")
+        XCTAssertEqual(frontMatter.postGenerateHook, "./scripts/upload-to-cdn.sh")
+
+        // Body
+        XCTAssertTrue(body.contains("# Production Notes"))
+    }
+
+    func testParse_BackwardCompatibility_NoGenerationConfig() throws {
+        // Old-style PROJECT.md without generation config fields should still parse
+        let content = """
+        ---
+        type: project
+        title: Legacy Project
+        author: Old Author
+        created: 2025-11-17T10:30:00Z
+        description: An old project
+        season: 1
+        episodes: 10
+        ---
+
+        # Notes
+        """
+
+        let (frontMatter, _) = try parser.parse(content: content)
+
+        XCTAssertEqual(frontMatter.title, "Legacy Project")
+        XCTAssertNil(frontMatter.episodesDir)
+        XCTAssertNil(frontMatter.audioDir)
+        XCTAssertNil(frontMatter.filePattern)
+        XCTAssertNil(frontMatter.exportFormat)
+        XCTAssertNil(frontMatter.preGenerateHook)
+        XCTAssertNil(frontMatter.postGenerateHook)
+
+        // Resolved defaults should work
+        XCTAssertEqual(frontMatter.resolvedEpisodesDir, "episodes")
+        XCTAssertEqual(frontMatter.resolvedAudioDir, "audio")
+        XCTAssertEqual(frontMatter.resolvedFilePatterns, ["*.fountain"])
+        XCTAssertEqual(frontMatter.resolvedExportFormat, "m4a")
+    }
+
+    // MARK: - Generation Config Generation Tests
+
+    func testGenerate_WithGenerationConfig() {
+        let frontMatter = ProjectFrontMatter(
+            title: "Config Project",
+            author: "Author",
+            episodesDir: "scripts",
+            audioDir: "output",
+            filePattern: .single("*.fountain"),
+            exportFormat: "aiff"
+        )
+
+        let generated = parser.generate(frontMatter: frontMatter)
+
+        XCTAssertTrue(generated.contains("episodesDir: scripts"))
+        XCTAssertTrue(generated.contains("audioDir: output"))
+        XCTAssertTrue(generated.contains("filePattern: \"*.fountain\""))
+        XCTAssertTrue(generated.contains("exportFormat: aiff"))
+    }
+
+    func testGenerate_WithMultipleFilePatterns() {
+        let frontMatter = ProjectFrontMatter(
+            title: "Multi-Pattern Project",
+            author: "Author",
+            filePattern: .multiple(["*.fountain", "*.fdx"])
+        )
+
+        let generated = parser.generate(frontMatter: frontMatter)
+
+        XCTAssertTrue(generated.contains("filePattern: [\"*.fountain\", \"*.fdx\"]"))
+    }
+
+    func testGenerate_WithHooks() {
+        let frontMatter = ProjectFrontMatter(
+            title: "Hooks Project",
+            author: "Author",
+            preGenerateHook: "./scripts/pre.sh",
+            postGenerateHook: "./scripts/post.sh"
+        )
+
+        let generated = parser.generate(frontMatter: frontMatter)
+
+        XCTAssertTrue(generated.contains("preGenerateHook: \"./scripts/pre.sh\""))
+        XCTAssertTrue(generated.contains("postGenerateHook: \"./scripts/post.sh\""))
+    }
+
+    func testGenerate_WithoutGenerationConfig() {
+        let frontMatter = ProjectFrontMatter(
+            title: "Basic Project",
+            author: "Author"
+        )
+
+        let generated = parser.generate(frontMatter: frontMatter)
+
+        XCTAssertFalse(generated.contains("episodesDir"))
+        XCTAssertFalse(generated.contains("audioDir"))
+        XCTAssertFalse(generated.contains("filePattern"))
+        XCTAssertFalse(generated.contains("exportFormat"))
+        XCTAssertFalse(generated.contains("preGenerateHook"))
+        XCTAssertFalse(generated.contains("postGenerateHook"))
+    }
+
+    // MARK: - Generation Config Round-trip Tests
+
+    func testRoundTrip_WithGenerationConfig() throws {
+        let original = ProjectFrontMatter(
+            title: "Round Trip Config",
+            author: "Author",
+            episodesDir: "scripts",
+            audioDir: "output",
+            filePattern: .single("*.fountain"),
+            exportFormat: "m4a",
+            preGenerateHook: "./pre.sh",
+            postGenerateHook: "./post.sh"
+        )
+
+        let generated = parser.generate(frontMatter: original)
+        let (parsed, _) = try parser.parse(content: generated)
+
+        XCTAssertEqual(parsed.episodesDir, original.episodesDir)
+        XCTAssertEqual(parsed.audioDir, original.audioDir)
+        XCTAssertEqual(parsed.filePattern?.patterns, original.filePattern?.patterns)
+        XCTAssertEqual(parsed.exportFormat, original.exportFormat)
+        XCTAssertEqual(parsed.preGenerateHook, original.preGenerateHook)
+        XCTAssertEqual(parsed.postGenerateHook, original.postGenerateHook)
+    }
+
+    func testRoundTrip_WithMultipleFilePatterns() throws {
+        let original = ProjectFrontMatter(
+            title: "Multi-Pattern Round Trip",
+            author: "Author",
+            filePattern: .multiple(["*.fountain", "*.fdx", "*.highland"])
+        )
+
+        let generated = parser.generate(frontMatter: original)
+        let (parsed, _) = try parser.parse(content: generated)
+
+        XCTAssertEqual(parsed.filePattern?.patterns, original.filePattern?.patterns)
+    }
+
+    // MARK: - Convenience Accessor Tests
+
+    func testResolvedDefaults() {
+        let frontMatter = ProjectFrontMatter(
+            title: "Defaults Test",
+            author: "Author"
+        )
+
+        XCTAssertEqual(frontMatter.resolvedEpisodesDir, "episodes")
+        XCTAssertEqual(frontMatter.resolvedAudioDir, "audio")
+        XCTAssertEqual(frontMatter.resolvedFilePatterns, ["*.fountain"])
+        XCTAssertEqual(frontMatter.resolvedExportFormat, "m4a")
+        XCTAssertFalse(frontMatter.hasGenerationConfig)
+    }
+
+    func testResolvedValues_WhenSet() {
+        let frontMatter = ProjectFrontMatter(
+            title: "Custom Values Test",
+            author: "Author",
+            episodesDir: "scripts",
+            audioDir: "output",
+            filePattern: .multiple(["*.fountain", "*.fdx"]),
+            exportFormat: "wav"
+        )
+
+        XCTAssertEqual(frontMatter.resolvedEpisodesDir, "scripts")
+        XCTAssertEqual(frontMatter.resolvedAudioDir, "output")
+        XCTAssertEqual(frontMatter.resolvedFilePatterns, ["*.fountain", "*.fdx"])
+        XCTAssertEqual(frontMatter.resolvedExportFormat, "wav")
+        XCTAssertTrue(frontMatter.hasGenerationConfig)
+    }
 }

@@ -156,7 +156,16 @@ EOF
 **ProjectFrontMatter** - Codable struct for PROJECT.md metadata
 - YAML front matter representation
 - Required fields: type, title, author, created
-- Optional fields: description, season, episodes, genre, tags
+- Optional metadata fields: description, season, episodes, genre, tags
+- Optional generation config: episodesDir, audioDir, filePattern, exportFormat
+- Optional hooks: preGenerateHook, postGenerateHook
+- Convenience accessors: resolvedEpisodesDir, resolvedAudioDir, resolvedFilePatterns, resolvedExportFormat
+
+**FilePattern** - Flexible file pattern type for generation config
+- Accepts single string or array of strings
+- Normalizes to array via `.patterns` property
+- Supports glob patterns (e.g., "*.fountain") and explicit file lists
+- Codable with automatic string/array detection
 
 **FileNode** - Hierarchical tree structure for file navigation
 - Built from flat ProjectFileReference array
@@ -195,37 +204,126 @@ EOF
 - Does NOT perform git operations (use git library for that)
 
 **ProjectMarkdownParser** - YAML front matter parser using UNIVERSAL
-- Parses PROJECT.md files with YAML front matter
+- Parses PROJECT.md files with YAML front matter (delimited by `---`)
 - Generates PROJECT.md content from ProjectFrontMatter
 - Uses UNIVERSAL library for spec-compliant YAML parsing
-- Properly handles quoted strings, colons in values, and complex arrays
+- Properly handles quoted strings, colons in values, complex arrays, and ISO8601 dates
+- Supports lazy loading: parse PROJECT.md only when needed
+- Two parsing methods: `parse(fileURL:)` and `parse(content:)`
+- Returns tuple of `(ProjectFrontMatter, String)` - front matter and body content
 
 **BookmarkManager** - Security-scoped bookmark utilities
 - Cross-platform (macOS/iOS)
 - Handles bookmark creation, resolution, refresh
 - Platform-specific: macOS uses `.withSecurityScope`, iOS uses `.minimalBookmark`
 
-### File Discovery Pattern
+### PROJECT.md Parsing Pattern
 
-SwiftProyecto discovers files but does NOT load them:
+SwiftProyecto uses **lazy loading** for PROJECT.md parsing. Metadata is only parsed when needed:
 
 ```swift
-// 1. Open/create project
+// 1. Parse PROJECT.md from file URL
+let parser = ProjectMarkdownParser()
+let (frontMatter, body) = try parser.parse(fileURL: projectURL.appendingPathComponent("PROJECT.md"))
+
+// 2. Or parse from string content (for in-memory operations)
+let content = """
+---
+type: project
+title: My Series
+author: Jane Doe
+created: 2025-11-17T10:30:00Z
+season: 1
+episodes: 12
+genre: Science Fiction
+tags: [sci-fi, drama]
+episodesDir: scripts
+audioDir: output
+filePattern: "*.fountain"
+exportFormat: m4a
+preGenerateHook: "./scripts/prepare.sh"
+postGenerateHook: "./scripts/upload.sh"
+---
+
+# Production Notes
+Additional notes here...
+"""
+let (frontMatter, body) = try parser.parse(content: content)
+
+// 3. Access front matter fields
+print(frontMatter.title)       // "My Series"
+print(frontMatter.author)      // "Jane Doe"
+print(frontMatter.season)      // Optional(1)
+print(frontMatter.episodes)    // Optional(12)
+print(frontMatter.tags)        // Optional(["sci-fi", "drama"])
+print(body)                    // "# Production Notes\nAdditional notes here..."
+
+// 4. Access generation config with defaults
+print(frontMatter.resolvedEpisodesDir)   // "scripts" (or "episodes" if nil)
+print(frontMatter.resolvedAudioDir)      // "output" (or "audio" if nil)
+print(frontMatter.resolvedFilePatterns)  // ["*.fountain"]
+print(frontMatter.resolvedExportFormat)  // "m4a"
+print(frontMatter.preGenerateHook)       // Optional("./scripts/prepare.sh")
+
+// 5. Generate PROJECT.md content
+let newFrontMatter = ProjectFrontMatter(
+    title: "New Project",
+    author: "John Writer",
+    season: 2,
+    episodes: 10,
+    episodesDir: "episodes",
+    audioDir: "audio",
+    filePattern: .multiple(["*.fountain", "*.fdx"]),
+    exportFormat: "m4a"
+)
+let markdown = parser.generate(frontMatter: newFrontMatter, body: "# Notes")
+// Produces valid PROJECT.md with YAML front matter
+```
+
+**Key Points**:
+- **Lazy**: PROJECT.md is only parsed when you call `parse()`, not automatically on project open
+- **Stateless**: ProjectMarkdownParser is a stateless utility - no caching, just pure parsing
+- **YAML Front Matter**: Must be delimited by `---` markers
+- **Required Fields**: `type`, `title`, `author`, `created` (validated during parsing)
+- **Optional Metadata Fields**: `description`, `season`, `episodes`, `genre`, `tags`
+- **Optional Generation Config**: `episodesDir`, `audioDir`, `filePattern`, `exportFormat`
+- **Optional Hooks**: `preGenerateHook`, `postGenerateHook`
+- **Date Format**: ISO8601 format for `created` field (e.g., `2025-11-17T10:30:00Z`)
+- **Error Handling**: Throws `ProjectMarkdownParser.ParserError` with detailed error messages
+- **Backward Compatible**: All new fields are optional with sensible defaults
+
+### File Discovery Pattern
+
+SwiftProyecto discovers files and parses PROJECT.md metadata but does NOT load screenplay documents:
+
+```swift
+// 1. Open/create project (automatically parses PROJECT.md)
 let projectService = ProjectService(modelContext: context)
 let project = try await projectService.openProject(at: folderURL)
+// Project metadata is now available (title, author, season, etc.)
 
-// 2. Discover files
+// 2. Discover files (lazy - call when needed)
 try await projectService.discoverFiles(for: project)
 
-// 3. Get security-scoped URL for a file
+// 3. Access PROJECT.md metadata (already parsed during openProject)
+print(project.title)       // From PROJECT.md front matter
+print(project.author)      // From PROJECT.md front matter
+print(project.season)      // Optional field
+
+// 4. Get security-scoped URL for a screenplay file
 let fileRef = project.fileReferences.first!
 let url = try projectService.getSecureURL(for: fileRef, in: project)
 
-// 4. App parses file (using SwiftCompartido or other parser)
+// 5. App parses screenplay file (using SwiftCompartido or other parser)
 let parsed = try await GuionParsedElementCollection(file: url.path)
 
-// 5. App stores document (apps manage integration)
+// 6. App stores document (apps manage integration)
 let document = await GuionDocumentModel.from(parsed, in: context)
+
+// 7. (Optional) Manually parse or regenerate PROJECT.md
+let parser = ProjectMarkdownParser()
+let projectMdURL = folderURL.appendingPathComponent("PROJECT.md")
+let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
 ```
 
 ---
@@ -287,57 +385,125 @@ See `.claude/REFACTORING_PLAN.md` for complete Produciesta integration guide.
 
 ---
 
+## Building
+
+**CRITICAL: Use the correct xcodebuild destination for macOS 26 on Apple Silicon.**
+
+```bash
+# Build and install proyecto CLI to ./bin (Debug, with Metal shaders)
+make install
+
+# Build and install proyecto CLI to ./bin (Release, with Metal shaders)
+make release
+
+# Development build only (swift build - fast but no Metal shaders)
+make build
+
+# Run tests
+make test
+
+# Clean all build artifacts
+make clean
+
+# Show all available targets
+make help
+```
+
+**Manual xcodebuild (if not using Makefile):**
+```bash
+# MUST use this exact destination string for macOS 26 Apple Silicon:
+xcodebuild -scheme proyecto -destination 'platform=macOS,arch=arm64' build
+```
+
+**Destination String:**
+- ✅ CORRECT: `'platform=macOS,arch=arm64'`
+- ❌ WRONG: `'platform=OS X'` (legacy, doesn't specify architecture)
+- ❌ WRONG: `'platform=macOS'` (missing architecture)
+
+---
+
+## proyecto CLI
+
+The `proyecto` CLI uses local LLM inference (via SwiftBruja) to analyze directories and generate PROJECT.md files with appropriate metadata.
+
+### Commands
+
+#### `proyecto init` (default)
+
+Analyzes a directory and generates PROJECT.md metadata using local LLM inference.
+
+```bash
+# Analyze current directory
+proyecto init
+
+# Analyze specific directory
+proyecto init /path/to/podcast
+
+# Override author field
+proyecto init --author "Jane Doe"
+
+# Use specific model
+proyecto init --model ~/Models/Phi-3
+
+# Update existing PROJECT.md (preserves created, body, hooks)
+proyecto init --update
+
+# Force overwrite existing PROJECT.md
+proyecto init --force
+
+# Quiet mode
+proyecto init --quiet
+```
+
+**Options:**
+- `directory` (argument): Directory to analyze (default: current directory)
+- `--model`: Model path or HuggingFace ID (default: mlx-community/Phi-3-mini-4k-instruct-4bit)
+- `--author`: Override the author field (skip LLM detection)
+- `--update`: Update existing PROJECT.md, preserving created date, body content, and hooks
+- `--force`: Completely overwrite existing PROJECT.md
+- `--quiet, -q`: Suppress progress output
+
+**Behavior with existing PROJECT.md:**
+- Default: Error if PROJECT.md exists (prevents accidental overwrites)
+- `--force`: Completely replace existing PROJECT.md
+- `--update`: Preserve created date, body content, and hooks; update other fields
+
+#### `proyecto download`
+
+Downloads an LLM model from HuggingFace for local inference.
+
+```bash
+# Download default model
+proyecto download
+
+# Download specific model
+proyecto download --model "mlx-community/Llama-3-8B"
+
+# Force re-download
+proyecto download --force
+```
+
+**Options:**
+- `--model`: HuggingFace model ID (default: mlx-community/Phi-3-mini-4k-instruct-4bit)
+- `--force`: Re-download even if model exists
+- `--quiet, -q`: Suppress progress output
+
+### LLM Analysis
+
+The `init` command analyzes:
+- Folder name and structure
+- README.md content (if present)
+- File patterns (*.fountain, *.mp3, etc.)
+
+And generates PROJECT.md frontmatter with:
+- title, author, description, genre, tags
+- episodesDir, audioDir, filePattern, exportFormat
+
+---
+
 ## Related Projects
 
 - **SwiftCompartido**: Screenplay parsing and SwiftData document models
 - **SwiftHablare**: TTS and voice provider integration
 - **Produciesta**: macOS/iOS application integrating these libraries
 
----
-
-## 📝 NOTE: Activating in Produciesta
-
-**Current Status** (2025-12-14): Phase 2 integration code exists in Produciesta but is **temporarily disabled** with `#if false` blocks.
-
-### To Enable SwiftProyecto Integration in Produciesta:
-
-1. **Remove `#if false` blocks** from:
-   - `Produciesta/Views/DocumentLoader.swift`
-   - `Produciesta/Views/ProjectBrowserView.swift`
-   - `Produciesta/Views/ProjectFileTreeView.swift`
-
-2. **Uncomment SwiftProyecto** in `ProduciestaApp.swift`:
-   ```swift
-   // Change this:
-   // import SwiftProyecto
-
-   // To this:
-   import SwiftProyecto
-
-   // And uncomment in schema:
-   Schema([
-       // ... existing models
-       ProjectModel.self,
-       ProjectFileReference.self,
-       DocumentRegistry.self
-   ])
-   ```
-
-3. **Add "Open Folder" to WelcomeView**:
-   - Implement folder picker (NSOpenPanel/UIDocumentPickerViewController)
-   - Call `ProjectService.openProject(at:)` and `discoverFiles(for:)`
-   - Navigate to `ProjectBrowserView`
-
-4. **Update Navigation**:
-   - Add `.project(ProjectModel)` route to AppRoute enum
-   - Wire up in MacOSNavigationRoot and IOSNavigationRoot
-
-5. **Test**:
-   - Open folder
-   - Browse file tree
-   - Load documents
-   - Verify caching via DocumentRegistry
-
-See `Produciesta/.claude/PHASE2_IMPLEMENTATION.md` for complete details.
-
-**Why Disabled**: Waiting for SwiftProyecto v2.0 to be merged and released before activating in Produciesta.

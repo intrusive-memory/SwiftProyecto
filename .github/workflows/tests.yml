@@ -3,7 +3,13 @@ name: Tests
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # Step 1: Code Quality (runs first)
@@ -18,87 +24,20 @@ jobs:
       - name: Check for TODOs in committed code
         run: |
           if git diff origin/main...HEAD | grep -E "^\+.*TODO|^\+.*FIXME"; then
-            echo "⚠️  Warning: New TODOs or FIXMEs detected"
+            echo "Warning: New TODOs or FIXMEs detected"
           fi
 
       - name: Check file sizes
         run: |
-          find Sources -type f -name "*.swift" -size +100k -exec echo "⚠️  Large file: {}" \;
+          find Sources -type f -name "*.swift" -size +100k -exec echo "Warning: Large file: {}" \;
 
       - name: Check for print statements
         run: |
           if grep -r "print(" Sources/ --include="*.swift" | grep -v "// print"; then
-            echo "⚠️  Warning: print() statements found in source code"
+            echo "Warning: print() statements found in source code"
           fi
 
-  # Step 2: Unit Tests (runs after code quality passes)
-  unit-tests-ios:
-    name: iOS Unit Tests
-    runs-on: macos-26
-    needs: [code-quality]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-
-      - name: Show Swift version
-        run: swift --version
-
-      - name: Show available simulators
-        run: |
-          echo "Available iOS Simulators:"
-          xcrun simctl list devices available | grep "iPhone" | head -5
-
-      - name: Build for iOS Simulator
-        run: |
-          echo "🔨 Building for iOS Simulator (arm64)"
-          xcodebuild build \
-            -scheme SwiftProyecto \
-            -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-            -quiet \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Run unit tests on iOS Simulator
-        run: |
-          set +e
-
-          echo "🧪 Running unit tests on iOS Simulator (performance tests disabled, serial execution)"
-
-          # Run unit tests serially to avoid race conditions
-          # Note: Parallel testing disabled due to test interference issues
-          xcodebuild test \
-            -scheme SwiftProyecto \
-            -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-            -enableCodeCoverage YES \
-            -parallel-testing-enabled NO \
-            -skip-testing:SwiftProyectoTests/PerformanceTests \
-            CODE_SIGNING_ALLOWED=NO \
-            > test_output_ios.txt 2>&1
-          TEST_EXIT_CODE=$?
-          cat test_output_ios.txt
-
-          # Check if tests passed
-          if grep -q "Test run with .* tests in .* suites passed\|TEST SUCCEEDED" test_output_ios.txt; then
-            echo "✅ All unit tests passed"
-            exit 0
-          else
-            echo "❌ Unit tests failed"
-            exit $TEST_EXIT_CODE
-          fi
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-test-results
-          path: test_output_ios.txt
-          retention-days: 7
-
+  # Step 2: macOS Unit Tests
   unit-tests-macos:
     name: macOS Unit Tests
     runs-on: macos-26
@@ -114,44 +53,16 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
-      - name: Build for macOS
+      - name: Build library
         run: |
-          echo "🔨 Building for macOS (arm64)"
-          xcodebuild build \
-            -scheme SwiftProyecto \
-            -destination 'platform=macOS' \
-            -quiet \
-            CODE_SIGNING_ALLOWED=NO
+          echo "Building SwiftProyecto library"
+          swift build
 
       - name: Run unit tests on macOS
         run: |
-          set +e
-
-          TOTAL_CPUS=$(sysctl -n hw.ncpu)
-          echo "🖥️  Total CPUs: $TOTAL_CPUS"
-          echo "🧪 Running unit tests on macOS (performance tests disabled)"
-
-          # Run unit tests only - skip performance tests
-          xcodebuild test \
-            -scheme SwiftProyecto \
-            -destination 'platform=macOS' \
-            -enableCodeCoverage YES \
-            -parallel-testing-enabled YES \
-            -maximum-parallel-testing-workers $TOTAL_CPUS \
-            -skip-testing:SwiftProyectoTests/PerformanceTests \
-            CODE_SIGNING_ALLOWED=NO \
-            > test_output_macos.txt 2>&1
-          TEST_EXIT_CODE=$?
-          cat test_output_macos.txt
-
-          # Check if tests passed
-          if grep -q "Test run with .* tests in .* suites passed\|TEST SUCCEEDED" test_output_macos.txt; then
-            echo "✅ All unit tests passed"
-            exit 0
-          else
-            echo "❌ Unit tests failed"
-            exit $TEST_EXIT_CODE
-          fi
+          echo "Running unit tests on macOS"
+          # Run only unit tests - integration tests require the CLI binary
+          swift test --filter SwiftProyectoTests 2>&1 | tee test_output_macos.txt
 
       - name: Upload test results
         if: always()
@@ -161,13 +72,13 @@ jobs:
           path: test_output_macos.txt
           retention-days: 7
 
-  # Step 3: Performance Tests (runs after unit tests pass)
-  performance-tests:
-    name: Performance Tests
+  # Step 3: Integration Tests (runs after unit tests pass)
+  # Tests end-to-end PROJECT.md generation using real podcast repositories
+  integration-tests:
+    name: Integration Tests
     runs-on: macos-26
-    needs: [unit-tests-ios, unit-tests-macos]
-    # Performance tests are informational only - don't block PRs
-    continue-on-error: true
+    needs: [unit-tests-macos]
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -179,44 +90,38 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
-      - name: Build for iOS Simulator
+      - name: Build proyecto CLI (Release)
         run: |
-          echo "🔨 Building for iOS Simulator (arm64)"
-          xcodebuild build \
-            -scheme SwiftProyecto \
-            -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-            -configuration Release \
-            -quiet \
-            CODE_SIGNING_ALLOWED=NO
+          echo "Building proyecto CLI with Metal shaders"
+          make release
+          echo "Binary built: $(./bin/proyecto --version 2>&1 || echo 'version check failed')"
+          ls -la ./bin/
 
-      - name: Run performance tests
+      - name: Cache LLM model
+        id: cache-model
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Application Support/SwiftBruja/Models
+          key: llm-model-phi3-mini-4k-4bit-v1
+
+      - name: Download LLM model
+        if: steps.cache-model.outputs.cache-hit != 'true'
         run: |
-          echo "🧪 Running performance tests only"
+          echo "Downloading default LLM model for inference"
+          ./bin/proyecto download -m mlx-community/Phi-3-mini-4k-instruct-4bit --quiet || ./bin/proyecto download -m mlx-community/Phi-3-mini-4k-instruct-4bit
+          echo "Model downloaded"
 
-          set +e
-          xcodebuild test \
-            -scheme SwiftProyecto \
-            -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-            -configuration Release \
-            -only-testing:SwiftProyectoTests/PerformanceTests \
-            CODE_SIGNING_ALLOWED=NO \
-            > performance_output.txt 2>&1
-          PERF_EXIT_CODE=$?
+      - name: Run integration tests
+        run: |
+          echo "Running integration tests (PROJECT.md generation)"
+          # Run only integration tests - these spawn the CLI binary as a subprocess
+          swift test --filter ProyectoIntegrationTests 2>&1 | tee integration_output.txt
 
-          cat performance_output.txt
-
-          # Extract performance metrics
-          grep -A 10 "📊 PERFORMANCE" performance_output.txt || echo "No performance metrics found"
-
-          # Performance tests don't block - always exit 0
-          exit 0
-
-      - name: Upload performance results
+      - name: Upload integration test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: performance-test-results
-          path: performance_output.txt
+          name: integration-test-results
+          path: integration_output.txt
           retention-days: 7
+

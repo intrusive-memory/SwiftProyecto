@@ -135,6 +135,28 @@ public struct ProjectMarkdownParser {
             yaml += "tags: [\(tags.joined(separator: ", "))]\n"
         }
 
+        // Generation configuration fields
+        if let episodesDir = frontMatter.episodesDir {
+            yaml += "episodesDir: \(episodesDir)\n"
+        }
+        if let audioDir = frontMatter.audioDir {
+            yaml += "audioDir: \(audioDir)\n"
+        }
+        if let filePattern = frontMatter.filePattern {
+            yaml += "filePattern: \(formatFilePattern(filePattern))\n"
+        }
+        if let exportFormat = frontMatter.exportFormat {
+            yaml += "exportFormat: \(exportFormat)\n"
+        }
+
+        // Hook fields
+        if let preGenerateHook = frontMatter.preGenerateHook {
+            yaml += "preGenerateHook: \"\(preGenerateHook)\"\n"
+        }
+        if let postGenerateHook = frontMatter.postGenerateHook {
+            yaml += "postGenerateHook: \"\(postGenerateHook)\"\n"
+        }
+
         yaml += "---\n"
 
         if !body.isEmpty {
@@ -142,6 +164,16 @@ public struct ProjectMarkdownParser {
         }
 
         return yaml
+    }
+
+    /// Format a FilePattern for YAML output.
+    private func formatFilePattern(_ pattern: FilePattern) -> String {
+        switch pattern {
+        case .single(let value):
+            return "\"\(value)\""
+        case .multiple(let values):
+            return "[\(values.map { "\"\($0)\"" }.joined(separator: ", "))]"
+        }
     }
 
     // MARK: - Private Helpers

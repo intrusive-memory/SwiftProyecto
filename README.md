@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="SwiftProyecto.jpg" alt="SwiftProyecto" width="200" height="200">
+</p>
+
 # SwiftProyecto
 
 <p align="center">
@@ -14,7 +18,10 @@
 SwiftProyecto provides:
 - **File Discovery**: Recursively discover files in project folders or git repositories via FileSource abstraction
 - **Secure File Access**: Security-scoped bookmarks for sandboxed macOS/iOS apps
-- **PROJECT.md Parsing**: YAML front matter parser using UNIVERSAL library for spec-compliant parsing
+- **PROJECT.md Parsing**: Lazy-loaded YAML front matter parser using UNIVERSAL library
+  - Parse PROJECT.md metadata (title, author, season, episodes, genre, tags)
+  - Generate PROJECT.md files from `ProjectFrontMatter` structs
+  - Stateless utility with `parse(fileURL:)` and `parse(content:)` methods
 - **Project Models**: SwiftData models for project metadata and file references
 - **FileNode**: Hierarchical file tree structure for UI display
 - **ProjectService**: Project lifecycle management (create, open, sync, get file URLs)
@@ -22,8 +29,8 @@ SwiftProyecto provides:
 
 **What SwiftProyecto Does NOT Do:**
 - ❌ Parse screenplay files (no SwiftCompartido dependency)
-- ❌ Load document content into memory automatically
-- ❌ Manage loading state or caching
+- ❌ Load screenplay document content into memory automatically
+- ❌ Manage screenplay document loading state or caching
 
 **Integration Pattern:**
 Apps using SwiftProyecto call `getSecureURL(for:in:)` to get a file URL, then parse it with their own parsers (e.g., SwiftCompartido). See the "Integration with Document Parsers" section for details.
@@ -105,7 +112,11 @@ SwiftProyecto uses a pluggable FileSource abstraction for discovering files:
 
 - **FileSource Abstraction**: Pluggable file discovery via `DirectoryFileSource` and `GitRepositoryFileSource`
 - **File Discovery**: Recursively discover all files in project directories or git repos
-- **PROJECT.md Parser**: YAML front matter parser using UNIVERSAL library for spec-compliant parsing
+- **PROJECT.md Parser**: Lazy-loaded YAML front matter parser using UNIVERSAL library
+  - Parse from file URL or string content
+  - Generate PROJECT.md with type-safe `ProjectFrontMatter` struct
+  - Stateless utility for easy testing and integration
+  - Spec-compliant YAML parsing (handles complex arrays, quoted strings, ISO8601 dates)
 - **Security-Scoped Bookmarks**: Per-project AND per-file bookmark support for sandboxed apps
 - **FileNode Tree**: Hierarchical file tree with sorted children (directories first)
 - **SwiftData Models**: `ProjectModel` and `ProjectFileReference` with cascade delete
@@ -163,6 +174,8 @@ my-series-project/              ← Project root
 
 ### PROJECT.md Format
 
+PROJECT.md uses YAML front matter delimited by `---` to store project metadata:
+
 ```markdown
 ---
 type: project
@@ -180,6 +193,19 @@ tags: [sci-fi, drama]
 
 Additional notes and production information go here...
 ```
+
+**Required Fields**:
+- `type`: Must be "project"
+- `title`: Project title
+- `author`: Project author
+- `created`: ISO8601 date (e.g., `2025-11-17T10:30:00Z`)
+
+**Optional Fields**:
+- `description`: Project description
+- `season`: Season number (integer)
+- `episodes`: Episode count (integer)
+- `genre`: Genre string
+- `tags`: Array of tag strings
 
 ### Basic Usage
 
@@ -254,9 +280,70 @@ displayTree(tree)
 //   📄 Episode 2.fountain
 ```
 
+#### Parsing PROJECT.md (Lazy Loading)
+
+SwiftProyecto uses **lazy loading** for PROJECT.md parsing. The file is automatically parsed during `openProject()`, but you can also parse it manually:
+
+```swift
+import SwiftProyecto
+
+// Automatic parsing (happens during openProject)
+let project = try await service.openProject(at: folderURL)
+print(project.title)    // Metadata from PROJECT.md
+print(project.author)   // Already parsed
+print(project.season)   // Optional field
+
+// Manual parsing (if you need to re-read or parse standalone)
+let parser = ProjectMarkdownParser()
+let projectMdURL = folderURL.appendingPathComponent("PROJECT.md")
+
+// Parse from file URL
+let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
+print(frontMatter.title)       // "My Series"
+print(frontMatter.author)      // "Jane Showrunner"
+print(frontMatter.season)      // Optional(1)
+print(frontMatter.episodes)    // Optional(12)
+print(frontMatter.tags)        // Optional(["sci-fi", "drama"])
+print(body)                    // "# Project Notes\n..."
+
+// Parse from string content
+let content = """
+---
+type: project
+title: My Series
+author: Jane Doe
+created: 2025-11-17T10:30:00Z
+---
+
+# Notes
+"""
+let (fm, bodyText) = try parser.parse(content: content)
+
+// Generate PROJECT.md content
+let newFrontMatter = ProjectFrontMatter(
+    title: "New Project",
+    author: "John Writer",
+    created: Date(),
+    season: 2,
+    episodes: 10,
+    genre: "Drama",
+    tags: ["drama", "mystery"]
+)
+let markdown = parser.generate(frontMatter: newFrontMatter, body: "# Production Notes")
+// Write to file or display in UI
+```
+
+**Parser Features**:
+- **Lazy Loading**: Parse only when needed (not automatically on every file access)
+- **Stateless**: ProjectMarkdownParser has no internal state, just pure functions
+- **Type-Safe**: Returns strongly-typed `ProjectFrontMatter` struct
+- **Error Handling**: Throws descriptive errors for invalid YAML or missing fields
+- **Two-Way**: Parse existing PROJECT.md OR generate new ones
+- **UNIVERSAL Library**: Uses spec-compliant YAML parser (handles complex arrays, quoted strings, colons in values)
+
 ### Integration with Document Parsers
 
-SwiftProyecto v2.0 focuses on **file discovery**, not document parsing. To integrate with a parser like SwiftCompartido, create an integration layer in your app:
+SwiftProyecto v2.0 focuses on **file discovery and PROJECT.md parsing**, not screenplay document parsing. To integrate with a screenplay parser like SwiftCompartido, create an integration layer in your app:
 
 ```swift
 import SwiftData
@@ -332,18 +419,96 @@ struct DocumentLoader<Content: View>: View {
 
 See `.claude/PHASE2_IMPLEMENTATION.md` in the Produciesta repository for a complete integration example.
 
+## proyecto CLI
+
+SwiftProyecto includes a command-line tool (`proyecto`) that uses local LLM inference to analyze directories and generate PROJECT.md files with appropriate metadata.
+
+### Installation
+
+```bash
+# Build and install to ./bin
+make install
+
+# Or for release build
+make release
+```
+
+### Commands
+
+#### `proyecto init` (default)
+
+Analyzes a directory and generates PROJECT.md using local LLM inference.
+
+```bash
+# Analyze current directory
+proyecto init
+
+# Analyze specific directory
+proyecto init /path/to/podcast
+
+# Override author field
+proyecto init --author "Jane Doe"
+
+# Update existing PROJECT.md (preserves created date, body, hooks)
+proyecto init --update
+
+# Force overwrite existing PROJECT.md
+proyecto init --force
+```
+
+**Options:**
+- `directory` (argument): Directory to analyze (default: current directory)
+- `--model`: Model path or HuggingFace ID (default: mlx-community/Phi-3-mini-4k-instruct-4bit)
+- `--author`: Override the author field
+- `--update`: Update existing PROJECT.md, preserving created date, body content, and hooks
+- `--force`: Completely overwrite existing PROJECT.md
+- `--quiet, -q`: Suppress progress output
+
+**Behavior with existing PROJECT.md:**
+- Default: Error if PROJECT.md exists (prevents accidental overwrites)
+- `--force`: Completely replace existing PROJECT.md
+- `--update`: Preserve created date, body content, and hooks; update other fields
+
+#### `proyecto download`
+
+Downloads an LLM model from HuggingFace.
+
+```bash
+# Download default model
+proyecto download
+
+# Download specific model
+proyecto download --model "mlx-community/Llama-3-8B"
+```
+
+### LLM Analysis
+
+The `init` command analyzes:
+- Folder name and structure
+- README.md content (if present)
+- File patterns (*.fountain, *.mp3, etc.)
+
+And generates PROJECT.md frontmatter with:
+- title, author, description, genre, tags
+- episodesDir, audioDir, filePattern, exportFormat
+
 ## Development
 
 ### Requirements
 
-- Swift 6.2+
+- **macOS 26.0+** or **iOS 26.0+**
+- **Apple Silicon only** (M1/M2/M3/M4) - NO Intel support
+- **Swift 6.2+**
 - Xcode 16.0+
-- macOS 26.0+ or iOS 26.0+
 
 ### Building
 
 ```bash
+# Library only (swift build)
 swift build
+
+# CLI with Metal shaders (xcodebuild)
+make install
 ```
 
 ### Testing
@@ -510,25 +675,20 @@ SwiftProyecto is released under the MIT License. See [LICENSE](./LICENSE) for de
 
 ## Status
 
-### ✅ v2.0.0-beta - File Discovery Focus
+### ✅ v2.0.0 - File Discovery Focus
 
-SwiftProyecto v2.0 is a major refactoring focused on **file discovery and secure access only**. Document parsing has been removed to eliminate the circular dependency with SwiftCompartido.
+SwiftProyecto v2.0 is a major refactoring focused on **file discovery, PROJECT.md parsing, and secure access**. Screenplay document parsing has been removed to eliminate circular dependency with SwiftCompartido.
 
 **Current Status**:
 - ✅ SwiftCompartido dependency removed
 - ✅ Document loading methods removed (~300 LOC)
 - ✅ FileSource abstraction implemented (DirectoryFileSource, GitRepositoryFileSource)
-- ✅ PROJECT.md parser using UNIVERSAL library (spec-compliant YAML)
+- ✅ PROJECT.md parser using UNIVERSAL library (spec-compliant YAML, lazy loading)
 - ✅ Per-file bookmark support added
 - ✅ FileNode tree structure complete
 - ✅ All 184 tests passing with v2.0 API
-- 🔄 Awaiting PR merge and v2.0.0 release
-- 🔄 Produciesta integration layer ready (currently disabled)
+- ✅ v2.0.0 released
 
-**Stability**: v2.0 introduces breaking changes. See "Migration from v1.x" section above.
+**Stability**: v2.0 introduces breaking changes. See "Migration from v1.x" section above for upgrade guide.
 
-**Next Steps**:
-1. ~~Update test suite to match v2.0 API~~ ✅ Complete (184 tests passing)
-2. Merge PR and tag v2.0.0
-3. Activate integration layer in Produciesta
-4. Update dependent apps
+**Integration**: Apps integrate SwiftProyecto with their own screenplay parsers (e.g., SwiftCompartido) via DocumentRegistry pattern.
