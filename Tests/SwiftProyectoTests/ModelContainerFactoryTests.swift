@@ -79,7 +79,6 @@ final class ModelContainerFactoryTests: XCTestCase {
         let cacheURL = projectURL.appendingPathComponent(".cache")
         XCTAssertTrue(FileManager.default.fileExists(atPath: cacheURL.path))
 
-        let storeURL = cacheURL.appendingPathComponent("default.store")
         // Store might not exist yet if no data has been saved, but cache dir should exist
         XCTAssertTrue(FileManager.default.fileExists(atPath: cacheURL.path))
     }
