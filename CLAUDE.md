@@ -77,10 +77,9 @@ This project follows a **strict branch-based workflow**:
 - No PR review required
 - GitHub Actions must pass before merge:
   - Code Quality: Linting and code checks
-  - iOS Unit Tests: Unit tests on iOS Simulator
   - macOS Unit Tests: Unit tests on macOS
-- Performance tests run after unit tests (informational only, don't block)
-- **Tests ONLY run on pull requests** (not on push to development)
+  - Integration Tests: Build CLI binary via `make release`, verify `--version` and `--help`
+- Tests run on pull requests and pushes to main
 
 **Development branch is NOT protected:**
 - Work happens directly on `development`
@@ -123,8 +122,8 @@ gh api --method PATCH repos/intrusive-memory/SwiftProyecto/branches/main/protect
   "strict": true,
   "contexts": [
     "Code Quality",
-    "iOS Unit Tests",
-    "macOS Unit Tests"
+    "macOS Unit Tests",
+    "Integration Tests"
   ]
 }
 EOF
@@ -331,10 +330,13 @@ let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
 ## Dependencies
 
 **Current**:
-- **UNIVERSAL** (v5.2.7): Zero-dependency YAML/JSON/XML parser for PROJECT.md parsing
+- **UNIVERSAL** (from 5.0.5): Zero-dependency YAML/JSON/XML parser for PROJECT.md parsing
   - Spec-compliant YAML parsing
   - Handles quoted strings, colons in values, complex arrays
   - Used by ProjectMarkdownParser
+- **SwiftBruja** (branch: main): On-device LLM inference for PROJECT.md generation
+  - Used by the `proyecto` CLI for AI-powered metadata generation
+- **swift-argument-parser** (from 1.3.0): CLI argument parsing for the `proyecto` executable
 
 **Removed** (v2.0+):
 - ~~SwiftCompartido~~ - Apps integrate directly

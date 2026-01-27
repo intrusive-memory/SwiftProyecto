@@ -203,9 +203,9 @@ public enum BookmarkManager {
     /// - Returns: The result of the operation
     /// - Throws: `BookmarkError` if access fails, or any error thrown by the operation
     ///
-    /// - Note: This method is marked as nonisolated(unsafe) to allow use from actor-isolated contexts.
+    /// - Note: This method is nonisolated to allow use from actor-isolated contexts.
     ///         The caller is responsible for ensuring thread safety.
-    nonisolated(unsafe) public static func withAccess<T>(
+    nonisolated public static func withAccess<T>(
         _ url: URL,
         bookmarkData: Data? = nil,
         operation: (URL) async throws -> T

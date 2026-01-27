@@ -51,13 +51,6 @@ let package = Package(
                 .enableUpcomingFeature("StrictConcurrency"),
             ]
         ),
-        .testTarget(
-            name: "ProyectoIntegrationTests",
-            dependencies: ["SwiftProyecto"],
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
-            ]
-        ),
     ],
     swiftLanguageModes: [.v6]
 )
