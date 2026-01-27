@@ -32,7 +32,7 @@ struct ProyectoCLI: AsyncParsableCommand {
               proyecto init --update            # Update existing PROJECT.md
               proyecto download                 # Download default LLM model
             """,
-        version: "2.1.1",
+        version: "2.1.2",
         subcommands: [InitCommand.self, DownloadCommand.self],
         defaultSubcommand: InitCommand.self
     )
@@ -46,7 +46,7 @@ struct DownloadCommand: AsyncParsableCommand {
         abstract: "Download an LLM model for use with proyecto",
         discussion: """
             Downloads a model from HuggingFace for local LLM inference.
-            Models are stored in ~/Library/Application Support/SwiftBruja/Models/
+            Models are stored in ~/Library/Caches/intrusive-memory/Models/LLM/
 
             The default model is optimized for PROJECT.md generation:
               mlx-community/Phi-3-mini-4k-instruct-4bit (~2.15 GB)
