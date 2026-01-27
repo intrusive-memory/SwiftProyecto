@@ -7,10 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [2.1.1] - 2026-01-27
+
 ### Fixed
 
 - **Release Workflow** - Include `mlx-swift_Cmlx.bundle` (Metal shader library) in release tarball
-- **Version Numbers** - Fixed library and CLI version strings to match v2.1.0 tag
+- **Version Numbers** - Fixed library and CLI version strings to match release tag
 
 ---
 
@@ -356,7 +360,8 @@ This release completes a major refactoring that transforms SwiftProyecto into a 
 - Basic tests pass (version check, placeholder test)
 - Repository published to GitHub
 
-[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.0...v2.1.1
 [0.5.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.2.0...v0.3.0
