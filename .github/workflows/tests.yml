@@ -61,7 +61,6 @@ jobs:
       - name: Run unit tests on macOS
         run: |
           echo "Running unit tests on macOS"
-          # Run only unit tests - integration tests require the CLI binary
           swift test --filter SwiftProyectoTests 2>&1 | tee test_output_macos.txt
 
       - name: Upload test results
@@ -72,4 +71,32 @@ jobs:
           path: test_output_macos.txt
           retention-days: 7
 
+  # Step 3: Integration Tests (CLI binary smoke test)
+  integration-tests:
+    name: Integration Tests
+    runs-on: macos-26
+    needs: [code-quality]
+    timeout-minutes: 15
 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Build proyecto CLI (Release)
+        run: |
+          make release
+          ls -la ./bin/
+
+      - name: Verify CLI binary
+        run: |
+          echo "Checking proyecto --version"
+          ./bin/proyecto --version
+          echo "Checking proyecto --help"
+          ./bin/proyecto --help
+          echo "Checking proyecto init --help"
+          ./bin/proyecto init --help
+          echo "Checking proyecto download --help"
+          ./bin/proyecto download --help
