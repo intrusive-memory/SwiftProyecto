@@ -9,12 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Release Workflow** - Include `mlx-swift_Cmlx.bundle` (Metal shader library) in release tarball
+- **Version Numbers** - Fixed library and CLI version strings to match v2.1.0 tag
+
+---
+
+## [2.1.0] - 2026-01-26
+
+### Fixed
+
 - **SwiftBruja Dependency** - Use version tag instead of branch reference for stability
-- **Version Numbers** - Fixed library and CLI version to display 2.0.1
 
 ### Changed
 
 - **CI/CD Updates** - Removed performance tests, only macOS tests run on PRs
+- **Homebrew Distribution** - Added release workflow with Metal bundle packaging
+- **proyecto CLI** - Added command-line tool for PROJECT.md generation
 
 ---
 
