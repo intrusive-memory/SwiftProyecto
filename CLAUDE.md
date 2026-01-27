@@ -216,6 +216,25 @@ EOF
 - Handles bookmark creation, resolution, refresh
 - Platform-specific: macOS uses `.withSecurityScope`, iOS uses `.minimalBookmark`
 
+### proyecto CLI Components (v2.2.0+)
+
+**DirectoryAnalyzer** - Analyzes project directories for LLM context
+- Gathers file listings, README content, git author, directory structure
+- Executes once per project analysis, result reused for all LLM queries
+- Returns `DirectoryContext` with all analyzed information
+
+**ProjectSection** - Enum defining metadata sections for iterative generation
+- 8 sections: title, author, description, genre, tags, season, episodes, config
+- Each section has focused prompt templates tailored to specific metadata
+- Sections build on previous results (e.g., description uses title)
+
+**IterativeProjectGenerator** - Orchestrates sequential LLM queries
+- Queries LLM 8 times with focused prompts (one per section)
+- Provides progress callbacks for UI feedback
+- Handles response parsing and validation
+- Assembles final `ProjectFrontMatter` from individual section results
+- Robust error handling with section-specific retry capability
+
 ### PROJECT.md Parsing Pattern
 
 SwiftProyecto uses **lazy loading** for PROJECT.md parsing. Metadata is only parsed when needed:
@@ -428,6 +447,24 @@ xcodebuild -scheme proyecto -destination 'platform=macOS,arch=arm64' build
 
 The `proyecto` CLI uses local LLM inference (via SwiftBruja) to analyze directories and generate PROJECT.md files with appropriate metadata.
 
+### Installation
+
+The CLI can be installed via Homebrew or built from source:
+
+**Homebrew (Recommended):**
+```bash
+brew tap intrusive-memory/tap
+brew install proyecto
+proyecto --version
+```
+
+**Build from Source:**
+```bash
+make install  # Debug build with Metal shaders
+make release  # Release build with Metal shaders
+./bin/proyecto --version
+```
+
 ### Commands
 
 #### `proyecto init` (default)
@@ -490,16 +527,46 @@ proyecto download --force
 - `--force`: Re-download even if model exists
 - `--quiet, -q`: Suppress progress output
 
-### LLM Analysis
+### Iterative LLM Architecture (v2.2.0+)
 
-The `init` command analyzes:
-- Folder name and structure
-- README.md content (if present)
-- File patterns (*.fountain, *.mp3, etc.)
+The `proyecto init` command uses an **iterative LLM approach** with 8 focused queries instead of one large request:
 
-And generates PROJECT.md frontmatter with:
-- title, author, description, genre, tags
-- episodesDir, audioDir, filePattern, exportFormat
+**Components:**
+- **DirectoryContext** - Gathers directory analysis once, reused for all queries
+- **ProjectSection** - Enum defining 8 sections with focused prompt templates
+- **IterativeProjectGenerator** - Orchestrates sequential LLM queries with progress feedback
+
+**Sections Queried (in order):**
+1. **Title** - Analyzes folder name, files, README for project title
+2. **Author** - Checks git config, README, file metadata for author
+3. **Description** - Generates 1-2 sentence description based on title and structure
+4. **Genre** - Categorizes project (Philosophy, Education, Drama, Sci-Fi, etc.)
+5. **Tags** - Generates 3-5 relevant tags based on title, description, genre
+6. **Season** - Detects season numbers from folder/file patterns
+7. **Episodes** - Counts episode files (*.fountain, *.fdx, etc.)
+8. **Config** - Suggests episodesDir, audioDir, filePattern, exportFormat
+
+**Benefits:**
+- Smaller, focused prompts improve LLM accuracy
+- Real-time progress visibility (`[Title] ✓ Title: My Project`)
+- Better fault tolerance (retry individual sections)
+- Context building (later sections reference earlier results)
+- Successfully handles large projects (tested with 366 episodes)
+
+**Example Output:**
+```
+[Title] Analyzing directory structure...
+[Title] Querying LLM for Title...
+[Title] ✓ Title: Space Exploration Podcast
+[Author] Using author override: Tom Stovall
+[Description] Querying LLM for Description...
+[Description] ✓ Description: A science fiction podcast series...
+[Genre] ✓ Genre: Science Fiction
+[Tags] ✓ Tags: space, sci-fi, podcast, adventure
+[Season] ✓ Season: 1
+[Episodes] ✓ Episodes: 12
+[Generation Config] ✓ Generation Config: episodesDir=episodes...
+```
 
 ---
 
