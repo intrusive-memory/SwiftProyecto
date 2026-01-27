@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **SwiftBruja Dependency** - Use version tag instead of branch reference for stability
-- **Version Numbers** - Fixed library and CLI version to display 2.0.0
+- **Version Numbers** - Fixed library and CLI version to display 2.0.1
 
 ### Changed
 
