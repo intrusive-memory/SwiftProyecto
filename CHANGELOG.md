@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **SwiftBruja Dependency** - Use version tag instead of branch reference for stability
+
+### Changed
+
+- **CI/CD Updates** - Removed performance tests, only macOS tests run on PRs
+
+---
+
+## [2.0.0] - 2026-01-20
+
+### Added
+
+- **proyecto CLI** - Command-line tool for PROJECT.md generation using local LLM inference
+  - `proyecto init` - Analyze directory and generate PROJECT.md with AI
+  - `proyecto download` - Download LLM models from HuggingFace
+  - Uses SwiftBruja for on-device LLM inference (no cloud API)
+
+- **Metal Shader Support** - Proper Metal shader bundle copying for LLM inference
+
+- **LLM Model Caching** - CI caches LLM models for faster integration tests
+
+### Changed
+
+- **Major Refactoring** - Library redesigned as file source abstraction layer
+  - Removed iOS-specific code
+  - Removed file format filtering
+  - Focus on file discovery and PROJECT.md management
+
 ---
 
 ## [0.6.0] - 2025-11-26

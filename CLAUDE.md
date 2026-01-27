@@ -385,6 +385,122 @@ See `.claude/REFACTORING_PLAN.md` for complete Produciesta integration guide.
 
 ---
 
+## Building
+
+**CRITICAL: Use the correct xcodebuild destination for macOS 26 on Apple Silicon.**
+
+```bash
+# Build and install proyecto CLI to ./bin (Debug, with Metal shaders)
+make install
+
+# Build and install proyecto CLI to ./bin (Release, with Metal shaders)
+make release
+
+# Development build only (swift build - fast but no Metal shaders)
+make build
+
+# Run tests
+make test
+
+# Clean all build artifacts
+make clean
+
+# Show all available targets
+make help
+```
+
+**Manual xcodebuild (if not using Makefile):**
+```bash
+# MUST use this exact destination string for macOS 26 Apple Silicon:
+xcodebuild -scheme proyecto -destination 'platform=macOS,arch=arm64' build
+```
+
+**Destination String:**
+- ✅ CORRECT: `'platform=macOS,arch=arm64'`
+- ❌ WRONG: `'platform=OS X'` (legacy, doesn't specify architecture)
+- ❌ WRONG: `'platform=macOS'` (missing architecture)
+
+---
+
+## proyecto CLI
+
+The `proyecto` CLI uses local LLM inference (via SwiftBruja) to analyze directories and generate PROJECT.md files with appropriate metadata.
+
+### Commands
+
+#### `proyecto init` (default)
+
+Analyzes a directory and generates PROJECT.md metadata using local LLM inference.
+
+```bash
+# Analyze current directory
+proyecto init
+
+# Analyze specific directory
+proyecto init /path/to/podcast
+
+# Override author field
+proyecto init --author "Jane Doe"
+
+# Use specific model
+proyecto init --model ~/Models/Phi-3
+
+# Update existing PROJECT.md (preserves created, body, hooks)
+proyecto init --update
+
+# Force overwrite existing PROJECT.md
+proyecto init --force
+
+# Quiet mode
+proyecto init --quiet
+```
+
+**Options:**
+- `directory` (argument): Directory to analyze (default: current directory)
+- `--model`: Model path or HuggingFace ID (default: mlx-community/Phi-3-mini-4k-instruct-4bit)
+- `--author`: Override the author field (skip LLM detection)
+- `--update`: Update existing PROJECT.md, preserving created date, body content, and hooks
+- `--force`: Completely overwrite existing PROJECT.md
+- `--quiet, -q`: Suppress progress output
+
+**Behavior with existing PROJECT.md:**
+- Default: Error if PROJECT.md exists (prevents accidental overwrites)
+- `--force`: Completely replace existing PROJECT.md
+- `--update`: Preserve created date, body content, and hooks; update other fields
+
+#### `proyecto download`
+
+Downloads an LLM model from HuggingFace for local inference.
+
+```bash
+# Download default model
+proyecto download
+
+# Download specific model
+proyecto download --model "mlx-community/Llama-3-8B"
+
+# Force re-download
+proyecto download --force
+```
+
+**Options:**
+- `--model`: HuggingFace model ID (default: mlx-community/Phi-3-mini-4k-instruct-4bit)
+- `--force`: Re-download even if model exists
+- `--quiet, -q`: Suppress progress output
+
+### LLM Analysis
+
+The `init` command analyzes:
+- Folder name and structure
+- README.md content (if present)
+- File patterns (*.fountain, *.mp3, etc.)
+
+And generates PROJECT.md frontmatter with:
+- title, author, description, genre, tags
+- episodesDir, audioDir, filePattern, exportFormat
+
+---
+
 ## Related Projects
 
 - **SwiftCompartido**: Screenplay parsing and SwiftData document models
