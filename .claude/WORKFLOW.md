@@ -170,51 +170,45 @@ Follow **Semantic Versioning** (semver):
 
 ### Test Pipeline Structure
 
-SwiftProyecto uses a **sequential test pipeline**:
+SwiftProyecto uses a **parallel test pipeline**:
 
 ```
-Pull Request/Push
+Pull Request / Push to main
     ↓
 ┌────────────────────────────┐
-│  Tests                     │  ← Unit tests (required)
-│  - iOS Simulator           │
-│  - macOS                   │
-│  - Code Quality            │
+│  Code Quality              │  ← Lint, file size, print checks
 └────────────┬───────────────┘
              ↓
-        ✅ Success?
-             ↓
-┌────────────────────────────┐
-│  Performance Tests         │  ← Performance benchmarks (informational)
-│  - Runs ONLY after         │
-│    unit tests succeed      │
-└────────────────────────────┘
+    ┌────────┴────────┐
+    ↓                 ↓
+┌──────────────┐  ┌──────────────┐
+│ macOS Unit   │  │ Integration  │
+│ Tests        │  │ Tests        │
+│ (swift test) │  │ (CLI smoke)  │
+└──────────────┘  └──────────────┘
 ```
 
 **Key Points:**
-- **Unit tests run first** - Tests workflow
-- **Performance tests run second** - Only if unit tests pass
-- **Performance tests don't block PRs** - `continue-on-error: true`
-- **Both workflows must complete** for full CI success
+- **Code Quality runs first** — gates both test jobs
+- **Unit tests and integration tests run in parallel**
+- **Integration tests build the CLI** via `make release` and verify `--version`/`--help`
+- **All three jobs must pass** before merging
 
 ### Before Merging PR
 
 ALL of the following MUST pass:
-- ✅ All unit tests pass (Tests - required)
-- ✅ Performance tests complete (informational only)
 - ✅ Code quality checks pass
-- ✅ Build succeeds on all platforms
+- ✅ macOS unit tests pass
+- ✅ Integration tests pass (CLI binary builds and responds to `--version`)
 - ✅ No new warnings introduced
-- ✅ Test coverage maintains or improves
 
 ### Branch Protection Rules
 
 Configure the following **required status checks** on `main`:
 
-1. **Tests / test-ios**
-2. **Tests / test-macos**
-3. **Tests / lint**
-4. **Performance Tests / performance** (optional - informational)
+1. **Code Quality**
+2. **macOS Unit Tests**
+3. **Integration Tests**
 
 ### If CI Fails
 
@@ -222,14 +216,6 @@ Configure the following **required status checks** on `main`:
 2. Commit and push the fix
 3. Wait for CI to re-run on the PR
 4. Only merge when green
-
-### Performance Test Failures
-
-Performance tests are **informational only** and will not block PRs even if they fail:
-- They provide baseline comparisons
-- They track performance regressions
-- They update PR comments with metrics
-- Failures are warnings, not blockers
 
 ## Emergency Hotfixes
 
