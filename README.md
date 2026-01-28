@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-2.2.0-blue.svg" />
+    <img src="https://img.shields.io/badge/Version-2.3.0-blue.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **file discovery and secure access** for screenplay project management. It discovers files in local directories or git repositories, manages security-scoped bookmarks for sandboxed environments, and provides secure URLs for apps to load and parse files using their own parsers.

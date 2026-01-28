@@ -171,6 +171,34 @@ EOF
 - Supports folders and files
 - Used for navigation UIs (OutlineGroup, List, etc.)
 
+### Audio Generation Models
+
+**ParseBatchArguments** - CLI batch-level flags for audio generation
+- Raw command-line arguments for processing multiple files
+- Fields: projectPath, output, format, skipExisting, resumeFrom, regenerate, skipHooks, useCastList, castListPath, dryRun, failFast, verbose, quiet, jsonOutput
+- Validation: Checks for mutually exclusive flags
+- Merged with PROJECT.md metadata to create ParseBatchConfig
+
+**ParseBatchConfig** - Resolved batch configuration from PROJECT.md + CLI overrides
+- Combines ProjectFrontMatter defaults with ParseBatchArguments overrides
+- Contains discovered episode files (discoveredFiles: [URL])
+- Provides iterator: `makeIterator() -> ParseFileIterator`
+- Factory methods: `from(projectPath:args:)` (static) or `ProjectModel.parseBatchConfig(with:)` (extension)
+- Includes hooks (preGenerateHook, postGenerateHook) and filter flags
+
+**ParseFileIterator** - Iterator yielding ParseCommandArguments for each file
+- Implements IteratorProtocol and Sequence
+- Applies filters during initialization (resumeFrom) and iteration (skipExisting)
+- Yields one ParseCommandArguments per discovered file
+- Methods: `next() -> ParseCommandArguments?`, `collect() -> [ParseCommandArguments]`
+- Properties: `totalCount`, `currentFileIndex`
+
+**ParseCommandArguments** - Single-file generation arguments
+- Command arguments for generating audio from ONE screenplay file
+- Fields: episodeFileURL, outputURL, exportFormat, castListURL, useCastList, verbose, quiet, dryRun
+- Validation: File existence, mutually exclusive flags, cast list requirements
+- This is what the `generate` command accepts as input
+
 ### Services
 
 **ProjectService** - Main service for project operations (@MainActor)

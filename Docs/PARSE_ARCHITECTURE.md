@@ -450,7 +450,7 @@ try await generateAudio(parseCommand)
 
 ## Migration from Current Design
 
-### Current State (v2.2.0)
+### Current State (v2.3.0)
 
 **Files:**
 - `ParseCommandArguments.swift` - Has batch-level flags (skipExisting, resumeFrom, etc.)
