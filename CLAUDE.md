@@ -344,6 +344,118 @@ let projectMdURL = folderURL.appendingPathComponent("PROJECT.md")
 let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
 ```
 
+### Audio Generation Iterator Pattern
+
+SwiftProyecto provides an iterator pattern for batch audio generation from PROJECT.md configuration:
+
+```swift
+import SwiftProyecto
+
+// 1. Create batch configuration from PROJECT.md
+let projectPath = "/Users/username/Projects/podcast-meditations"
+let args = ParseBatchArguments(
+    projectPath: projectPath,
+    format: "m4a",
+    skipExisting: true,
+    verbose: true
+)
+
+// Parse PROJECT.md and discover episode files
+let batchConfig = try ParseBatchConfig.from(projectPath: projectPath, args: args)
+
+print("Project: \(batchConfig.title)")
+print("Author: \(batchConfig.author)")
+print("Discovered \(batchConfig.discoveredFiles.count) episode files")
+
+// 2. Create iterator to yield per-file generation arguments
+var iterator = batchConfig.makeIterator()
+
+// 3. Iterate over each episode file
+while let commandArgs = iterator.next() {
+    print("\nProcessing: \(commandArgs.episodeFileURL.lastPathComponent)")
+    print("  Input:  \(commandArgs.episodeFileURL.path)")
+    print("  Output: \(commandArgs.outputURL.path)")
+    print("  Format: \(commandArgs.exportFormat)")
+
+    if let castListURL = commandArgs.castListURL {
+        print("  Cast List: \(castListURL.path)")
+    }
+
+    // Validate arguments before generation
+    try commandArgs.validate()
+
+    if commandArgs.dryRun {
+        print("  [DRY RUN] Skipping actual generation")
+        continue
+    }
+
+    if commandArgs.outputExists && batchConfig.skipExisting {
+        print("  [SKIP] Output file already exists")
+        continue
+    }
+
+    // 4. Pass commandArgs to your audio generation function
+    // try await generateAudio(with: commandArgs)
+}
+
+print("\nProcessed \(iterator.currentFileIndex) of \(iterator.totalCount) files")
+```
+
+**Alternative: Using ProjectModel**
+
+If you already have a SwiftData `ProjectModel` instance, use the extension method:
+
+```swift
+import SwiftProyecto
+
+// 1. Open project with ProjectService
+let projectService = ProjectService(modelContext: context)
+let project = try await projectService.openProject(at: folderURL)
+
+// 2. Create batch configuration from ProjectModel
+let args = ParseBatchArguments(
+    projectPath: project.sourceRootURL,
+    output: "custom-audio-dir",
+    format: "mp3",
+    resumeFrom: 10  // Resume from episode 10
+)
+
+let batchConfig = try project.parseBatchConfig(with: args)
+
+// 3. Iterate and generate
+var iterator = batchConfig.makeIterator()
+while let commandArgs = iterator.next() {
+    print("Episode: \(commandArgs.episodeFileURL.lastPathComponent)")
+    // Process file...
+}
+```
+
+**Collect All Arguments**
+
+To get all `ParseCommandArguments` as an array without iterating:
+
+```swift
+var iterator = batchConfig.makeIterator()
+let allArgs = iterator.collect()
+
+print("Total files to process: \(allArgs.count)")
+
+for (index, args) in allArgs.enumerated() {
+    print("\(index + 1). \(args.episodeFileURL.lastPathComponent) → \(args.outputURL.lastPathComponent)")
+}
+```
+
+**Iterator Behavior**:
+- **resumeFrom**: Skips first N files during iterator initialization
+- **skipExisting**: Skips files during iteration if output exists (unless `regenerate` is true)
+- **regenerate**: Ignores `skipExisting` filter, processes all files
+- **Filters are applied automatically**: No need to check manually
+
+**Configuration Priority**:
+1. CLI arguments (`ParseBatchArguments`) - highest priority
+2. PROJECT.md front matter (`ProjectFrontMatter`) - default values
+3. Built-in defaults (`episodesDir: "episodes"`, `audioDir: "audio"`, `exportFormat: "m4a"`)
+
 ---
 
 ## Dependencies
