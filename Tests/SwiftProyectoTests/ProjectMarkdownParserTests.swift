@@ -724,4 +724,92 @@ final class ProjectMarkdownParserTests: XCTestCase {
         XCTAssertEqual(frontMatter.resolvedExportFormat, "wav")
         XCTAssertTrue(frontMatter.hasGenerationConfig)
     }
+
+    // MARK: - TTS Config Tests
+
+    func testParse_TTSConfig() throws {
+        let content = """
+        ---
+        type: project
+        title: My Series
+        author: Jane Doe
+        created: 2025-11-17T10:30:00Z
+        tts:
+          providerId: apple
+          voiceId: com.apple.voice.compact.en-US.Samantha
+          languageCode: en
+          voiceURI: "hablare://apple/com.apple.voice.compact.en-US.Samantha?lang=en"
+        ---
+        """
+
+        let (frontMatter, _) = try parser.parse(content: content)
+
+        XCTAssertTrue(frontMatter.hasTTSConfig)
+        XCTAssertEqual(frontMatter.tts?.providerId, "apple")
+        XCTAssertEqual(frontMatter.tts?.voiceId, "com.apple.voice.compact.en-US.Samantha")
+        XCTAssertEqual(frontMatter.tts?.languageCode, "en")
+        XCTAssertEqual(frontMatter.tts?.voiceURI, "hablare://apple/com.apple.voice.compact.en-US.Samantha?lang=en")
+    }
+
+    func testParse_NoTTSConfig() throws {
+        let content = """
+        ---
+        type: project
+        title: My Project
+        author: Jane Doe
+        created: 2025-11-17T10:30:00Z
+        ---
+        """
+
+        let (frontMatter, _) = try parser.parse(content: content)
+
+        XCTAssertFalse(frontMatter.hasTTSConfig)
+        XCTAssertNil(frontMatter.tts)
+    }
+
+    func testGenerate_WithTTSConfig() {
+        let tts = TTSConfig(
+            providerId: "apple",
+            voiceId: "com.apple.voice.compact.en-US.Samantha",
+            languageCode: "en",
+            voiceURI: "hablare://apple/com.apple.voice.compact.en-US.Samantha?lang=en"
+        )
+        let frontMatter = ProjectFrontMatter(
+            title: "My Series",
+            author: "Jane Doe",
+            created: ISO8601DateFormatter().date(from: "2025-11-17T10:30:00Z")!,
+            tts: tts
+        )
+
+        let output = parser.generate(frontMatter: frontMatter)
+
+        XCTAssertTrue(output.contains("tts:"))
+        XCTAssertTrue(output.contains("  providerId: apple"))
+        XCTAssertTrue(output.contains("  voiceId: com.apple.voice.compact.en-US.Samantha"))
+        XCTAssertTrue(output.contains("  languageCode: en"))
+        XCTAssertTrue(output.contains("  voiceURI: \"hablare://apple/com.apple.voice.compact.en-US.Samantha?lang=en\""))
+    }
+
+    func testRoundTrip_TTSConfig() throws {
+        let tts = TTSConfig(
+            providerId: "elevenlabs",
+            voiceId: "voice_abc123",
+            languageCode: "es",
+            voiceURI: "hablare://elevenlabs/voice_abc123?lang=es"
+        )
+        let original = ProjectFrontMatter(
+            title: "Round Trip TTS",
+            author: "Test Author",
+            created: ISO8601DateFormatter().date(from: "2025-11-17T10:30:00Z")!,
+            tts: tts
+        )
+
+        let generated = parser.generate(frontMatter: original, body: "# Notes")
+        let (parsed, body) = try parser.parse(content: generated)
+
+        XCTAssertEqual(parsed.title, original.title)
+        XCTAssertEqual(parsed.author, original.author)
+        XCTAssertEqual(parsed.tts, original.tts)
+        XCTAssertEqual(body, "# Notes")
+    }
 }

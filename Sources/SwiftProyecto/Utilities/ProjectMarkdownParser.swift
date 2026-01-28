@@ -157,6 +157,23 @@ public struct ProjectMarkdownParser {
             yaml += "postGenerateHook: \"\(postGenerateHook)\"\n"
         }
 
+        // TTS configuration
+        if let tts = frontMatter.tts {
+            yaml += "tts:\n"
+            if let providerId = tts.providerId {
+                yaml += "  providerId: \(providerId)\n"
+            }
+            if let voiceId = tts.voiceId {
+                yaml += "  voiceId: \(voiceId)\n"
+            }
+            if let languageCode = tts.languageCode {
+                yaml += "  languageCode: \(languageCode)\n"
+            }
+            if let voiceURI = tts.voiceURI {
+                yaml += "  voiceURI: \"\(voiceURI)\"\n"
+            }
+        }
+
         yaml += "---\n"
 
         if !body.isEmpty {

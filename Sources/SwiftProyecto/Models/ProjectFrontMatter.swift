@@ -100,6 +100,11 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     /// Shell command to run AFTER generation
     public let postGenerateHook: String?
 
+    // MARK: - TTS Configuration
+
+    /// Optional text-to-speech generation configuration
+    public let tts: TTSConfig?
+
     /// Create a new ProjectFrontMatter instance.
     ///
     /// - Parameters:
@@ -118,6 +123,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     ///   - exportFormat: Audio export format (default: "m4a")
     ///   - preGenerateHook: Shell command to run before generation
     ///   - postGenerateHook: Shell command to run after generation
+    ///   - tts: Optional TTS generation configuration
     public init(
         type: String = "project",
         title: String,
@@ -133,7 +139,8 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
         filePattern: FilePattern? = nil,
         exportFormat: String? = nil,
         preGenerateHook: String? = nil,
-        postGenerateHook: String? = nil
+        postGenerateHook: String? = nil,
+        tts: TTSConfig? = nil
     ) {
         self.type = type
         self.title = title
@@ -150,6 +157,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
         self.exportFormat = exportFormat
         self.preGenerateHook = preGenerateHook
         self.postGenerateHook = postGenerateHook
+        self.tts = tts
     }
 }
 
@@ -187,6 +195,11 @@ public extension ProjectFrontMatter {
     /// Resolved export format, defaulting to "m4a" if not specified.
     var resolvedExportFormat: String {
         exportFormat ?? "m4a"
+    }
+
+    /// Returns true if a TTS configuration is present.
+    var hasTTSConfig: Bool {
+        tts != nil
     }
 
     /// Returns true if any generation configuration fields are set.

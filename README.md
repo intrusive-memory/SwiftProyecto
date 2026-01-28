@@ -419,6 +419,150 @@ struct DocumentLoader<Content: View>: View {
 
 See `.claude/PHASE2_IMPLEMENTATION.md` in the Produciesta repository for a complete integration example.
 
+### PROJECT.md Processing & Command Arguments
+
+SwiftProyecto provides a complete pipeline for processing PROJECT.md metadata and generating per-file command arguments for audio generation:
+
+```mermaid
+classDiagram
+    class ProjectMarkdownParser {
+        +parse(fileURL: URL) (ProjectFrontMatter, String)
+        +parse(content: String) (ProjectFrontMatter, String)
+        +generate(frontMatter: ProjectFrontMatter, body: String) String
+    }
+
+    class ProjectFrontMatter {
+        +title: String
+        +author: String
+        +created: Date
+        +season: Int?
+        +episodes: Int?
+        +genre: String?
+        +tags: [String]?
+        +episodesDir: String?
+        +audioDir: String?
+        +filePattern: FilePattern?
+        +exportFormat: String?
+        +preGenerateHook: String?
+        +postGenerateHook: String?
+        +resolvedEpisodesDir: String
+        +resolvedAudioDir: String
+        +resolvedFilePatterns: [String]
+        +resolvedExportFormat: String
+    }
+
+    class ParseBatchArguments {
+        +projectPath: String
+        +output: String?
+        +episode: String?
+        +format: String
+        +skipExisting: Bool
+        +resumeFrom: Int?
+        +regenerate: Bool
+        +skipHooks: Bool
+        +useCastList: Bool
+        +castListPath: String?
+        +dryRun: Bool
+        +failFast: Bool
+        +verbose: Bool
+        +quiet: Bool
+        +jsonOutput: Bool
+        +validate() void
+    }
+
+    class ParseBatchConfig {
+        +title: String
+        +author: String
+        +projectURL: URL
+        +episodesDir: String
+        +audioDir: String
+        +filePatterns: [String]
+        +discoveredFiles: [URL]
+        +exportFormat: String
+        +preGenerateHook: String?
+        +postGenerateHook: String?
+        +skipExisting: Bool
+        +resumeFrom: Int?
+        +regenerate: Bool
+        +skipHooks: Bool
+        +useCastList: Bool
+        +castListPath: String?
+        +dryRun: Bool
+        +verbose: Bool
+        +quiet: Bool
+        +makeIterator() ParseFileIterator
+        +from(projectPath: String, args: ParseBatchArguments?) ParseBatchConfig$
+    }
+
+    class ProjectModel {
+        +parseBatchConfig(with: ParseBatchArguments?) ParseBatchConfig
+    }
+
+    class ParseFileIterator {
+        -batchConfig: ParseBatchConfig
+        -currentIndex: Int
+        -filesToProcess: [URL]
+        +next() ParseCommandArguments?
+        +collect() [ParseCommandArguments]
+        +totalCount: Int
+        +currentFileIndex: Int
+    }
+
+    class ParseCommandArguments {
+        +episodeFileURL: URL
+        +outputURL: URL
+        +exportFormat: String
+        +castListURL: URL?
+        +useCastList: Bool
+        +verbose: Bool
+        +quiet: Bool
+        +dryRun: Bool
+        +validate() void
+        +expectedOutputFilename: String
+        +outputExists: Bool
+    }
+
+    %% Parsing relationships
+    ProjectMarkdownParser --> ProjectFrontMatter : parse() returns
+    ProjectMarkdownParser --> ProjectFrontMatter : generate() consumes
+
+    %% Configuration relationships
+    ParseBatchArguments --> ParseBatchConfig : from() merges into
+    ProjectFrontMatter --> ParseBatchConfig : from() merges into
+    ProjectModel --> ParseBatchConfig : parseBatchConfig() creates
+
+    %% Internal usage
+    ParseBatchConfig ..> ProjectMarkdownParser : from() uses parse()
+    ParseBatchConfig ..> ProjectFrontMatter : from() reads via parser
+
+    %% Iterator relationships
+    ParseBatchConfig --> ParseFileIterator : makeIterator() creates
+    ParseFileIterator --> ParseCommandArguments : next() yields
+    ParseFileIterator ..> ParseBatchConfig : reads config
+
+    note for ParseBatchConfig "Static factory method:\nfrom(projectPath:args:)\n1. Parses PROJECT.md via ProjectMarkdownParser\n2. Merges ProjectFrontMatter + ParseBatchArguments\n3. Discovers files matching filePatterns\n4. Returns configured ParseBatchConfig"
+
+    note for ParseFileIterator "Iterator applies filters:\n- resumeFrom (skip first N files)\n- skipExisting (skip if output exists)\n- regenerate (ignore skipExisting)\nYields one ParseCommandArguments per file"
+
+    note for ParseCommandArguments "Single-file generation args\nConsumed by 'generate' command\nContains all info for one audio file"
+```
+
+**Flow**:
+1. **CLI** reads `ParseBatchArguments` from command-line flags
+2. **ParseBatchConfig.from(projectPath:args:)** creates batch configuration:
+   - Calls `ProjectMarkdownParser.parse(fileURL:)` to read PROJECT.md
+   - Returns `ProjectFrontMatter` with metadata
+   - Merges front matter defaults with CLI overrides (output dir, format, etc.)
+   - Discovers episode files matching `filePattern` glob patterns
+3. **ParseBatchConfig.makeIterator()** creates `ParseFileIterator`
+4. **ParseFileIterator.next()** yields `ParseCommandArguments` for each file:
+   - Applies `resumeFrom` filter (skip first N files)
+   - Applies `skipExisting` filter (skip if output exists, unless `regenerate`)
+   - Constructs output URL, resolves cast list, inherits flags
+5. **Generate command** receives single `ParseCommandArguments` for audio generation
+
+**Alternative**: Use `ProjectModel.parseBatchConfig(with:)` extension method to create config from an existing SwiftData project instance.
+
 ## proyecto CLI
 
 SwiftProyecto includes a command-line tool (`proyecto`) that uses local LLM inference to analyze directories and generate PROJECT.md files with appropriate metadata.

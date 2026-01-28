@@ -1,5 +1,5 @@
 //
-//  ParseConfig.swift
+//  ParseBatchConfig.swift
 //  SwiftProyecto
 //
 //  Copyright (c) 2025 Intrusive Memory
@@ -7,9 +7,9 @@
 
 import Foundation
 
-/// Configuration for audio generation, combining PROJECT.md metadata with CLI overrides.
-/// This is the final, resolved configuration used to trigger a generation cycle.
-public struct ParseConfig: Sendable, Codable, Equatable {
+/// Batch configuration for audio generation, combining PROJECT.md metadata with CLI overrides.
+/// Contains discovered files and provides an iterator to yield ParseCommandArguments for each file.
+public struct ParseBatchConfig: Sendable, Codable, Equatable {
     // MARK: - Project Metadata
 
     /// Project title (from PROJECT.md)
@@ -41,6 +41,9 @@ public struct ParseConfig: Sendable, Codable, Equatable {
     /// Supports glob patterns (*.fountain) or explicit file names
     public var filePatterns: [String]
 
+    /// Discovered episode files (absolute URLs)
+    public var discoveredFiles: [URL]
+
     /// Audio export format (m4a, mp3, wav, etc.)
     public var exportFormat: String
 
@@ -52,10 +55,7 @@ public struct ParseConfig: Sendable, Codable, Equatable {
     /// Shell command to run after generation (optional)
     public var postGenerateHook: String?
 
-    // MARK: - CLI Overrides (from ParseCommandArguments)
-
-    /// Single episode file to process (overrides file discovery)
-    public var singleEpisode: String?
+    // MARK: - CLI Overrides (from ParseBatchArguments)
 
     /// Skip existing audio files
     public var skipExisting: Bool
@@ -78,17 +78,11 @@ public struct ParseConfig: Sendable, Codable, Equatable {
     /// Dry run - show what would be generated
     public var dryRun: Bool
 
-    /// Fail fast - stop on first error
-    public var failFast: Bool
-
     /// Verbose output
     public var verbose: Bool
 
     /// Quiet mode
     public var quiet: Bool
-
-    /// JSON output format
-    public var jsonOutput: Bool
 
     /// Initialize with all configuration
     public init(
@@ -98,10 +92,10 @@ public struct ParseConfig: Sendable, Codable, Equatable {
         episodesDir: String = "episodes",
         audioDir: String = "audio",
         filePatterns: [String] = ["*.fountain"],
+        discoveredFiles: [URL] = [],
         exportFormat: String = "m4a",
         preGenerateHook: String? = nil,
         postGenerateHook: String? = nil,
-        singleEpisode: String? = nil,
         skipExisting: Bool = false,
         resumeFrom: Int? = nil,
         regenerate: Bool = false,
@@ -109,10 +103,8 @@ public struct ParseConfig: Sendable, Codable, Equatable {
         useCastList: Bool = false,
         castListPath: String? = nil,
         dryRun: Bool = false,
-        failFast: Bool = false,
         verbose: Bool = false,
-        quiet: Bool = false,
-        jsonOutput: Bool = false
+        quiet: Bool = false
     ) {
         self.title = title
         self.author = author
@@ -122,10 +114,10 @@ public struct ParseConfig: Sendable, Codable, Equatable {
         self.audioDir = audioDir
         self.audioDirURL = projectURL.appendingPathComponent(audioDir)
         self.filePatterns = filePatterns
+        self.discoveredFiles = discoveredFiles
         self.exportFormat = exportFormat
         self.preGenerateHook = preGenerateHook
         self.postGenerateHook = postGenerateHook
-        self.singleEpisode = singleEpisode
         self.skipExisting = skipExisting
         self.resumeFrom = resumeFrom
         self.regenerate = regenerate
@@ -133,16 +125,14 @@ public struct ParseConfig: Sendable, Codable, Equatable {
         self.useCastList = useCastList
         self.castListPath = castListPath
         self.dryRun = dryRun
-        self.failFast = failFast
         self.verbose = verbose
         self.quiet = quiet
-        self.jsonOutput = jsonOutput
     }
 }
 
 // MARK: - Convenience
 
-extension ParseConfig {
+extension ParseBatchConfig {
     /// Should run pre-generate hook
     public var shouldRunPreGenerateHook: Bool {
         preGenerateHook != nil && !skipHooks
@@ -163,5 +153,10 @@ extension ParseConfig {
         guard let path = castListPath else { return nil }
         let expandedPath = (path as NSString).expandingTildeInPath
         return URL(fileURLWithPath: expandedPath).standardizedFileURL
+    }
+
+    /// Create an iterator to yield ParseCommandArguments for each file
+    public func makeIterator() -> ParseFileIterator {
+        ParseFileIterator(batchConfig: self)
     }
 }
