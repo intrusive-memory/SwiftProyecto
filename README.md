@@ -228,21 +228,57 @@ cast:
   - character: NARRATOR
     actor: Tom Stovall
     voices:
-      - apple://en-US/Aaron
-      - elevenlabs://en/wise-elder
+      - apple://com.apple.voice.compact.en-US.Aaron?lang=en
+      - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
   - character: LAO TZU
     actor: Jason Manino
     voices:
-      - qwen://en/narrative-1
+      - qwen-tts://male-voice-1?lang=en
+      - apple://com.apple.voice.premium.en-US.Tom?lang=en
 ---
 ```
 
-**Voice URI Format**: `<provider>://<voice_id>`
-- `apple://en-US/Aaron` - Apple TTS voice
-- `elevenlabs://en/wise-elder` - ElevenLabs voice
-- `qwen://en/narrative-1` - Qwen TTS voice
+**Voice URI Format**: `<providerId>://<voiceId>?lang=<languageCode>`
 
-**Voice Resolution**: During audio generation, voices are tried in order. The first voice matching an enabled provider is used. If no voices match, the default voice is used.
+This format follows the [SwiftHablare VoiceURI specification](https://github.com/intrusive-memory/SwiftHablare):
+- `providerId`: Voice provider identifier (lowercase)
+- `voiceId`: Provider-specific voice identifier (case-sensitive)
+- `lang`: Optional language code parameter (e.g., `en`, `es`, `fr`)
+
+**Supported Providers & Voice ID Formats**:
+
+| Provider | providerId | Voice ID Format | Example |
+|----------|-----------|-----------------|---------|
+| **Apple TTS** | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `apple://com.apple.voice.compact.en-US.Samantha?lang=en` |
+| **ElevenLabs** | `elevenlabs` | Unique voice ID (alphanumeric) | `elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en` |
+| **Qwen TTS** | `qwen-tts` | Voice name or ID | `qwen-tts://female-voice-1?lang=en` |
+
+**Apple Voice Quality Levels**:
+- `premium` - High-quality enhanced voices
+- `compact` - Standard quality voices (default)
+
+**Example Voice URIs**:
+```yaml
+# Apple TTS voices
+- apple://com.apple.voice.premium.en-US.Allison?lang=en
+- apple://com.apple.voice.compact.en-US.Samantha?lang=en
+- apple://com.apple.voice.premium.es-ES.Monica?lang=es
+
+# ElevenLabs voices (voice ID from ElevenLabs dashboard)
+- elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
+- elevenlabs://pNInz6obpgDQGcFmaJgB?lang=en
+
+# Qwen TTS voices (local on-device inference)
+- qwen-tts://female-voice-1?lang=en
+- qwen-tts://male-voice-1?lang=zh
+```
+
+**Voice Resolution**: During audio generation, voices are tried in order. The first voice matching an enabled provider is used. If no voices match or a voice URI is invalid, it is skipped and the next is tried. If all voices fail, the default voice is used.
+
+**Finding Voice IDs**:
+- **Apple**: Use `AVSpeechSynthesisVoice.speechVoices()` to list available voices and their identifiers
+- **ElevenLabs**: Find voice IDs in your ElevenLabs dashboard under "Voices"
+- **Qwen TTS**: Run `hablare voices` CLI command to list available voices
 
 #### Automatic Cast List Discovery
 

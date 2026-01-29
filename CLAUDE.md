@@ -164,10 +164,15 @@ EOF
 **CastMember** - Character-to-voice mapping for audio generation
 - Maps screenplay characters to actors and TTS voice URIs
 - Fields: character (String), actor (String?), voices ([String])
-- Voice URI format: `<provider>://<voice_id>` (e.g., `apple://en-US/Aaron`, `elevenlabs://en/wise-elder`)
+- Voice URI format: `<providerId>://<voiceId>?lang=<languageCode>` (follows SwiftHablare VoiceURI spec)
+  - Examples:
+    - `apple://com.apple.voice.compact.en-US.Samantha?lang=en` (Apple TTS)
+    - `elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en` (ElevenLabs)
+    - `qwen-tts://female-voice-1?lang=en` (Qwen TTS)
 - Stored inline in PROJECT.md cast array
 - Identity based on character name (mutable for renaming)
 - Voice resolution: First matching enabled provider is used, falls back to default if none match
+- No validation of voice URIs in model - validation happens at generation time
 
 **FilePattern** - Flexible file pattern type for generation config
 - Accepts single string or array of strings
@@ -450,10 +455,15 @@ try updatedMarkdown.write(
 - Characters only in discovered: Add as new (empty actor/voices)
 - Characters only in existing: Keep (user may have manually added)
 
-**Voice URI Format**: `<provider>://<voice_id>`
-- `apple://en-US/Aaron` - Apple TTS
-- `elevenlabs://en/wise-elder` - ElevenLabs
-- `qwen://en/narrative-1` - Qwen TTS
+**Voice URI Format**: `<providerId>://<voiceId>?lang=<languageCode>`
+
+Follows [SwiftHablare VoiceURI specification](https://github.com/intrusive-memory/SwiftHablare):
+
+| Provider | providerId | Voice ID Format | Example |
+|----------|-----------|-----------------|---------|
+| Apple TTS | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `apple://com.apple.voice.compact.en-US.Samantha?lang=en` |
+| ElevenLabs | `elevenlabs` | Unique voice ID (alphanumeric) | `elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en` |
+| Qwen TTS | `qwen-tts` | Voice name or ID | `qwen-tts://female-voice-1?lang=en` |
 
 ### Audio Generation Iterator Pattern
 
