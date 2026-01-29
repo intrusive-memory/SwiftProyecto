@@ -161,9 +161,16 @@ EOF
 - Optional hooks: preGenerateHook, postGenerateHook
 - Convenience accessors: resolvedEpisodesDir, resolvedAudioDir, resolvedFilePatterns, resolvedExportFormat
 
+**Gender** - Gender specification for character roles
+- Enum values: `.male` (M), `.female` (F), `.nonBinary` (NB), `.notSpecified` (NS)
+- Used to specify expected or preferred gender for character roles
+- `.notSpecified` indicates role doesn't depend on character's gender
+- Codable with raw string values for PROJECT.md YAML
+- Display names: "Male", "Female", "Non-Binary", "Not Specified"
+
 **CastMember** - Character-to-voice mapping for audio generation
 - Maps screenplay characters to actors and TTS voice URIs
-- Fields: character (String), actor (String?), voices ([String])
+- Fields: character (String), actor (String?), gender (Gender?), voices ([String])
 - Voice URI format: `<providerId>://<voiceId>?lang=<languageCode>` (follows SwiftHablare VoiceURI spec)
   - Examples:
     - `apple://com.apple.voice.compact.en-US.Samantha?lang=en` (Apple TTS)

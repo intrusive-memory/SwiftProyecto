@@ -3,6 +3,46 @@ import XCTest
 
 final class CastMemberTests: XCTestCase {
 
+    // MARK: - Gender Enum Tests
+
+    func testGender_RawValues() {
+        XCTAssertEqual(Gender.male.rawValue, "M")
+        XCTAssertEqual(Gender.female.rawValue, "F")
+        XCTAssertEqual(Gender.nonBinary.rawValue, "NB")
+        XCTAssertEqual(Gender.notSpecified.rawValue, "NS")
+    }
+
+    func testGender_DisplayNames() {
+        XCTAssertEqual(Gender.male.displayName, "Male")
+        XCTAssertEqual(Gender.female.displayName, "Female")
+        XCTAssertEqual(Gender.nonBinary.displayName, "Non-Binary")
+        XCTAssertEqual(Gender.notSpecified.displayName, "Not Specified")
+    }
+
+    func testGender_CaseIterable() {
+        let allGenders = Gender.allCases
+        XCTAssertEqual(allGenders.count, 4)
+        XCTAssertTrue(allGenders.contains(.male))
+        XCTAssertTrue(allGenders.contains(.female))
+        XCTAssertTrue(allGenders.contains(.nonBinary))
+        XCTAssertTrue(allGenders.contains(.notSpecified))
+    }
+
+    func testGender_Codable() throws {
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+
+        // Test encoding
+        let maleData = try encoder.encode(Gender.male)
+        let decoded = try decoder.decode(Gender.self, from: maleData)
+        XCTAssertEqual(decoded, .male)
+
+        // Test decoding from raw value
+        let rawJSON = "\"NB\"".data(using: .utf8)!
+        let nonBinary = try decoder.decode(Gender.self, from: rawJSON)
+        XCTAssertEqual(nonBinary, .nonBinary)
+    }
+
     // MARK: - Initialization Tests
 
     func testInitialization_Minimal() {
@@ -10,8 +50,35 @@ final class CastMemberTests: XCTestCase {
 
         XCTAssertEqual(member.character, "NARRATOR")
         XCTAssertNil(member.actor)
+        XCTAssertNil(member.gender)
         XCTAssertEqual(member.voices, [])
         XCTAssertEqual(member.id, "NARRATOR")
+    }
+
+    func testInitialization_WithGender() {
+        let member = CastMember(
+            character: "NARRATOR",
+            gender: .male
+        )
+
+        XCTAssertEqual(member.character, "NARRATOR")
+        XCTAssertNil(member.actor)
+        XCTAssertEqual(member.gender, .male)
+        XCTAssertEqual(member.voices, [])
+    }
+
+    func testInitialization_WithAllFields() {
+        let member = CastMember(
+            character: "PROTAGONIST",
+            actor: "Alex Jordan",
+            gender: .nonBinary,
+            voices: ["apple://en-US/Samantha"]
+        )
+
+        XCTAssertEqual(member.character, "PROTAGONIST")
+        XCTAssertEqual(member.actor, "Alex Jordan")
+        XCTAssertEqual(member.gender, .nonBinary)
+        XCTAssertEqual(member.voices.count, 1)
     }
 
     func testInitialization_WithActor() {
@@ -168,6 +235,7 @@ final class CastMemberTests: XCTestCase {
         let original = CastMember(
             character: "NARRATOR",
             actor: "Tom Stovall",
+            gender: .male,
             voices: [
                 "apple://en-US/Aaron",
                 "elevenlabs://en/wise-elder"
@@ -182,6 +250,7 @@ final class CastMemberTests: XCTestCase {
 
         XCTAssertEqual(decoded.character, original.character)
         XCTAssertEqual(decoded.actor, original.actor)
+        XCTAssertEqual(decoded.gender, original.gender)
         XCTAssertEqual(decoded.voices, original.voices)
     }
 
@@ -196,7 +265,26 @@ final class CastMemberTests: XCTestCase {
 
         XCTAssertEqual(decoded.character, "LAO TZU")
         XCTAssertNil(decoded.actor)
+        XCTAssertNil(decoded.gender)
         XCTAssertEqual(decoded.voices, [])
+    }
+
+    func testCodable_WithGender() throws {
+        let original = CastMember(
+            character: "ALEX",
+            actor: "Jordan Smith",
+            gender: .nonBinary
+        )
+
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(original)
+
+        let decoder = JSONDecoder()
+        let decoded = try decoder.decode(CastMember.self, from: data)
+
+        XCTAssertEqual(decoded.character, "ALEX")
+        XCTAssertEqual(decoded.actor, "Jordan Smith")
+        XCTAssertEqual(decoded.gender, .nonBinary)
     }
 
     // MARK: - Sendable Tests
@@ -272,5 +360,19 @@ final class CastMemberTests: XCTestCase {
 
         member.voices.append("elevenlabs://en/wise-elder")
         XCTAssertEqual(member.voices.count, 2)
+    }
+
+    func testGender_Mutable() {
+        var member = CastMember(character: "CHARACTER")
+        XCTAssertNil(member.gender)
+
+        member.gender = .male
+        XCTAssertEqual(member.gender, .male)
+
+        member.gender = .notSpecified
+        XCTAssertEqual(member.gender, .notSpecified)
+
+        member.gender = nil
+        XCTAssertNil(member.gender)
     }
 }

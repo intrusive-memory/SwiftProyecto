@@ -12,6 +12,22 @@ episodesDir: episodes
 audioDir: audio
 filePattern: "*.fountain"
 exportFormat: m4a
+cast:
+  - character: MARCUS AURELIUS
+    actor: Tom Stovall
+    gender: M
+    voices:
+      - apple://en-US/Aaron
+  - character: NARRATOR
+    actor: Jason Manino
+    gender: M
+    voices:
+      - apple://en-US/Daniel
+  - character: POETIC VOICE
+    actor: Sarah Mitchell
+    gender: F
+    voices:
+      - apple://en-US/Samantha
 ---
 
 # Meditations Podcast

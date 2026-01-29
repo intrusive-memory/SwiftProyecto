@@ -25,6 +25,34 @@
 
 import Foundation
 
+/// Gender specification for character roles.
+///
+/// Used to specify the expected or preferred gender for a character role,
+/// or to indicate that gender is not a factor for the role.
+public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable {
+    /// Male
+    case male = "M"
+
+    /// Female
+    case female = "F"
+
+    /// Non-binary
+    case nonBinary = "NB"
+
+    /// Not specified - role doesn't depend on character's gender
+    case notSpecified = "NS"
+
+    /// Display name for UI presentation
+    public var displayName: String {
+        switch self {
+        case .male: return "Male"
+        case .female: return "Female"
+        case .nonBinary: return "Non-Binary"
+        case .notSpecified: return "Not Specified"
+        }
+    }
+}
+
 /// A character-to-voice mapping for audio generation.
 ///
 /// Maps screenplay characters to human actors and TTS voice URIs for
@@ -42,6 +70,7 @@ import Foundation
 /// let narrator = CastMember(
 ///     character: "NARRATOR",
 ///     actor: "Tom Stovall",
+///     gender: .male,
 ///     voices: [
 ///         "apple://en-US/Aaron",
 ///         "elevenlabs://en/wise-elder",
@@ -56,6 +85,7 @@ import Foundation
 /// cast:
 ///   - character: NARRATOR
 ///     actor: Tom Stovall
+///     gender: M
 ///     voices:
 ///       - apple://en-US/Aaron
 ///       - elevenlabs://en/wise-elder
@@ -70,6 +100,10 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     /// Optional actor/voice artist name (for credits/reference)
     /// Example: "Tom Stovall", "Jason Manino"
     public var actor: String?
+
+    /// Optional gender specification for the character role
+    /// Defaults to .notSpecified if not provided
+    public var gender: Gender?
 
     /// Array of voice provider URIs (tries in order, first available wins)
     /// Format: `<provider>://<voice_id>`
@@ -90,10 +124,12 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     public init(
         character: String,
         actor: String? = nil,
+        gender: Gender? = nil,
         voices: [String] = []
     ) {
         self.character = character
         self.actor = actor
+        self.gender = gender
         self.voices = voices
     }
 
@@ -131,6 +167,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case character
         case actor
+        case gender
         case voices
     }
 
@@ -138,6 +175,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         character = try container.decode(String.self, forKey: .character)
         actor = try container.decodeIfPresent(String.self, forKey: .actor)
+        gender = try container.decodeIfPresent(Gender.self, forKey: .gender)
         voices = try container.decodeIfPresent([String].self, forKey: .voices) ?? []
     }
 }
