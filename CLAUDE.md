@@ -157,8 +157,17 @@ EOF
 - Required fields: type, title, author, created
 - Optional metadata fields: description, season, episodes, genre, tags
 - Optional generation config: episodesDir, audioDir, filePattern, exportFormat
+- Optional cast list: cast (array of CastMember for character-to-voice mappings)
 - Optional hooks: preGenerateHook, postGenerateHook
 - Convenience accessors: resolvedEpisodesDir, resolvedAudioDir, resolvedFilePatterns, resolvedExportFormat
+
+**CastMember** - Character-to-voice mapping for audio generation
+- Maps screenplay characters to actors and TTS voice URIs
+- Fields: character (String), actor (String?), voices ([String])
+- Voice URI format: `<provider>://<voice_id>` (e.g., `apple://en-US/Aaron`, `elevenlabs://en/wise-elder`)
+- Stored inline in PROJECT.md cast array
+- Identity based on character name (mutable for renaming)
+- Voice resolution: First matching enabled provider is used, falls back to default if none match
 
 **FilePattern** - Flexible file pattern type for generation config
 - Accepts single string or array of strings
@@ -206,6 +215,8 @@ EOF
 - **Project Management**: `createProject(at:title:author:...)`, `openProject(at:)`
 - **Bookmark Management**: `getSecureURL(for:in:)`, `refreshBookmark(for:in:)`, `createFileBookmark(for:in:)`
 - **PROJECT.md**: Reads/writes project metadata files
+- **Cast List Discovery**: `discoverCastList(for:)` - Automatically extracts CHARACTER elements from .fountain files
+- **Cast List Merging**: `mergeCastLists(discovered:existing:)` - Merges discovered characters with existing cast, preserving user edits
 
 **ModelContainerFactory** - SwiftData container creation
 - Creates containers for project metadata only
@@ -287,6 +298,16 @@ episodesDir: scripts
 audioDir: output
 filePattern: "*.fountain"
 exportFormat: m4a
+cast:
+  - character: NARRATOR
+    actor: Tom Stovall
+    voices:
+      - apple://en-US/Aaron
+      - elevenlabs://en/wise-elder
+  - character: LAO TZU
+    actor: Jason Manino
+    voices:
+      - qwen://en/narrative-1
 preGenerateHook: "./scripts/prepare.sh"
 postGenerateHook: "./scripts/upload.sh"
 ---
@@ -371,6 +392,68 @@ let parser = ProjectMarkdownParser()
 let projectMdURL = folderURL.appendingPathComponent("PROJECT.md")
 let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
 ```
+
+### Cast List Discovery Pattern
+
+SwiftProyecto can automatically discover characters from .fountain files and generate cast list entries:
+
+```swift
+import SwiftProyecto
+
+// 1. Discover characters from all .fountain files in project
+let projectService = ProjectService(modelContext: context)
+let project = try await projectService.openProject(at: folderURL)
+
+let discoveredCast = try await projectService.discoverCastList(for: project)
+// Returns: [CastMember(character: "NARRATOR"), CastMember(character: "LAO TZU")]
+// All actor and voices fields are nil/empty - user fills these in manually
+
+// 2. Merge with existing cast list (preserves user edits)
+let parser = ProjectMarkdownParser()
+let (frontMatter, body) = try parser.parse(fileURL: folderURL.appendingPathComponent("PROJECT.md"))
+
+let existingCast = frontMatter.cast ?? []
+let mergedCast = projectService.mergeCastLists(
+    discovered: discoveredCast,
+    existing: existingCast
+)
+// Existing actor/voice assignments are preserved
+// New characters are added with empty actor/voices
+// Old characters not in .fountain files are preserved
+
+// 3. Update PROJECT.md with merged cast
+let updatedFrontMatter = ProjectFrontMatter(
+    title: frontMatter.title,
+    author: frontMatter.author,
+    created: frontMatter.created,
+    cast: mergedCast
+    // ... other fields
+)
+let updatedMarkdown = parser.generate(frontMatter: updatedFrontMatter, body: body)
+try updatedMarkdown.write(
+    to: folderURL.appendingPathComponent("PROJECT.md"),
+    atomically: true,
+    encoding: .utf8
+)
+```
+
+**Character Extraction Rules**:
+- Extracts all-uppercase lines from .fountain files
+- Removes parentheticals like `(V.O.)`, `(CONT'D)`, `(O.S.)`
+- Ignores transitions (lines ending with `TO:`)
+- Ignores scene headings (`INT.`, `EXT.`, `EST.`)
+- Deduplicates across all files in project
+- Returns sorted by character name
+
+**Merge Strategy**:
+- Characters in both lists: Keep existing actor/voices (preserves user edits)
+- Characters only in discovered: Add as new (empty actor/voices)
+- Characters only in existing: Keep (user may have manually added)
+
+**Voice URI Format**: `<provider>://<voice_id>`
+- `apple://en-US/Aaron` - Apple TTS
+- `elevenlabs://en/wise-elder` - ElevenLabs
+- `qwen://en/narrative-1` - Qwen TTS
 
 ### Audio Generation Iterator Pattern
 

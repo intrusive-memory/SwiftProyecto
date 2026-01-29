@@ -92,6 +92,12 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     /// Audio export format (default: "m4a")
     public let exportFormat: String?
 
+    // MARK: - Cast List
+
+    /// Character-to-voice mappings for audio generation
+    /// Maps screenplay characters to actors and TTS voice URIs
+    public let cast: [CastMember]?
+
     // MARK: - Hook Fields
 
     /// Shell command to run BEFORE generation
@@ -121,6 +127,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     ///   - audioDir: Relative path for audio output (default: "audio")
     ///   - filePattern: Glob pattern(s) for file discovery
     ///   - exportFormat: Audio export format (default: "m4a")
+    ///   - cast: Character-to-voice mappings for audio generation
     ///   - preGenerateHook: Shell command to run before generation
     ///   - postGenerateHook: Shell command to run after generation
     ///   - tts: Optional TTS generation configuration
@@ -138,6 +145,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
         audioDir: String? = nil,
         filePattern: FilePattern? = nil,
         exportFormat: String? = nil,
+        cast: [CastMember]? = nil,
         preGenerateHook: String? = nil,
         postGenerateHook: String? = nil,
         tts: TTSConfig? = nil
@@ -155,6 +163,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
         self.audioDir = audioDir
         self.filePattern = filePattern
         self.exportFormat = exportFormat
+        self.cast = cast
         self.preGenerateHook = preGenerateHook
         self.postGenerateHook = postGenerateHook
         self.tts = tts

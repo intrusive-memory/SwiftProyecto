@@ -566,3 +566,148 @@ public final class ProjectService {
     }
 
 }
+
+// MARK: - Cast List Discovery
+
+public extension ProjectService {
+    /// Discover characters from .fountain files in project directory.
+    ///
+    /// Parses all .fountain files in the project and extracts unique CHARACTER elements
+    /// to build a cast list. Actor names and voice URIs are left empty for manual entry.
+    ///
+    /// - Parameter project: The project to discover characters in
+    /// - Returns: Array of CastMember with discovered characters
+    /// - Throws: ProjectError if discovery fails
+    ///
+    /// ## Example
+    /// ```swift
+    /// let castList = try await projectService.discoverCastList(for: project)
+    /// // Returns: [CastMember(character: "NARRATOR"), CastMember(character: "LAO TZU")]
+    /// ```
+    ///
+    /// ## Merging with Existing Cast
+    ///
+    /// This method does NOT merge with existing cast lists. To preserve user-entered
+    /// actor names and voice URIs, merge manually:
+    ///
+    /// ```swift
+    /// let discovered = try await projectService.discoverCastList(for: project)
+    /// let existing = frontMatter.cast ?? []
+    /// let merged = mergeExistingCast(discovered: discovered, existing: existing)
+    /// ```
+    func discoverCastList(for project: ProjectModel) async throws -> [CastMember] {
+        // Get all .fountain files in project
+        let fountainFiles = project.fileReferences.filter { $0.fileExtension == "fountain" }
+
+        guard !fountainFiles.isEmpty else {
+            return []
+        }
+
+        var discoveredCharacters = Set<String>()
+
+        // Parse each .fountain file for CHARACTER elements
+        for fileRef in fountainFiles {
+            let fileURL = try getSecureURL(for: fileRef, in: project)
+
+            do {
+                let content = try String(contentsOf: fileURL, encoding: .utf8)
+                let characters = extractCharacters(from: content)
+                discoveredCharacters.formUnion(characters)
+            } catch {
+                // Skip files that can't be read
+                continue
+            }
+        }
+
+        // Convert to sorted CastMember array
+        return discoveredCharacters
+            .sorted()
+            .map { CastMember(character: $0) }
+    }
+
+    /// Extract CHARACTER elements from .fountain file content.
+    ///
+    /// Uses a simple line-based parser to find character names. A line is considered
+    /// a character if it:
+    /// - Is all uppercase (with optional parenthetical)
+    /// - Is not a transition (doesn't end with TO:)
+    /// - Is not scene heading (doesn't start with INT/EXT/EST)
+    /// - Is not empty or whitespace only
+    ///
+    /// - Parameter content: The .fountain file content
+    /// - Returns: Set of unique character names
+    private func extractCharacters(from content: String) -> Set<String> {
+        var characters = Set<String>()
+        let lines = content.split(separator: "\n", omittingEmptySubsequences: false)
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            // Skip empty lines
+            guard !trimmed.isEmpty else { continue }
+
+            // CHARACTER lines are typically all uppercase
+            // Remove parentheticals like "(CONT'D)" or "(V.O.)"
+            let withoutParenthetical = trimmed.replacingOccurrences(
+                of: "\\s*\\([^)]+\\)",
+                with: "",
+                options: .regularExpression
+            ).trimmingCharacters(in: .whitespaces)
+
+            // Must be all uppercase
+            guard withoutParenthetical == withoutParenthetical.uppercased() else { continue }
+
+            // Skip transitions (END WITH "TO:")
+            guard !withoutParenthetical.hasSuffix("TO:") else { continue }
+
+            // Skip scene headings
+            guard !withoutParenthetical.hasPrefix("INT."),
+                  !withoutParenthetical.hasPrefix("EXT."),
+                  !withoutParenthetical.hasPrefix("EST."),
+                  !withoutParenthetical.hasPrefix("INT/EXT") else { continue }
+
+            // Skip lines that are likely action (contain lowercase)
+            guard trimmed == trimmed.uppercased() else { continue }
+
+            // This is likely a character name
+            characters.insert(withoutParenthetical)
+        }
+
+        return characters
+    }
+}
+
+// MARK: - Cast List Merging Helper
+
+public extension ProjectService {
+    /// Merge discovered characters with existing cast, preserving user edits.
+    ///
+    /// - Parameters:
+    ///   - discovered: Newly discovered characters from .fountain files
+    ///   - existing: Existing cast list from PROJECT.md
+    /// - Returns: Merged cast list with preserved actor/voice data
+    ///
+    /// ## Merge Strategy
+    ///
+    /// - Characters in both lists: Keep existing actor/voices
+    /// - Characters only in discovered: Add as new (empty actor/voices)
+    /// - Characters only in existing: Keep (user may have manually added)
+    func mergeCastLists(discovered: [CastMember], existing: [CastMember]) -> [CastMember] {
+        var merged = [String: CastMember]()
+
+        // Start with existing cast (preserves user edits)
+        for member in existing {
+            merged[member.character] = member
+        }
+
+        // Add new characters from discovered
+        for member in discovered {
+            if merged[member.character] == nil {
+                merged[member.character] = member
+            }
+        }
+
+        // Return sorted by character name
+        return merged.values.sorted { $0.character < $1.character }
+    }
+}

@@ -206,6 +206,65 @@ Additional notes and production information go here...
 - `episodes`: Episode count (integer)
 - `genre`: Genre string
 - `tags`: Array of tag strings
+- `episodesDir`: Relative path to episode files (default: "episodes")
+- `audioDir`: Relative path for audio output (default: "audio")
+- `filePattern`: File discovery patterns (glob patterns or explicit files)
+- `exportFormat`: Audio export format (default: "m4a")
+- `cast`: Character-to-voice mappings for audio generation (see below)
+
+### Cast List for Audio Generation
+
+PROJECT.md supports inline character-to-voice mappings for TTS audio generation:
+
+```yaml
+---
+type: project
+title: Daily Dao Podcast
+author: Tom Stovall
+created: 2025-01-28T00:00:00Z
+
+# Character-to-voice mappings
+cast:
+  - character: NARRATOR
+    actor: Tom Stovall
+    voices:
+      - apple://en-US/Aaron
+      - elevenlabs://en/wise-elder
+  - character: LAO TZU
+    actor: Jason Manino
+    voices:
+      - qwen://en/narrative-1
+---
+```
+
+**Voice URI Format**: `<provider>://<voice_id>`
+- `apple://en-US/Aaron` - Apple TTS voice
+- `elevenlabs://en/wise-elder` - ElevenLabs voice
+- `qwen://en/narrative-1` - Qwen TTS voice
+
+**Voice Resolution**: During audio generation, voices are tried in order. The first voice matching an enabled provider is used. If no voices match, the default voice is used.
+
+#### Automatic Cast List Discovery
+
+```swift
+import SwiftProyecto
+
+let projectService = ProjectService(modelContext: context)
+let project = try await projectService.openProject(at: projectURL)
+
+// Discover characters from .fountain files
+let discoveredCast = try await projectService.discoverCastList(for: project)
+// Returns: [CastMember(character: "NARRATOR"), CastMember(character: "LAO TZU")]
+
+// Merge with existing cast list (preserves actor/voice assignments)
+if let existingCast = frontMatter.cast {
+    let merged = projectService.mergeCastLists(
+        discovered: discoveredCast,
+        existing: existingCast
+    )
+    // Update PROJECT.md with merged cast
+}
+```
 
 ### Basic Usage
 

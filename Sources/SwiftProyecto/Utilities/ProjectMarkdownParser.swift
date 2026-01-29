@@ -149,6 +149,23 @@ public struct ProjectMarkdownParser {
             yaml += "exportFormat: \(exportFormat)\n"
         }
 
+        // Cast list
+        if let cast = frontMatter.cast, !cast.isEmpty {
+            yaml += "cast:\n"
+            for member in cast {
+                yaml += "  - character: \(member.character)\n"
+                if let actor = member.actor {
+                    yaml += "    actor: \(actor)\n"
+                }
+                if !member.voices.isEmpty {
+                    yaml += "    voices:\n"
+                    for voice in member.voices {
+                        yaml += "      - \(voice)\n"
+                    }
+                }
+            }
+        }
+
         // Hook fields
         if let preGenerateHook = frontMatter.preGenerateHook {
             yaml += "preGenerateHook: \"\(preGenerateHook)\"\n"
