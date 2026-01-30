@@ -1,0 +1,181 @@
+//
+//  CastMember.swift
+//  SwiftProyecto
+//
+//  Copyright (c) 2025 Intrusive Memory
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a copy
+//  of this software and associated documentation files (the "Software"), to
+//  deal in the Software without restriction, including without limitation the
+//  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+//  sell copies of the Software, and to permit persons to whom the Software is
+//  furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+//  IN THE SOFTWARE.
+//
+
+import Foundation
+
+/// Gender specification for character roles.
+///
+/// Used to specify the expected or preferred gender for a character role,
+/// or to indicate that gender is not a factor for the role.
+public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable {
+    /// Male
+    case male = "M"
+
+    /// Female
+    case female = "F"
+
+    /// Non-binary
+    case nonBinary = "NB"
+
+    /// Not specified - role doesn't depend on character's gender
+    case notSpecified = "NS"
+
+    /// Display name for UI presentation
+    public var displayName: String {
+        switch self {
+        case .male: return "Male"
+        case .female: return "Female"
+        case .nonBinary: return "Non-Binary"
+        case .notSpecified: return "Not Specified"
+        }
+    }
+}
+
+/// A character-to-voice mapping for audio generation.
+///
+/// Maps screenplay characters to human actors and TTS voice URIs for
+/// audio generation. Voice URIs follow the hablare spec: `<provider>://<voice_id>`.
+///
+/// ## Voice Resolution
+///
+/// Voice URIs are tried in order during generation. The first voice that matches
+/// an enabled provider is used. If no voices match, the default voice is used.
+/// Invalid or unavailable voice URIs are silently skipped.
+///
+/// ## Example
+///
+/// ```swift
+/// let narrator = CastMember(
+///     character: "NARRATOR",
+///     actor: "Tom Stovall",
+///     gender: .male,
+///     voices: [
+///         "apple://en-US/Aaron",
+///         "elevenlabs://en/wise-elder",
+///         "qwen://en/narrative-1"
+///     ]
+/// )
+/// ```
+///
+/// ## YAML Representation
+///
+/// ```yaml
+/// cast:
+///   - character: NARRATOR
+///     actor: Tom Stovall
+///     gender: M
+///     voices:
+///       - apple://en-US/Aaron
+///       - elevenlabs://en/wise-elder
+/// ```
+public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
+
+    /// Character name (as it appears in .fountain CHARACTER elements)
+    /// Example: "NARRATOR", "LAO TZU", "COMMENTATOR"
+    /// This is mutable to allow character renaming
+    public var character: String
+
+    /// Optional actor/voice artist name (for credits/reference)
+    /// Example: "Tom Stovall", "Jason Manino"
+    public var actor: String?
+
+    /// Optional gender specification for the character role
+    /// Defaults to .notSpecified if not provided
+    public var gender: Gender?
+
+    /// Array of voice provider URIs (tries in order, first available wins)
+    /// Format: `<provider>://<voice_id>`
+    ///
+    /// Examples:
+    /// - "apple://en-US/Aaron"
+    /// - "elevenlabs://en/wise-elder"
+    /// - "qwen://en/narrative-1"
+    /// - "invalid-garbage" (allowed, will be skipped during generation)
+    ///
+    /// Invalid URIs are permitted and silently skipped at generation time.
+    public var voices: [String]
+
+    /// Unique identifier based on character name
+    public var id: String { character }
+
+    /// Create a new cast member
+    public init(
+        character: String,
+        actor: String? = nil,
+        gender: Gender? = nil,
+        voices: [String] = []
+    ) {
+        self.character = character
+        self.actor = actor
+        self.gender = gender
+        self.voices = voices
+    }
+
+    // MARK: - Convenience
+
+    /// Returns true if at least one voice is assigned
+    public var hasVoices: Bool {
+        !voices.isEmpty
+    }
+
+    /// Returns true if actor name is assigned
+    public var hasActor: Bool {
+        actor != nil && !(actor?.isEmpty ?? true)
+    }
+
+    /// Primary voice URI (first in array), if any
+    public var primaryVoice: String? {
+        voices.first
+    }
+
+    // MARK: - Equatable & Hashable
+
+    /// Two cast members are equal if they have the same character name
+    public static func == (lhs: CastMember, rhs: CastMember) -> Bool {
+        lhs.character == rhs.character
+    }
+
+    /// Hash based on character name only
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(character)
+    }
+
+    // MARK: - Codable
+
+    enum CodingKeys: String, CodingKey {
+        case character
+        case actor
+        case gender
+        case voices
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        character = try container.decode(String.self, forKey: .character)
+        actor = try container.decodeIfPresent(String.self, forKey: .actor)
+        gender = try container.decodeIfPresent(Gender.self, forKey: .gender)
+        voices = try container.decodeIfPresent([String].self, forKey: .voices) ?? []
+    }
+}

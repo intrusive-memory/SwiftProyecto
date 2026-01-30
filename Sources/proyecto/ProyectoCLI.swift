@@ -32,7 +32,7 @@ struct ProyectoCLI: AsyncParsableCommand {
               proyecto init --update            # Update existing PROJECT.md
               proyecto download                 # Download default LLM model
             """,
-        version: "2.2.0",
+        version: "2.3.0",
         subcommands: [InitCommand.self, DownloadCommand.self],
         defaultSubcommand: InitCommand.self
     )

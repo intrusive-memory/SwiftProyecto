@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Cast List Support**: Inline character-to-voice mappings for audio generation
+  - `CastMember` model: Maps characters to actors and voice URIs (provider://voice_id format)
+  - `cast: [CastMember]?` field in `ProjectFrontMatter` for storing cast list inline
+  - `discoverCastList(for:)` in `ProjectService`: Automatically extracts CHARACTER elements from .fountain files
+  - `mergeCastLists()` helper: Merges discovered characters with existing cast, preserving user edits
+  - Voice URI format: `<provider>://<voice_id>` (e.g., `apple://en-US/Aaron`, `elevenlabs://en/wise-elder`)
+  - Comprehensive tests for CastMember model, parsing, generation, and discovery
+
+### Changed
+
+- `ProjectMarkdownParser.generate()` now outputs inline cast list in YAML format
+- `ProjectFrontMatter` initializer includes new optional `cast` parameter
+- Cast list stored directly in PROJECT.md instead of separate custom-pages.json file
+
 ---
 
 ## [2.1.2] - 2026-01-27

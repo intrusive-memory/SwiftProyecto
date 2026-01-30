@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-2.2.0-blue.svg" />
+    <img src="https://img.shields.io/badge/Version-2.3.0-blue.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **file discovery and secure access** for screenplay project management. It discovers files in local directories or git repositories, manages security-scoped bookmarks for sandboxed environments, and provides secure URLs for apps to load and parse files using their own parsers.
@@ -206,6 +206,101 @@ Additional notes and production information go here...
 - `episodes`: Episode count (integer)
 - `genre`: Genre string
 - `tags`: Array of tag strings
+- `episodesDir`: Relative path to episode files (default: "episodes")
+- `audioDir`: Relative path for audio output (default: "audio")
+- `filePattern`: File discovery patterns (glob patterns or explicit files)
+- `exportFormat`: Audio export format (default: "m4a")
+- `cast`: Character-to-voice mappings for audio generation (see below)
+
+### Cast List for Audio Generation
+
+PROJECT.md supports inline character-to-voice mappings for TTS audio generation:
+
+```yaml
+---
+type: project
+title: Daily Dao Podcast
+author: Tom Stovall
+created: 2025-01-28T00:00:00Z
+
+# Character-to-voice mappings
+cast:
+  - character: NARRATOR
+    actor: Tom Stovall
+    voices:
+      - apple://com.apple.voice.compact.en-US.Aaron?lang=en
+      - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
+  - character: LAO TZU
+    actor: Jason Manino
+    voices:
+      - qwen-tts://male-voice-1?lang=en
+      - apple://com.apple.voice.premium.en-US.Tom?lang=en
+---
+```
+
+**Voice URI Format**: `<providerId>://<voiceId>?lang=<languageCode>`
+
+This format follows the [SwiftHablare VoiceURI specification](https://github.com/intrusive-memory/SwiftHablare):
+- `providerId`: Voice provider identifier (lowercase)
+- `voiceId`: Provider-specific voice identifier (case-sensitive)
+- `lang`: Optional language code parameter (e.g., `en`, `es`, `fr`)
+
+**Supported Providers & Voice ID Formats**:
+
+| Provider | providerId | Voice ID Format | Example |
+|----------|-----------|-----------------|---------|
+| **Apple TTS** | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `apple://com.apple.voice.compact.en-US.Samantha?lang=en` |
+| **ElevenLabs** | `elevenlabs` | Unique voice ID (alphanumeric) | `elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en` |
+| **Qwen TTS** | `qwen-tts` | Voice name or ID | `qwen-tts://female-voice-1?lang=en` |
+
+**Apple Voice Quality Levels**:
+- `premium` - High-quality enhanced voices
+- `compact` - Standard quality voices (default)
+
+**Example Voice URIs**:
+```yaml
+# Apple TTS voices
+- apple://com.apple.voice.premium.en-US.Allison?lang=en
+- apple://com.apple.voice.compact.en-US.Samantha?lang=en
+- apple://com.apple.voice.premium.es-ES.Monica?lang=es
+
+# ElevenLabs voices (voice ID from ElevenLabs dashboard)
+- elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
+- elevenlabs://pNInz6obpgDQGcFmaJgB?lang=en
+
+# Qwen TTS voices (local on-device inference)
+- qwen-tts://female-voice-1?lang=en
+- qwen-tts://male-voice-1?lang=zh
+```
+
+**Voice Resolution**: During audio generation, voices are tried in order. The first voice matching an enabled provider is used. If no voices match or a voice URI is invalid, it is skipped and the next is tried. If all voices fail, the default voice is used.
+
+**Finding Voice IDs**:
+- **Apple**: Use `AVSpeechSynthesisVoice.speechVoices()` to list available voices and their identifiers
+- **ElevenLabs**: Find voice IDs in your ElevenLabs dashboard under "Voices"
+- **Qwen TTS**: Run `hablare voices` CLI command to list available voices
+
+#### Automatic Cast List Discovery
+
+```swift
+import SwiftProyecto
+
+let projectService = ProjectService(modelContext: context)
+let project = try await projectService.openProject(at: projectURL)
+
+// Discover characters from .fountain files
+let discoveredCast = try await projectService.discoverCastList(for: project)
+// Returns: [CastMember(character: "NARRATOR"), CastMember(character: "LAO TZU")]
+
+// Merge with existing cast list (preserves actor/voice assignments)
+if let existingCast = frontMatter.cast {
+    let merged = projectService.mergeCastLists(
+        discovered: discoveredCast,
+        existing: existingCast
+    )
+    // Update PROJECT.md with merged cast
+}
+```
 
 ### Basic Usage
 
@@ -418,6 +513,150 @@ struct DocumentLoader<Content: View>: View {
 ```
 
 See `.claude/PHASE2_IMPLEMENTATION.md` in the Produciesta repository for a complete integration example.
+
+### PROJECT.md Processing & Command Arguments
+
+SwiftProyecto provides a complete pipeline for processing PROJECT.md metadata and generating per-file command arguments for audio generation:
+
+```mermaid
+classDiagram
+    class ProjectMarkdownParser {
+        +parse(fileURL: URL) (ProjectFrontMatter, String)
+        +parse(content: String) (ProjectFrontMatter, String)
+        +generate(frontMatter: ProjectFrontMatter, body: String) String
+    }
+
+    class ProjectFrontMatter {
+        +title: String
+        +author: String
+        +created: Date
+        +season: Int?
+        +episodes: Int?
+        +genre: String?
+        +tags: [String]?
+        +episodesDir: String?
+        +audioDir: String?
+        +filePattern: FilePattern?
+        +exportFormat: String?
+        +preGenerateHook: String?
+        +postGenerateHook: String?
+        +resolvedEpisodesDir: String
+        +resolvedAudioDir: String
+        +resolvedFilePatterns: [String]
+        +resolvedExportFormat: String
+    }
+
+    class ParseBatchArguments {
+        +projectPath: String
+        +output: String?
+        +episode: String?
+        +format: String
+        +skipExisting: Bool
+        +resumeFrom: Int?
+        +regenerate: Bool
+        +skipHooks: Bool
+        +useCastList: Bool
+        +castListPath: String?
+        +dryRun: Bool
+        +failFast: Bool
+        +verbose: Bool
+        +quiet: Bool
+        +jsonOutput: Bool
+        +validate() void
+    }
+
+    class ParseBatchConfig {
+        +title: String
+        +author: String
+        +projectURL: URL
+        +episodesDir: String
+        +audioDir: String
+        +filePatterns: [String]
+        +discoveredFiles: [URL]
+        +exportFormat: String
+        +preGenerateHook: String?
+        +postGenerateHook: String?
+        +skipExisting: Bool
+        +resumeFrom: Int?
+        +regenerate: Bool
+        +skipHooks: Bool
+        +useCastList: Bool
+        +castListPath: String?
+        +dryRun: Bool
+        +verbose: Bool
+        +quiet: Bool
+        +makeIterator() ParseFileIterator
+        +from(projectPath: String, args: ParseBatchArguments?) ParseBatchConfig$
+    }
+
+    class ProjectModel {
+        +parseBatchConfig(with: ParseBatchArguments?) ParseBatchConfig
+    }
+
+    class ParseFileIterator {
+        -batchConfig: ParseBatchConfig
+        -currentIndex: Int
+        -filesToProcess: [URL]
+        +next() ParseCommandArguments?
+        +collect() [ParseCommandArguments]
+        +totalCount: Int
+        +currentFileIndex: Int
+    }
+
+    class ParseCommandArguments {
+        +episodeFileURL: URL
+        +outputURL: URL
+        +exportFormat: String
+        +castListURL: URL?
+        +useCastList: Bool
+        +verbose: Bool
+        +quiet: Bool
+        +dryRun: Bool
+        +validate() void
+        +expectedOutputFilename: String
+        +outputExists: Bool
+    }
+
+    %% Parsing relationships
+    ProjectMarkdownParser --> ProjectFrontMatter : parse() returns
+    ProjectMarkdownParser --> ProjectFrontMatter : generate() consumes
+
+    %% Configuration relationships
+    ParseBatchArguments --> ParseBatchConfig : from() merges into
+    ProjectFrontMatter --> ParseBatchConfig : from() merges into
+    ProjectModel --> ParseBatchConfig : parseBatchConfig() creates
+
+    %% Internal usage
+    ParseBatchConfig ..> ProjectMarkdownParser : from() uses parse()
+    ParseBatchConfig ..> ProjectFrontMatter : from() reads via parser
+
+    %% Iterator relationships
+    ParseBatchConfig --> ParseFileIterator : makeIterator() creates
+    ParseFileIterator --> ParseCommandArguments : next() yields
+    ParseFileIterator ..> ParseBatchConfig : reads config
+
+    note for ParseBatchConfig "Static factory method:\nfrom(projectPath:args:)\n1. Parses PROJECT.md via ProjectMarkdownParser\n2. Merges ProjectFrontMatter + ParseBatchArguments\n3. Discovers files matching filePatterns\n4. Returns configured ParseBatchConfig"
+
+    note for ParseFileIterator "Iterator applies filters:\n- resumeFrom (skip first N files)\n- skipExisting (skip if output exists)\n- regenerate (ignore skipExisting)\nYields one ParseCommandArguments per file"
+
+    note for ParseCommandArguments "Single-file generation args\nConsumed by 'generate' command\nContains all info for one audio file"
+```
+
+**Flow**:
+1. **CLI** reads `ParseBatchArguments` from command-line flags
+2. **ParseBatchConfig.from(projectPath:args:)** creates batch configuration:
+   - Calls `ProjectMarkdownParser.parse(fileURL:)` to read PROJECT.md
+   - Returns `ProjectFrontMatter` with metadata
+   - Merges front matter defaults with CLI overrides (output dir, format, etc.)
+   - Discovers episode files matching `filePattern` glob patterns
+3. **ParseBatchConfig.makeIterator()** creates `ParseFileIterator`
+4. **ParseFileIterator.next()** yields `ParseCommandArguments` for each file:
+   - Applies `resumeFrom` filter (skip first N files)
+   - Applies `skipExisting` filter (skip if output exists, unless `regenerate`)
+   - Constructs output URL, resolves cast list, inherits flags
+5. **Generate command** receives single `ParseCommandArguments` for audio generation
+
+**Alternative**: Use `ProjectModel.parseBatchConfig(with:)` extension method to create config from an existing SwiftData project instance.
 
 ## proyecto CLI
 

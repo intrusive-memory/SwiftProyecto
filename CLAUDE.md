@@ -157,8 +157,29 @@ EOF
 - Required fields: type, title, author, created
 - Optional metadata fields: description, season, episodes, genre, tags
 - Optional generation config: episodesDir, audioDir, filePattern, exportFormat
+- Optional cast list: cast (array of CastMember for character-to-voice mappings)
 - Optional hooks: preGenerateHook, postGenerateHook
 - Convenience accessors: resolvedEpisodesDir, resolvedAudioDir, resolvedFilePatterns, resolvedExportFormat
+
+**Gender** - Gender specification for character roles
+- Enum values: `.male` (M), `.female` (F), `.nonBinary` (NB), `.notSpecified` (NS)
+- Used to specify expected or preferred gender for character roles
+- `.notSpecified` indicates role doesn't depend on character's gender
+- Codable with raw string values for PROJECT.md YAML
+- Display names: "Male", "Female", "Non-Binary", "Not Specified"
+
+**CastMember** - Character-to-voice mapping for audio generation
+- Maps screenplay characters to actors and TTS voice URIs
+- Fields: character (String), actor (String?), gender (Gender?), voices ([String])
+- Voice URI format: `<providerId>://<voiceId>?lang=<languageCode>` (follows SwiftHablare VoiceURI spec)
+  - Examples:
+    - `apple://com.apple.voice.compact.en-US.Samantha?lang=en` (Apple TTS)
+    - `elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en` (ElevenLabs)
+    - `qwen-tts://female-voice-1?lang=en` (Qwen TTS)
+- Stored inline in PROJECT.md cast array
+- Identity based on character name (mutable for renaming)
+- Voice resolution: First matching enabled provider is used, falls back to default if none match
+- No validation of voice URIs in model - validation happens at generation time
 
 **FilePattern** - Flexible file pattern type for generation config
 - Accepts single string or array of strings
@@ -171,6 +192,34 @@ EOF
 - Supports folders and files
 - Used for navigation UIs (OutlineGroup, List, etc.)
 
+### Audio Generation Models
+
+**ParseBatchArguments** - CLI batch-level flags for audio generation
+- Raw command-line arguments for processing multiple files
+- Fields: projectPath, output, format, skipExisting, resumeFrom, regenerate, skipHooks, useCastList, castListPath, dryRun, failFast, verbose, quiet, jsonOutput
+- Validation: Checks for mutually exclusive flags
+- Merged with PROJECT.md metadata to create ParseBatchConfig
+
+**ParseBatchConfig** - Resolved batch configuration from PROJECT.md + CLI overrides
+- Combines ProjectFrontMatter defaults with ParseBatchArguments overrides
+- Contains discovered episode files (discoveredFiles: [URL])
+- Provides iterator: `makeIterator() -> ParseFileIterator`
+- Factory methods: `from(projectPath:args:)` (static) or `ProjectModel.parseBatchConfig(with:)` (extension)
+- Includes hooks (preGenerateHook, postGenerateHook) and filter flags
+
+**ParseFileIterator** - Iterator yielding ParseCommandArguments for each file
+- Implements IteratorProtocol and Sequence
+- Applies filters during initialization (resumeFrom) and iteration (skipExisting)
+- Yields one ParseCommandArguments per discovered file
+- Methods: `next() -> ParseCommandArguments?`, `collect() -> [ParseCommandArguments]`
+- Properties: `totalCount`, `currentFileIndex`
+
+**ParseCommandArguments** - Single-file generation arguments
+- Command arguments for generating audio from ONE screenplay file
+- Fields: episodeFileURL, outputURL, exportFormat, castListURL, useCastList, verbose, quiet, dryRun
+- Validation: File existence, mutually exclusive flags, cast list requirements
+- This is what the `generate` command accepts as input
+
 ### Services
 
 **ProjectService** - Main service for project operations (@MainActor)
@@ -178,6 +227,8 @@ EOF
 - **Project Management**: `createProject(at:title:author:...)`, `openProject(at:)`
 - **Bookmark Management**: `getSecureURL(for:in:)`, `refreshBookmark(for:in:)`, `createFileBookmark(for:in:)`
 - **PROJECT.md**: Reads/writes project metadata files
+- **Cast List Discovery**: `discoverCastList(for:)` - Automatically extracts CHARACTER elements from .fountain files
+- **Cast List Merging**: `mergeCastLists(discovered:existing:)` - Merges discovered characters with existing cast, preserving user edits
 
 **ModelContainerFactory** - SwiftData container creation
 - Creates containers for project metadata only
@@ -259,6 +310,16 @@ episodesDir: scripts
 audioDir: output
 filePattern: "*.fountain"
 exportFormat: m4a
+cast:
+  - character: NARRATOR
+    actor: Tom Stovall
+    voices:
+      - apple://en-US/Aaron
+      - elevenlabs://en/wise-elder
+  - character: LAO TZU
+    actor: Jason Manino
+    voices:
+      - qwen://en/narrative-1
 preGenerateHook: "./scripts/prepare.sh"
 postGenerateHook: "./scripts/upload.sh"
 ---
@@ -343,6 +404,185 @@ let parser = ProjectMarkdownParser()
 let projectMdURL = folderURL.appendingPathComponent("PROJECT.md")
 let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
 ```
+
+### Cast List Discovery Pattern
+
+SwiftProyecto can automatically discover characters from .fountain files and generate cast list entries:
+
+```swift
+import SwiftProyecto
+
+// 1. Discover characters from all .fountain files in project
+let projectService = ProjectService(modelContext: context)
+let project = try await projectService.openProject(at: folderURL)
+
+let discoveredCast = try await projectService.discoverCastList(for: project)
+// Returns: [CastMember(character: "NARRATOR"), CastMember(character: "LAO TZU")]
+// All actor and voices fields are nil/empty - user fills these in manually
+
+// 2. Merge with existing cast list (preserves user edits)
+let parser = ProjectMarkdownParser()
+let (frontMatter, body) = try parser.parse(fileURL: folderURL.appendingPathComponent("PROJECT.md"))
+
+let existingCast = frontMatter.cast ?? []
+let mergedCast = projectService.mergeCastLists(
+    discovered: discoveredCast,
+    existing: existingCast
+)
+// Existing actor/voice assignments are preserved
+// New characters are added with empty actor/voices
+// Old characters not in .fountain files are preserved
+
+// 3. Update PROJECT.md with merged cast
+let updatedFrontMatter = ProjectFrontMatter(
+    title: frontMatter.title,
+    author: frontMatter.author,
+    created: frontMatter.created,
+    cast: mergedCast
+    // ... other fields
+)
+let updatedMarkdown = parser.generate(frontMatter: updatedFrontMatter, body: body)
+try updatedMarkdown.write(
+    to: folderURL.appendingPathComponent("PROJECT.md"),
+    atomically: true,
+    encoding: .utf8
+)
+```
+
+**Character Extraction Rules**:
+- Extracts all-uppercase lines from .fountain files
+- Removes parentheticals like `(V.O.)`, `(CONT'D)`, `(O.S.)`
+- Ignores transitions (lines ending with `TO:`)
+- Ignores scene headings (`INT.`, `EXT.`, `EST.`)
+- Deduplicates across all files in project
+- Returns sorted by character name
+
+**Merge Strategy**:
+- Characters in both lists: Keep existing actor/voices (preserves user edits)
+- Characters only in discovered: Add as new (empty actor/voices)
+- Characters only in existing: Keep (user may have manually added)
+
+**Voice URI Format**: `<providerId>://<voiceId>?lang=<languageCode>`
+
+Follows [SwiftHablare VoiceURI specification](https://github.com/intrusive-memory/SwiftHablare):
+
+| Provider | providerId | Voice ID Format | Example |
+|----------|-----------|-----------------|---------|
+| Apple TTS | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `apple://com.apple.voice.compact.en-US.Samantha?lang=en` |
+| ElevenLabs | `elevenlabs` | Unique voice ID (alphanumeric) | `elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en` |
+| Qwen TTS | `qwen-tts` | Voice name or ID | `qwen-tts://female-voice-1?lang=en` |
+
+### Audio Generation Iterator Pattern
+
+SwiftProyecto provides an iterator pattern for batch audio generation from PROJECT.md configuration:
+
+```swift
+import SwiftProyecto
+
+// 1. Create batch configuration from PROJECT.md
+let projectPath = "/Users/username/Projects/podcast-meditations"
+let args = ParseBatchArguments(
+    projectPath: projectPath,
+    format: "m4a",
+    skipExisting: true,
+    verbose: true
+)
+
+// Parse PROJECT.md and discover episode files
+let batchConfig = try ParseBatchConfig.from(projectPath: projectPath, args: args)
+
+print("Project: \(batchConfig.title)")
+print("Author: \(batchConfig.author)")
+print("Discovered \(batchConfig.discoveredFiles.count) episode files")
+
+// 2. Create iterator to yield per-file generation arguments
+var iterator = batchConfig.makeIterator()
+
+// 3. Iterate over each episode file
+while let commandArgs = iterator.next() {
+    print("\nProcessing: \(commandArgs.episodeFileURL.lastPathComponent)")
+    print("  Input:  \(commandArgs.episodeFileURL.path)")
+    print("  Output: \(commandArgs.outputURL.path)")
+    print("  Format: \(commandArgs.exportFormat)")
+
+    if let castListURL = commandArgs.castListURL {
+        print("  Cast List: \(castListURL.path)")
+    }
+
+    // Validate arguments before generation
+    try commandArgs.validate()
+
+    if commandArgs.dryRun {
+        print("  [DRY RUN] Skipping actual generation")
+        continue
+    }
+
+    if commandArgs.outputExists && batchConfig.skipExisting {
+        print("  [SKIP] Output file already exists")
+        continue
+    }
+
+    // 4. Pass commandArgs to your audio generation function
+    // try await generateAudio(with: commandArgs)
+}
+
+print("\nProcessed \(iterator.currentFileIndex) of \(iterator.totalCount) files")
+```
+
+**Alternative: Using ProjectModel**
+
+If you already have a SwiftData `ProjectModel` instance, use the extension method:
+
+```swift
+import SwiftProyecto
+
+// 1. Open project with ProjectService
+let projectService = ProjectService(modelContext: context)
+let project = try await projectService.openProject(at: folderURL)
+
+// 2. Create batch configuration from ProjectModel
+let args = ParseBatchArguments(
+    projectPath: project.sourceRootURL,
+    output: "custom-audio-dir",
+    format: "mp3",
+    resumeFrom: 10  // Resume from episode 10
+)
+
+let batchConfig = try project.parseBatchConfig(with: args)
+
+// 3. Iterate and generate
+var iterator = batchConfig.makeIterator()
+while let commandArgs = iterator.next() {
+    print("Episode: \(commandArgs.episodeFileURL.lastPathComponent)")
+    // Process file...
+}
+```
+
+**Collect All Arguments**
+
+To get all `ParseCommandArguments` as an array without iterating:
+
+```swift
+var iterator = batchConfig.makeIterator()
+let allArgs = iterator.collect()
+
+print("Total files to process: \(allArgs.count)")
+
+for (index, args) in allArgs.enumerated() {
+    print("\(index + 1). \(args.episodeFileURL.lastPathComponent) → \(args.outputURL.lastPathComponent)")
+}
+```
+
+**Iterator Behavior**:
+- **resumeFrom**: Skips first N files during iterator initialization
+- **skipExisting**: Skips files during iteration if output exists (unless `regenerate` is true)
+- **regenerate**: Ignores `skipExisting` filter, processes all files
+- **Filters are applied automatically**: No need to check manually
+
+**Configuration Priority**:
+1. CLI arguments (`ParseBatchArguments`) - highest priority
+2. PROJECT.md front matter (`ProjectFrontMatter`) - default values
+3. Built-in defaults (`episodesDir: "episodes"`, `audioDir: "audio"`, `exportFormat: "m4a"`)
 
 ---
 
