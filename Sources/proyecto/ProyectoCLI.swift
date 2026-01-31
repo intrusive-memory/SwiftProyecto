@@ -209,7 +209,7 @@ struct InitCommand: AsyncParsableCommand {
                 created: existing.created,  // Preserve original created date
                 description: generatedFrontMatter.description,
                 season: existing.season ?? generatedFrontMatter.season,  // Preserve existing if set
-                episodes: existing.episodes ?? generatedFrontMatter.episodes,  // Preserve existing if set
+                episodes: generatedFrontMatter.episodes,  // ALWAYS use actual file count
                 genre: generatedFrontMatter.genre,
                 tags: generatedFrontMatter.tags,
                 episodesDir: generatedFrontMatter.episodesDir,

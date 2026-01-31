@@ -48,6 +48,15 @@ class IterativeProjectGenerator {
                 continue
             }
 
+            // Use direct count for episodes (no LLM query)
+            if section == .episodes {
+                let count = context.screenplayFileCount
+                let result = count > 0 ? Optional<Int>.some(count) as Any : Optional<Int>.none as Any
+                results[.episodes] = result
+                progressHandler?(section, "✓ \(section.displayName): \(formatResultPreview(result))")
+                continue
+            }
+
             progressHandler?(section, "Querying LLM for \(section.displayName)...")
 
             do {
