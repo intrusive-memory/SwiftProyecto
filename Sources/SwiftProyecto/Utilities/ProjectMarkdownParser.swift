@@ -114,13 +114,13 @@ public struct ProjectMarkdownParser {
     /// - Returns: Complete PROJECT.md content string
     public func generate(frontMatter: ProjectFrontMatter, body: String = "") -> String {
         var yaml = "---\n"
-        yaml += "type: \(frontMatter.type)\n"
-        yaml += "title: \(frontMatter.title)\n"
-        yaml += "author: \(frontMatter.author)\n"
+        yaml += "type: \(escapeYAMLString(frontMatter.type))\n"
+        yaml += "title: \(escapeYAMLString(frontMatter.title))\n"
+        yaml += "author: \(escapeYAMLString(frontMatter.author))\n"
         yaml += "created: \(ISO8601DateFormatter().string(from: frontMatter.created))\n"
 
         if let description = frontMatter.description {
-            yaml += "description: \(description)\n"
+            yaml += "description: \(escapeYAMLString(description))\n"
         }
         if let season = frontMatter.season {
             yaml += "season: \(season)\n"
@@ -129,38 +129,38 @@ public struct ProjectMarkdownParser {
             yaml += "episodes: \(episodes)\n"
         }
         if let genre = frontMatter.genre {
-            yaml += "genre: \(genre)\n"
+            yaml += "genre: \(escapeYAMLString(genre))\n"
         }
         if let tags = frontMatter.tags {
-            yaml += "tags: [\(tags.joined(separator: ", "))]\n"
+            yaml += "tags: [\(tags.map { escapeYAMLString($0) }.joined(separator: ", "))]\n"
         }
 
         // Generation configuration fields
         if let episodesDir = frontMatter.episodesDir {
-            yaml += "episodesDir: \(episodesDir)\n"
+            yaml += "episodesDir: \(escapeYAMLString(episodesDir))\n"
         }
         if let audioDir = frontMatter.audioDir {
-            yaml += "audioDir: \(audioDir)\n"
+            yaml += "audioDir: \(escapeYAMLString(audioDir))\n"
         }
         if let filePattern = frontMatter.filePattern {
             yaml += "filePattern: \(formatFilePattern(filePattern))\n"
         }
         if let exportFormat = frontMatter.exportFormat {
-            yaml += "exportFormat: \(exportFormat)\n"
+            yaml += "exportFormat: \(escapeYAMLString(exportFormat))\n"
         }
 
         // Cast list
         if let cast = frontMatter.cast, !cast.isEmpty {
             yaml += "cast:\n"
             for member in cast {
-                yaml += "  - character: \(member.character)\n"
+                yaml += "  - character: \(escapeYAMLString(member.character))\n"
                 if let actor = member.actor {
-                    yaml += "    actor: \(actor)\n"
+                    yaml += "    actor: \(escapeYAMLString(actor))\n"
                 }
                 if !member.voices.isEmpty {
                     yaml += "    voices:\n"
                     for voice in member.voices {
-                        yaml += "      - \(voice)\n"
+                        yaml += "      - \(escapeYAMLString(voice))\n"
                     }
                 }
             }
@@ -168,26 +168,26 @@ public struct ProjectMarkdownParser {
 
         // Hook fields
         if let preGenerateHook = frontMatter.preGenerateHook {
-            yaml += "preGenerateHook: \"\(preGenerateHook)\"\n"
+            yaml += "preGenerateHook: \(escapeYAMLString(preGenerateHook))\n"
         }
         if let postGenerateHook = frontMatter.postGenerateHook {
-            yaml += "postGenerateHook: \"\(postGenerateHook)\"\n"
+            yaml += "postGenerateHook: \(escapeYAMLString(postGenerateHook))\n"
         }
 
         // TTS configuration
         if let tts = frontMatter.tts {
             yaml += "tts:\n"
             if let providerId = tts.providerId {
-                yaml += "  providerId: \(providerId)\n"
+                yaml += "  providerId: \(escapeYAMLString(providerId))\n"
             }
             if let voiceId = tts.voiceId {
-                yaml += "  voiceId: \(voiceId)\n"
+                yaml += "  voiceId: \(escapeYAMLString(voiceId))\n"
             }
             if let languageCode = tts.languageCode {
-                yaml += "  languageCode: \(languageCode)\n"
+                yaml += "  languageCode: \(escapeYAMLString(languageCode))\n"
             }
             if let voiceURI = tts.voiceURI {
-                yaml += "  voiceURI: \"\(voiceURI)\"\n"
+                yaml += "  voiceURI: \(escapeYAMLString(voiceURI))\n"
             }
         }
 
@@ -208,6 +208,42 @@ public struct ProjectMarkdownParser {
         case .multiple(let values):
             return "[\(values.map { "\"\($0)\"" }.joined(separator: ", "))]"
         }
+    }
+
+    /// Safely escape a string for YAML output.
+    ///
+    /// Determines if a string needs quoting and applies appropriate escaping:
+    /// - Strings with special characters (quotes, colons, etc.) are quoted
+    /// - Double quotes inside strings are escaped
+    /// - Empty strings and strings with leading/trailing whitespace are quoted
+    ///
+    /// - Parameter string: The string to escape
+    /// - Returns: A YAML-safe string representation
+    private func escapeYAMLString(_ string: String) -> String {
+        // Empty strings need quotes
+        if string.isEmpty {
+            return "\"\""
+        }
+
+        // Check if string needs quoting
+        let needsQuoting = string.contains(where: { char in
+            // YAML special characters that require quoting
+            "\"':{}[],&*#?|<>=!%@`".contains(char)
+        }) || string.hasPrefix("@") || string.hasPrefix("%") ||
+           string.hasPrefix(" ") || string.hasSuffix(" ") ||
+           string.contains("\n") || string.contains("\t")
+
+        if !needsQuoting {
+            return string
+        }
+
+        // Use double quotes and escape internal double quotes
+        let escaped = string.replacingOccurrences(of: "\\", with: "\\\\")
+                           .replacingOccurrences(of: "\"", with: "\\\"")
+                           .replacingOccurrences(of: "\n", with: "\\n")
+                           .replacingOccurrences(of: "\t", with: "\\t")
+
+        return "\"\(escaped)\""
     }
 
     // MARK: - Private Helpers
