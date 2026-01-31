@@ -648,7 +648,16 @@ See `.claude/REFACTORING_PLAN.md` for complete Produciesta integration guide.
 
 ## Building
 
-**CRITICAL: Use the correct xcodebuild destination for macOS 26 on Apple Silicon.**
+**CRITICAL: The `proyecto` CLI MUST be built with `xcodebuild`, NOT `swift build`.**
+
+### Why xcodebuild is Required
+
+The `proyecto` CLI uses **SwiftBruja** for on-device LLM inference, which depends on **MLX** (Apple's ML framework). MLX requires **Metal shaders** to be compiled into a `.metallib` bundle (`mlx-swift_Cmlx.bundle`).
+
+- ✅ **xcodebuild**: Compiles Metal shaders + creates `.bundle` → CLI works
+- ❌ **swift build**: No Metal shader compilation → CLI fails with `MLX error: Failed to load the default metallib`
+
+### Build Commands
 
 ```bash
 # Build and install proyecto CLI to ./bin (Debug, with Metal shaders)
@@ -657,10 +666,11 @@ make install
 # Build and install proyecto CLI to ./bin (Release, with Metal shaders)
 make release
 
-# Development build only (swift build - fast but no Metal shaders)
+# Development build only (swift build - fast but NO Metal shaders)
+# ⚠️ WARNING: Binary will NOT work for LLM features
 make build
 
-# Run tests
+# Run tests (library tests only, no LLM)
 make test
 
 # Clean all build artifacts
@@ -670,16 +680,26 @@ make clean
 make help
 ```
 
-**Manual xcodebuild (if not using Makefile):**
+### Manual xcodebuild (if not using Makefile)
+
+**CRITICAL: Use the correct destination string for macOS 26 on Apple Silicon.**
+
 ```bash
 # MUST use this exact destination string for macOS 26 Apple Silicon:
 xcodebuild -scheme proyecto -destination 'platform=macOS,arch=arm64' build
+
+# Find the built binary and Metal bundle:
+# Binary: ~/Library/Developer/Xcode/DerivedData/SwiftProyecto-*/Build/Products/Debug/proyecto
+# Bundle: ~/Library/Developer/Xcode/DerivedData/SwiftProyecto-*/Build/Products/Debug/mlx-swift_Cmlx.bundle
 ```
 
 **Destination String:**
 - ✅ CORRECT: `'platform=macOS,arch=arm64'`
 - ❌ WRONG: `'platform=OS X'` (legacy, doesn't specify architecture)
 - ❌ WRONG: `'platform=macOS'` (missing architecture)
+
+**Metal Bundle:**
+The `mlx-swift_Cmlx.bundle` must be copied alongside the `proyecto` binary for the CLI to work. The Makefile handles this automatically (lines 30-32, 50-52 in Makefile).
 
 ---
 

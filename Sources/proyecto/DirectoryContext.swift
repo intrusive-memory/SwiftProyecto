@@ -18,6 +18,7 @@ struct DirectoryContext: Sendable {
     let structure: String
     let fileCount: Int
     let detectedPatterns: [String]
+    let screenplayFileCount: Int
 }
 
 /// Analyzes a directory and gathers context for LLM queries.
@@ -38,7 +39,8 @@ struct DirectoryAnalyzer {
             gitAuthor: gitAuthor,
             structure: context.structure,
             fileCount: context.fileCount,
-            detectedPatterns: context.detectedPatterns
+            detectedPatterns: context.detectedPatterns,
+            screenplayFileCount: context.screenplayFileCount
         )
     }
 
@@ -49,6 +51,7 @@ struct DirectoryAnalyzer {
         // Gather file information
         var files: [String] = []
         var detectedExtensions: Set<String> = []
+        var screenplayFileCount = 0
 
         if let enumerator = fileManager.enumerator(
             at: directory,
@@ -75,6 +78,17 @@ struct DirectoryAnalyzer {
                     let ext = fileURL.pathExtension.lowercased()
                     if !ext.isEmpty {
                         detectedExtensions.insert(ext)
+                    }
+
+                    // Count screenplay files (.fountain, .fdx, .highland, .md excluding root)
+                    let screenplayExtensions = ["fountain", "fdx", "highland"]
+                    if screenplayExtensions.contains(ext) {
+                        screenplayFileCount += 1
+                    } else if ext == "md" {
+                        // Only count .md files NOT in root directory
+                        if relativePath.contains("/") {
+                            screenplayFileCount += 1
+                        }
                     }
                 }
             }
@@ -114,7 +128,8 @@ struct DirectoryAnalyzer {
             gitAuthor: nil,  // Will be set in analyze()
             structure: structure,
             fileCount: fileCount,
-            detectedPatterns: patterns
+            detectedPatterns: patterns,
+            screenplayFileCount: screenplayFileCount
         )
     }
 
