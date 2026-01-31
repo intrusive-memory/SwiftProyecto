@@ -635,8 +635,9 @@ final class ProjectMarkdownParserTests: XCTestCase {
 
         let generated = parser.generate(frontMatter: frontMatter)
 
-        XCTAssertTrue(generated.contains("preGenerateHook: \"./scripts/pre.sh\""))
-        XCTAssertTrue(generated.contains("postGenerateHook: \"./scripts/post.sh\""))
+        // Hooks without special characters are not quoted (valid YAML)
+        XCTAssertTrue(generated.contains("preGenerateHook: ./scripts/pre.sh"))
+        XCTAssertTrue(generated.contains("postGenerateHook: ./scripts/post.sh"))
     }
 
     func testGenerate_WithoutGenerationConfig() {
