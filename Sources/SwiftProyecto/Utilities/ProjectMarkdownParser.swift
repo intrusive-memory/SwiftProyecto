@@ -157,13 +157,10 @@ public struct ProjectMarkdownParser {
                 if let actor = member.actor {
                     yaml += "    actor: \(escapeYAMLString(actor))\n"
                 }
-                if let gender = member.gender {
-                    yaml += "    gender: \(gender.rawValue)\n"
-                }
                 if !member.voices.isEmpty {
                     yaml += "    voices:\n"
-                    for (provider, voiceId) in member.voices.sorted(by: { $0.key < $1.key }) {
-                        yaml += "      \(provider): \(escapeYAMLString(voiceId))\n"
+                    for voice in member.voices {
+                        yaml += "      - \(escapeYAMLString(voice))\n"
                     }
                 }
             }
@@ -191,13 +188,6 @@ public struct ProjectMarkdownParser {
             }
             if let voiceURI = tts.voiceURI {
                 yaml += "  voiceURI: \(escapeYAMLString(voiceURI))\n"
-            }
-        }
-
-        // App-specific settings sections (at root level)
-        if !frontMatter.appSections.isEmpty {
-            for (key, value) in frontMatter.appSections.sorted(by: { $0.key < $1.key }) {
-                yaml += try! generateAppSectionYAML(key: key, value: value)
             }
         }
 
