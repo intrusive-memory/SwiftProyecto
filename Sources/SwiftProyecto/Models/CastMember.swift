@@ -110,8 +110,8 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     /// Example: "Deep, warm baritone with measured pacing and gravitas"
     public var voiceDescription: String?
 
-    /// Dictionary of voice identifiers by provider.
-    /// Keys are provider names (e.g., "apple", "elevenlabs"), values are voice identifiers.
+    /// Array of voice provider URIs (tries in order, first available wins)
+    /// Format: `<provider>://<voice_id>`
     ///
     /// Examples:
     /// - "apple": "com.apple.voice.compact.en-US.Aaron"
@@ -130,7 +130,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         actor: String? = nil,
         gender: Gender? = nil,
         voiceDescription: String? = nil,
-        voices: [String: String] = [:]
+        voices: [String] = []
     ) {
         self.character = character
         self.actor = actor
@@ -224,6 +224,6 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         actor = try container.decodeIfPresent(String.self, forKey: .actor)
         gender = try container.decodeIfPresent(Gender.self, forKey: .gender)
         voiceDescription = try container.decodeIfPresent(String.self, forKey: .voiceDescription)
-        voices = try container.decodeIfPresent([String: String].self, forKey: .voices) ?? [:]
+        voices = try container.decodeIfPresent([String].self, forKey: .voices) ?? []
     }
 }
