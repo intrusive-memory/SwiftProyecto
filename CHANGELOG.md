@@ -7,10 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [2.5.0] - 2026-02-01
+
 ### Added
 
+- **CastMember.voiceDescription**: Optional field for describing desired voice characteristics
+  - Used by CastMatcher in SwiftHablare for intelligent TTS voice selection
+  - Example: "Deep, warm baritone with measured pacing and gravitas"
+  - Fully integrated with PROJECT.md YAML parsing and generation
+  - Backward-compatible (optional field with sensible defaults)
+
 - **Cast List Support**: Inline character-to-voice mappings for audio generation
-  - `CastMember` model: Maps characters to actors and voice URIs (provider://voice_id format)
+  - `CastMember` model: Maps characters to actors, voice descriptions, and voice URIs
   - `cast: [CastMember]?` field in `ProjectFrontMatter` for storing cast list inline
   - `discoverCastList(for:)` in `ProjectService`: Automatically extracts CHARACTER elements from .fountain files
   - `mergeCastLists()` helper: Merges discovered characters with existing cast, preserving user edits
@@ -22,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ProjectMarkdownParser.generate()` now outputs inline cast list in YAML format
 - `ProjectFrontMatter` initializer includes new optional `cast` parameter
 - Cast list stored directly in PROJECT.md instead of separate custom-pages.json file
+- `CastMember` fields: character (String), actor (String?), gender (Gender?), **voiceDescription (String?)**, voices ([String])
 
 ---
 
@@ -384,7 +395,8 @@ This release completes a major refactoring that transforms SwiftProyecto into a 
 - Basic tests pass (version check, placeholder test)
 - Repository published to GitHub
 
-[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.2...HEAD
+[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.2...v2.5.0
 [2.1.2]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.0...v2.1.1
 [0.5.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v0.4.0...v0.5.0
