@@ -2,22 +2,9 @@
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 3.0.0 (February 2026)
+**Current Version**: 2.5.0 (February 2026)
 
-**Latest Changes (v3.0.0)**:
-- **BREAKING**: Voice representation migrated from URL-style to key/value pairs
-- Simpler API: `voice(for: "apple")` replaces `filterVoices(provider:)`
-- Faster voice lookups with dictionary-based storage
-- Better type safety with provider names as keys
-
-**Previous Changes (v2.6.0)**:
-- AppFrontMatterSettings protocol for extensible app-specific settings
-- Namespaced settings sections in PROJECT.md frontmatter
-- AnyCodable type-erased wrapper for storage
-- Complete extension system with 50+ tests
-- Full backward compatibility maintained
-
-**Previous Changes (v2.5.0)**:
+**Latest Changes**:
 - CastMember.voiceDescription field for TTS voice selection guidance
 - Inline cast list support in PROJECT.md
 - Cast list discovery and merging helpers
@@ -26,75 +13,24 @@ This file provides comprehensive documentation for AI agents working with the Sw
 
 ## Project Overview
 
-SwiftProyecto is a Swift package providing **extensible, agentic discovery of content projects and project components**.
-
-**Purpose**: This project exists to help AI coding agents understand content projects in a single pass, eliminating the need for multiple utilities and discovery iterations. By storing project settings, utilities, intent, and composition in structured PROJECT.md front matter, AI agents can immediately comprehend what a project is, how it's structured, and how to render its content.
-
-**Core Capabilities**:
-- **Agentic Metadata**: Machine-readable PROJECT.md front matter for AI agent consumption
-  - Project intent (title, author, genre, description, tags)
-  - Composition structure (season, episodes, file patterns)
-  - Generation settings (output directories, export formats)
-  - Cast lists (character-to-voice mappings for TTS)
-  - Workflow hooks (pre/post-generation automation)
-  - App-specific settings (extensible via AppFrontMatterSettings protocol - **NEW in v2.6.0**)
-- **File Discovery**: Recursively discover project components in folders/git repos
-- **Secure Access**: Security-scoped bookmarks for sandboxed environments
-- **Hierarchical Structure**: FileNode trees for navigation
-- **SwiftData Persistence**: Project metadata and file references
+SwiftProyecto is a Swift package for **file discovery and project metadata management** in screenplay applications. It provides:
+- Project folder management and file discovery
+- PROJECT.md metadata parsing and generation
+- Security-scoped bookmark handling
+- File tree building for navigation UIs
 
 **What SwiftProyecto Does**:
-- ✅ Provides structured metadata for AI agents to understand projects
-- ✅ Discovers files and builds navigable project structure
-- ✅ Stores rendering settings and utilities in front matter
-- ✅ Enables single-pass project comprehension (not multi-pass inference)
-- ✅ Parses and generates PROJECT.md with YAML front matter
+- ✅ Discovers screenplay files in folders/git repos
+- ✅ Manages PROJECT.md metadata
+- ✅ Provides security-scoped URLs for file access
+- ✅ Builds hierarchical file trees
 
 **What SwiftProyecto Does NOT Do**:
-- ❌ Parse content files (use SwiftCompartido or other parsers)
-- ❌ Render or generate content (provides metadata to renderers)
-- ❌ Store content models (apps handle integration)
+- ❌ Parse screenplay files (use SwiftCompartido)
+- ❌ Store document models (apps handle integration)
 - ❌ Display UI (provides data only)
 
 **Platforms**: iOS 26.0+, macOS 26.0+
-
----
-
-## 📦 Extending PROJECT.md with App-Specific Settings
-
-**SwiftProyecto 2.6.0+ supports an extension system** that allows apps to define their own settings sections in PROJECT.md frontmatter without modifying the library.
-
-### Quick Example
-
-```swift
-// 1. Define your settings
-struct MyAppSettings: AppFrontMatterSettings {
-    static let sectionKey = "myapp"
-    var theme: String?
-    var autoSave: Bool?
-}
-
-// 2. Read settings
-let (frontMatter, _) = try parser.parse(fileURL: projectURL)
-let settings = try frontMatter.settings(for: MyAppSettings.self)
-
-// 3. Write settings
-var frontMatter = ProjectFrontMatter(title: "My Project")
-try frontMatter.setSettings(MyAppSettings(theme: "dark"))
-```
-
-**📖 Complete Guide**: See [**Docs/EXTENDING_PROJECT_MD.md**](Docs/EXTENDING_PROJECT_MD.md) for:
-- Step-by-step implementation guide
-- Complete examples (podcast app, screenplay tools)
-- Best practices and common patterns
-- UserDefaults sync, settings migration, multi-app coexistence
-- Troubleshooting
-
-**Key Benefits:**
-- ✅ Type-safe with Codable
-- ✅ No coupling between SwiftProyecto and your app
-- ✅ Multiple apps can store settings in same PROJECT.md
-- ✅ Backward compatible with existing PROJECT.md files
 
 ---
 
@@ -243,39 +179,25 @@ EOF
 
 **CastMember** - Character-to-voice mapping for audio generation
 - Maps screenplay characters to actors and TTS voice URIs
-- Fields: character (String), actor (String?), gender (Gender?), voiceDescription (String?), voices ([String: String])
-- Voice format: Key/value pairs where key is provider name, value is voice identifier
+- Fields: character (String), actor (String?), gender (Gender?), voiceDescription (String?), voices ([String])
+- Voice URI format: `<providerId>://<voiceId>?lang=<languageCode>` (follows SwiftHablare VoiceURI spec)
   - Examples:
-    - `apple: com.apple.voice.compact.en-US.Samantha` (Apple TTS)
-    - `elevenlabs: 21m00Tcm4TlvDq8ikWAM` (ElevenLabs)
-    - `voxalta: female-voice-1` (VoxAlta)
+    - `apple://com.apple.voice.compact.en-US.Samantha?lang=en` (Apple TTS)
+    - `elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en` (ElevenLabs)
+    - `qwen-tts://female-voice-1?lang=en` (Qwen TTS)
 - **voiceDescription** (v2.5.0+): Optional description of desired voice characteristics for TTS voice selection
   - Used by CastMatcher in SwiftHablare to guide intelligent voice selection
   - Example: "Deep, warm baritone with measured pacing and gravitas"
 - Stored inline in PROJECT.md cast array
 - Identity based on character name (mutable for renaming)
-- Voice resolution: Appropriate voice is selected based on enabled TTS provider
-- No validation of voice identifiers in model - validation happens at generation time
+- Voice resolution: First matching enabled provider is used, falls back to default if none match
+- No validation of voice URIs in model - validation happens at generation time
 
 **FilePattern** - Flexible file pattern type for generation config
 - Accepts single string or array of strings
 - Normalizes to array via `.patterns` property
 - Supports glob patterns (e.g., "*.fountain") and explicit file lists
 - Codable with automatic string/array detection
-
-**AppFrontMatterSettings** - Protocol for app-specific settings extension (v2.6.0+)
-- Defines contract for type-safe, namespaced settings in PROJECT.md
-- Requires `sectionKey` static property for YAML section name
-- Conforms to Codable and Sendable
-- Apps implement this protocol to define their own settings
-- Settings stored in dedicated YAML section (e.g., `myapp:`)
-- See [Docs/EXTENDING_PROJECT_MD.md](../Docs/EXTENDING_PROJECT_MD.md) for complete guide
-
-**AnyCodable** - Type-erased wrapper for Codable values (v2.6.0+)
-- Internal utility for storing app settings without SwiftProyecto knowing their types
-- Wraps any Codable value while preserving encoding/decoding
-- Used by ProjectFrontMatter to store app-specific settings
-- Not exposed in public API (apps use generic `settings(for:)` methods)
 
 **FileNode** - Hierarchical tree structure for file navigation
 - Built from flat ProjectFileReference array
@@ -405,13 +327,13 @@ cast:
     actor: Tom Stovall
     voiceDescription: "Deep, warm baritone with measured pacing and gravitas"
     voices:
-      apple: com.apple.voice.compact.en-US.Aaron
-      elevenlabs: 21m00Tcm4TlvDq8ikWAM
+      - apple://en-US/Aaron
+      - elevenlabs://en/wise-elder
   - character: LAO TZU
     actor: Jason Manino
     voiceDescription: "Wise, contemplative voice with subtle Eastern accent"
     voices:
-      voxalta: narrative-1
+      - qwen://en/narrative-1
 preGenerateHook: "./scripts/prepare.sh"
 postGenerateHook: "./scripts/upload.sh"
 ---
@@ -558,11 +480,11 @@ try updatedMarkdown.write(
 
 Follows [SwiftHablare VoiceURI specification](https://github.com/intrusive-memory/SwiftHablare):
 
-| Provider | Key | Voice ID Format | Example Voice ID |
-|----------|-----|-----------------|------------------|
-| Apple TTS | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `com.apple.voice.compact.en-US.Samantha` |
-| ElevenLabs | `elevenlabs` | Unique voice ID (alphanumeric) | `21m00Tcm4TlvDq8ikWAM` |
-| VoxAlta | `voxalta` | Voice name or ID | `female-voice-1` |
+| Provider | providerId | Voice ID Format | Example |
+|----------|-----------|-----------------|---------|
+| Apple TTS | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `apple://com.apple.voice.compact.en-US.Samantha?lang=en` |
+| ElevenLabs | `elevenlabs` | Unique voice ID (alphanumeric) | `elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en` |
+| Qwen TTS | `qwen-tts` | Voice name or ID | `qwen-tts://female-voice-1?lang=en` |
 
 ### Audio Generation Iterator Pattern
 
@@ -724,7 +646,7 @@ let registry = DocumentRegistry(
 context.insert(registry)
 ```
 
-**Note**: The refactoring to remove document loading from SwiftProyecto is complete. Apps should implement their own DocumentRegistry pattern to link ProjectFileReference with parsed documents.
+See `.claude/REFACTORING_PLAN.md` for complete Produciesta integration guide.
 
 ---
 

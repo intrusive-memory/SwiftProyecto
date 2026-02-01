@@ -9,93 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [3.0.0] - 2026-02-13
-
-### BREAKING CHANGES
-
-- **Voice representation changed from URL-style to key/value pairs**
-  - `CastMember.voices` is now `[String: String]` instead of `[String]`
-  - Voice URIs like `apple://com.apple.voice.premium.en-US.Aaron?lang=en` are now key/value pairs: `apple: com.apple.voice.premium.en-US.Aaron`
-  - Removed `filterVoices(provider:)` method (use dictionary subscript instead: `voices["apple"]`)
-  - Removed `primaryVoice` property (use `voice(for:)` method instead)
-  - Added `voice(for provider: String) -> String?` method for provider-specific lookup
-  - Added `providers` property to list all available providers
-  - All existing PROJECT.md files must be migrated to new format
-
-### Added
-
-- **Audio Generation Configuration**: Complete CLI support fields in `ProjectFrontMatter`
-  - `episodesDir`: Relative path to episode files (default: "episodes")
-  - `audioDir`: Relative path for audio output (default: "audio")
-  - `filePattern`: Glob pattern(s) for file discovery (String or [String])
-  - `exportFormat`: Audio export format (default: "m4a")
-  - `preGenerateHook`: Shell command to run before generation
-  - `postGenerateHook`: Shell command to run after generation
-  - Convenience accessors: `resolvedEpisodesDir`, `resolvedAudioDir`, `resolvedFilePatterns`, `resolvedExportFormat`
-- **Cast List Discovery**: Character extraction from .fountain files
-  - `discoverCastList(for:)` in `ProjectService`: Automatically extracts CHARACTER elements
-  - `mergeCastLists(discovered:existing:)`: Merges discovered with existing, preserving user edits
-  - Comprehensive tests for discovery and merge logic
-- **Gender Field**: Added `Gender` enum to `CastMember` (M, F, NB, NS)
-- **Voice Description Field**: Added optional `voiceDescription: String?` to `CastMember` for TTS voice selection guidance
-
-### Changed
-
-- `ProjectFrontMatter` initializer includes all new generation configuration parameters
-- `ProjectMarkdownParser.generate()` outputs generation config fields in YAML
-- Cast list stored directly in PROJECT.md (not separate custom-pages.json file)
-
-### Migration Guide
-
-**Old format (URL-style):**
-```yaml
-voices:
-  - apple://com.apple.voice.premium.en-US.Aaron?lang=en
-  - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
-```
-
-**New format (Key/Value):**
-```yaml
-voices:
-  apple: com.apple.voice.premium.en-US.Aaron
-  elevenlabs: 21m00Tcm4TlvDq8ikWAM
-```
-
-**Code changes:**
-```swift
-// Old
-let appleVoices = member.filterVoices(provider: "apple")
-let firstVoice = member.primaryVoice
-
-// New
-if let appleVoice = member.voice(for: "apple") {
-    // Use apple voice
-}
-let allProviders = member.providers
-```
-
----
-
-## [2.6.0] - 2026-02-05
-
-### Added
-
-- `CastMember.filterVoices(provider:)` - Filter voice URIs by provider prefix
-- Supports runtime voice provider filtering for multi-provider cast lists
-- Case-insensitive provider matching
-- Preserves original voice order in filtered results
-
-### Tests
-
-- Added comprehensive unit tests for voice filtering (5 test cases)
-  - `testFilterVoicesAppleProvider` - Single provider match
-  - `testFilterVoicesNoMatches` - No matching provider
-  - `testFilterVoicesEmptyArray` - Empty voices array
-  - `testFilterVoicesCaseInsensitive` - Case insensitive matching
-  - `testFilterVoicesPreservesOrder` - Original order preserved
-
----
-
 ## [2.5.0] - 2026-02-01
 
 ### Added
@@ -482,9 +395,7 @@ This release completes a major refactoring that transforms SwiftProyecto into a 
 - Basic tests pass (version check, placeholder test)
 - Repository published to GitHub
 
-[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v3.0.0...HEAD
-[3.0.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.6.0...v3.0.0
-[2.6.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.5.0...v2.6.0
+[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.5.0...HEAD
 [2.5.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.2...v2.5.0
 [2.1.2]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.0...v2.1.1
