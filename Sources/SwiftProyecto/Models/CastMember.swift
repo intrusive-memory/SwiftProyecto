@@ -105,6 +105,11 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     /// Defaults to .notSpecified if not provided
     public var gender: Gender?
 
+    /// Optional description of the desired voice characteristics for this character.
+    /// Used by CastMatcher to guide TTS voice selection.
+    /// Example: "Deep, warm baritone with measured pacing and gravitas"
+    public var voiceDescription: String?
+
     /// Array of voice provider URIs (tries in order, first available wins)
     /// Format: `<provider>://<voice_id>`
     ///
@@ -125,11 +130,13 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         character: String,
         actor: String? = nil,
         gender: Gender? = nil,
+        voiceDescription: String? = nil,
         voices: [String] = []
     ) {
         self.character = character
         self.actor = actor
         self.gender = gender
+        self.voiceDescription = voiceDescription
         self.voices = voices
     }
 
@@ -168,6 +175,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         case character
         case actor
         case gender
+        case voiceDescription
         case voices
     }
 
@@ -176,6 +184,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         character = try container.decode(String.self, forKey: .character)
         actor = try container.decodeIfPresent(String.self, forKey: .actor)
         gender = try container.decodeIfPresent(Gender.self, forKey: .gender)
+        voiceDescription = try container.decodeIfPresent(String.self, forKey: .voiceDescription)
         voices = try container.decodeIfPresent([String].self, forKey: .voices) ?? []
     }
 }
