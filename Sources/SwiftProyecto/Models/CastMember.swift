@@ -196,6 +196,34 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         Array(voices.keys).sorted()
     }
 
+    /// Filter voices by provider prefix
+    ///
+    /// Returns all voice URIs that match the specified provider, preserving the original order.
+    /// Provider matching is case-insensitive.
+    ///
+    /// - Parameter provider: Provider name (e.g., "apple", "elevenlabs")
+    /// - Returns: Array of voice URIs matching the provider, preserving original order.
+    ///            Returns empty array if no voices match.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let member = CastMember(
+    ///     character: "NARRATOR",
+    ///     voices: ["elevenlabs://voice1", "apple://voice2", "apple://voice3"]
+    /// )
+    /// let appleVoices = member.filterVoices(provider: "apple")
+    /// // Returns: ["apple://voice2", "apple://voice3"]
+    /// ```
+    public func filterVoices(provider: String) -> [String] {
+        let normalizedProvider = provider.lowercased()
+        return voices.filter { voiceURI in
+            guard let colonIndex = voiceURI.firstIndex(of: ":") else { return false }
+            let voiceProvider = String(voiceURI[..<colonIndex]).lowercased()
+            return voiceProvider == normalizedProvider
+        }
+    }
+
     // MARK: - Equatable & Hashable
 
     /// Two cast members are equal if they have the same character name
