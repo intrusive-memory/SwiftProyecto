@@ -10,17 +10,22 @@
 
 | Sprint | Name | Status | Committed |
 |--------|------|--------|-----------|
-| 1 | Add filterVoices() | completed | pending |
-| 2 | Add Unit Tests | completed | pending |
-| 3 | Version Bump | completed | pending |
-| 4 | Commit & Push | pending | - |
+| 1 | Add filterVoices() | completed | 8d289ff |
+| 2 | Add Unit Tests | completed | 8d289ff |
+| 3 | Version Bump | completed | 8d289ff |
+| 4 | Commit & Push | completed | 8d289ff |
+
+**Commit Hash:** `8d289ff4c33f64ae1afb6e8097eb65bdd01c9f86`
+**Pushed to:** `origin/development`
+**Build Status:** passing
+**Tests Status:** passing (318 tests, 0 failures)
 
 ---
 
 ## Sprint 1: Add filterVoices()
 
 **Status:** completed
-**Committed:** pending (awaiting Sprint 4)
+**Committed:** 8d289ff
 
 ### Entry Checks
 - [x] File exists: `Sources/SwiftProyecto/Models/CastMember.swift`
@@ -52,7 +57,7 @@
 ## Sprint 2: Add Unit Tests
 
 **Status:** completed
-**Committed:** pending (awaiting Sprint 4)
+**Committed:** 8d289ff
 
 ### Entry Checks
 - [x] Sprint 1 complete (filterVoices() method exists)
@@ -86,7 +91,7 @@
 ## Sprint 3: Version Bump
 
 **Status:** completed
-**Committed:** pending (awaiting Sprint 4)
+**Committed:** 8d289ff
 
 ### Entry Checks
 - [x] Sprints 1-2 complete
@@ -117,7 +122,50 @@
 
 ---
 
-## Notes
+## Sprint 4: Commit & Push
 
-Sprints 1, 2, and 3 complete. Changes are staged but not committed.
-Waiting for Sprint 4 (Commit & Push) to finalize all changes.
+**Status:** completed
+**Committed:** 8d289ff
+
+### Entry Checks
+- [x] Sprints 1-3 complete
+- [x] All tests passing: `xcodebuild test` - 318 tests, 0 failures
+- [x] Build passing: `xcodebuild build` - BUILD SUCCEEDED
+
+### Implementation
+- Staged files: CastMember.swift, CastMemberTests.swift, CHANGELOG.md, PROGRESS.md
+- Commit message follows conventional commits format
+- Pushed to remote development branch
+
+### Exit Checks
+- [x] Git status clean (all changes committed)
+- [x] Commit message follows conventional commits
+- [x] Push succeeded: `git log origin/development -1` shows latest commit
+- [x] PROGRESS.md updated with commit hash
+
+### Verification
+```
+Commit: 8d289ff4c33f64ae1afb6e8097eb65bdd01c9f86
+Remote: origin/development
+Push: a04c0e0..8d289ff development -> development
+```
+
+---
+
+## Summary
+
+All 4 SwiftProyecto sprints completed successfully.
+
+**Changes Committed:**
+- `CastMember.filterVoices(provider:)` method added (Sprint 1)
+- 5 unit tests for filterVoices() added (Sprint 2)
+- CHANGELOG.md updated for version 2.6.0 (Sprint 3)
+- All changes committed and pushed (Sprint 4)
+
+**Final Status:**
+- Build: passing
+- Tests: passing (318 tests, 0 failures)
+- Version: 2.6.0
+- Commit Hash: 8d289ff4c33f64ae1afb6e8097eb65bdd01c9f86
+
+SwiftProyecto is ready for Produciesta to consume (Sprint 5 can proceed).
