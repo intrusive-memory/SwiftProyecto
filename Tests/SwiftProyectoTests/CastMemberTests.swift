@@ -375,4 +375,38 @@ final class CastMemberTests: XCTestCase {
         member.gender = nil
         XCTAssertNil(member.gender)
     }
+
+    // MARK: - filterVoices() Tests
+
+    func testFilterVoicesAppleProvider() {
+        let member = CastMember(
+            character: "TEST",
+            voices: ["apple://voice1", "elevenlabs://voice2", "apple://voice3"]
+        )
+        XCTAssertEqual(member.filterVoices(provider: "apple"), ["apple://voice1", "apple://voice3"])
+    }
+
+    func testFilterVoicesNoMatches() {
+        let member = CastMember(character: "TEST", voices: ["apple://voice1"])
+        XCTAssertEqual(member.filterVoices(provider: "elevenlabs"), [])
+    }
+
+    func testFilterVoicesEmptyArray() {
+        let member = CastMember(character: "TEST", voices: [])
+        XCTAssertEqual(member.filterVoices(provider: "apple"), [])
+    }
+
+    func testFilterVoicesCaseInsensitive() {
+        let member = CastMember(character: "TEST", voices: ["APPLE://voice1", "Apple://voice2"])
+        XCTAssertEqual(member.filterVoices(provider: "apple").count, 2)
+    }
+
+    func testFilterVoicesPreservesOrder() {
+        let member = CastMember(
+            character: "TEST",
+            voices: ["elevenlabs://v1", "apple://v2", "elevenlabs://v3", "apple://v4"]
+        )
+        let filtered = member.filterVoices(provider: "apple")
+        XCTAssertEqual(filtered, ["apple://v2", "apple://v4"])
+    }
 }
