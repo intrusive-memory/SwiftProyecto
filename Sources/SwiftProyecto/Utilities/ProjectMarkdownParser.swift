@@ -191,6 +191,13 @@ public struct ProjectMarkdownParser {
             }
         }
 
+        // App-specific settings sections (at root level)
+        if !frontMatter.appSections.isEmpty {
+            for (key, value) in frontMatter.appSections.sorted(by: { $0.key < $1.key }) {
+                yaml += try! generateAppSectionYAML(key: key, value: value)
+            }
+        }
+
         yaml += "---\n"
 
         if !body.isEmpty {
@@ -198,6 +205,79 @@ public struct ProjectMarkdownParser {
         }
 
         return yaml
+    }
+
+    /// Generate YAML for an app section.
+    private func generateAppSectionYAML(key: String, value: AnyCodable) throws -> String {
+        // Decode AnyCodable to get the actual value
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(value)
+        let jsonObject = try JSONSerialization.jsonObject(with: data)
+
+        // Generate YAML for this section
+        var yaml = "\(key):\n"
+        yaml += generateYAMLValue(jsonObject, indent: 1)
+        return yaml
+    }
+
+    /// Recursively generate YAML for a value with proper indentation.
+    private func generateYAMLValue(_ value: Any, indent: Int) -> String {
+        let indentStr = String(repeating: "  ", count: indent)
+
+        if let dict = value as? [String: Any] {
+            var yaml = ""
+            for (key, val) in dict.sorted(by: { $0.key < $1.key }) {
+                if let nestedDict = val as? [String: Any] {
+                    yaml += "\(indentStr)\(key):\n"
+                    yaml += generateYAMLValue(nestedDict, indent: indent + 1)
+                } else if let array = val as? [Any] {
+                    yaml += "\(indentStr)\(key):\n"
+                    for item in array {
+                        if let itemDict = item as? [String: Any] {
+                            yaml += "\(indentStr)  -\n"
+                            for (k, v) in itemDict.sorted(by: { $0.key < $1.key }) {
+                                yaml += "\(indentStr)    \(k): \(formatYAMLPrimitive(v))\n"
+                            }
+                        } else {
+                            yaml += "\(indentStr)  - \(formatYAMLPrimitive(item))\n"
+                        }
+                    }
+                } else {
+                    yaml += "\(indentStr)\(key): \(formatYAMLPrimitive(val))\n"
+                }
+            }
+            return yaml
+        } else if let array = value as? [Any] {
+            var yaml = ""
+            for item in array {
+                yaml += "\(indentStr)- \(formatYAMLPrimitive(item))\n"
+            }
+            return yaml
+        } else {
+            return "\(indentStr)\(formatYAMLPrimitive(value))\n"
+        }
+    }
+
+    /// Format a primitive value for YAML output.
+    private func formatYAMLPrimitive(_ value: Any) -> String {
+        if let string = value as? String {
+            return escapeYAMLString(string)
+        } else if let number = value as? NSNumber {
+            // Check if it's a boolean (NSNumber can represent bools)
+            if CFBooleanGetTypeID() == CFGetTypeID(number as CFTypeRef) {
+                return number.boolValue ? "true" : "false"
+            }
+            return "\(number)"
+        } else if let bool = value as? Bool {
+            return bool ? "true" : "false"
+        } else if let int = value as? Int {
+            return "\(int)"
+        } else if let double = value as? Double {
+            return "\(double)"
+        } else {
+            return escapeYAMLString("\(value)")
+        }
     }
 
     /// Format a FilePattern for YAML output.

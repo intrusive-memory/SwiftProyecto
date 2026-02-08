@@ -813,4 +813,329 @@ final class ProjectMarkdownParserTests: XCTestCase {
         XCTAssertEqual(parsed.tts, original.tts)
         XCTAssertEqual(body, "# Notes")
     }
+
+    // MARK: - App Sections Tests
+
+    func testParseYAMLWithAppSection() throws {
+        let content = """
+        ---
+        type: project
+        title: Test Project
+        author: Test Author
+        created: 2025-01-01T00:00:00Z
+        myapp:
+          theme: dark
+          version: 1
+        ---
+
+        # Body
+        """
+
+        let (frontMatter, body) = try parser.parse(content: content)
+
+        XCTAssertEqual(frontMatter.title, "Test Project")
+        XCTAssertEqual(body, "# Body")
+
+        // Verify app section was captured
+        XCTAssertTrue(frontMatter.hasSettings(for: TestAppSettings.self))
+
+        let settings = try frontMatter.settings(for: TestAppSettings.self)
+        XCTAssertEqual(settings?.theme, "dark")
+        XCTAssertEqual(settings?.version, 1)
+    }
+
+    func testParseYAMLWithMultipleAppSections() throws {
+        let content = """
+        ---
+        type: project
+        title: Multi-App Project
+        author: Test Author
+        created: 2025-01-01T00:00:00Z
+        myapp:
+          theme: dark
+          version: 1
+        otherapp:
+          enabled: true
+          count: 42
+        ---
+        """
+
+        let (frontMatter, _) = try parser.parse(content: content)
+
+        // Verify both app sections exist
+        XCTAssertTrue(frontMatter.hasSettings(for: TestAppSettings.self))
+        XCTAssertTrue(frontMatter.hasSettings(for: OtherAppSettings.self))
+
+        let mySettings = try frontMatter.settings(for: TestAppSettings.self)
+        XCTAssertEqual(mySettings?.theme, "dark")
+        XCTAssertEqual(mySettings?.version, 1)
+
+        let otherSettings = try frontMatter.settings(for: OtherAppSettings.self)
+        XCTAssertEqual(otherSettings?.enabled, true)
+        XCTAssertEqual(otherSettings?.count, 42)
+    }
+
+    func testGenerateYAMLWithAppSection() throws {
+        var frontMatter = ProjectFrontMatter(
+            title: "Test Project",
+            author: "Test Author",
+            created: ISO8601DateFormatter().date(from: "2025-01-01T00:00:00Z")!
+        )
+
+        let settings = TestAppSettings(theme: "dark", version: 1)
+        try frontMatter.setSettings(settings)
+
+        let generated = parser.generate(frontMatter: frontMatter)
+
+        // Verify YAML contains app section
+        XCTAssertTrue(generated.contains("myapp:"))
+        XCTAssertTrue(generated.contains("theme: dark"))
+        XCTAssertTrue(generated.contains("version: 1"))
+
+        // Verify known fields are still present
+        XCTAssertTrue(generated.contains("type: project"))
+        XCTAssertTrue(generated.contains("title: Test Project"))
+        XCTAssertTrue(generated.contains("author: Test Author"))
+    }
+
+    func testYAMLRoundTrip_AppSectionsPreserved() throws {
+        // Create frontmatter with app section
+        var original = ProjectFrontMatter(
+            title: "Round Trip Test",
+            author: "Author",
+            created: ISO8601DateFormatter().date(from: "2025-01-01T00:00:00Z")!
+        )
+
+        let settings = TestAppSettings(theme: "dark", version: 2)
+        try original.setSettings(settings)
+
+        // Generate YAML
+        let generated = parser.generate(frontMatter: original, body: "# Body")
+
+        // Parse it back
+        let (parsed, body) = try parser.parse(content: generated)
+
+        // Verify app section survived round-trip
+        let retrievedSettings = try parsed.settings(for: TestAppSettings.self)
+        XCTAssertEqual(retrievedSettings?.theme, "dark")
+        XCTAssertEqual(retrievedSettings?.version, 2)
+        XCTAssertEqual(body, "# Body")
+    }
+
+    func testYAMLRoundTrip_KnownFieldsUnaffected() throws {
+        // Create frontmatter with both known fields and app section
+        var original = ProjectFrontMatter(
+            title: "Full Test",
+            author: "Author",
+            created: ISO8601DateFormatter().date(from: "2025-01-01T00:00:00Z")!,
+            description: "Test description",
+            season: 1,
+            episodes: 10,
+            genre: "Drama",
+            tags: ["test", "round-trip"]
+        )
+
+        let settings = TestAppSettings(theme: "light", version: 3)
+        try original.setSettings(settings)
+
+        // Generate and re-parse
+        let generated = parser.generate(frontMatter: original)
+        let (parsed, _) = try parser.parse(content: generated)
+
+        // Verify all known fields preserved
+        XCTAssertEqual(parsed.title, original.title)
+        XCTAssertEqual(parsed.author, original.author)
+        XCTAssertEqual(parsed.description, original.description)
+        XCTAssertEqual(parsed.season, original.season)
+        XCTAssertEqual(parsed.episodes, original.episodes)
+        XCTAssertEqual(parsed.genre, original.genre)
+        XCTAssertEqual(parsed.tags, original.tags)
+
+        // Verify app section also preserved
+        let retrievedSettings = try parsed.settings(for: TestAppSettings.self)
+        XCTAssertEqual(retrievedSettings?.theme, "light")
+        XCTAssertEqual(retrievedSettings?.version, 3)
+    }
+
+    func testAppSectionAtRootLevel() throws {
+        var frontMatter = ProjectFrontMatter(
+            title: "Root Level Test",
+            author: "Author",
+            created: ISO8601DateFormatter().date(from: "2025-01-01T00:00:00Z")!
+        )
+
+        let settings = TestAppSettings(theme: "dark", version: 1)
+        try frontMatter.setSettings(settings)
+
+        let generated = parser.generate(frontMatter: frontMatter)
+
+        // Split into lines to check structure
+        let lines = generated.split(separator: "\n")
+
+        // Find the myapp line
+        guard let myappLineIndex = lines.firstIndex(where: { $0.starts(with: "myapp:") }) else {
+            XCTFail("myapp section not found")
+            return
+        }
+
+        // Verify myapp is at root level (no leading whitespace)
+        let myappLine = lines[myappLineIndex]
+        XCTAssertTrue(myappLine.starts(with: "myapp:"))
+        XCTAssertFalse(myappLine.starts(with: " "))
+
+        // Verify theme is indented under myapp
+        let themeLine = lines[myappLineIndex + 1]
+        XCTAssertTrue(themeLine.contains("theme:"))
+        XCTAssertTrue(themeLine.starts(with: "  ")) // Two spaces indent
+    }
+
+    func testLegacyYAMLWithoutAppSections() throws {
+        // Old-style PROJECT.md without any app sections should parse correctly
+        let content = """
+        ---
+        type: project
+        title: Legacy Project
+        author: Old Author
+        created: 2025-01-01T00:00:00Z
+        description: An old project without app sections
+        season: 1
+        episodes: 10
+        ---
+
+        # Notes
+        """
+
+        let (frontMatter, body) = try parser.parse(content: content)
+
+        // Verify known fields parsed correctly
+        XCTAssertEqual(frontMatter.title, "Legacy Project")
+        XCTAssertEqual(frontMatter.author, "Old Author")
+        XCTAssertEqual(frontMatter.description, "An old project without app sections")
+        XCTAssertEqual(frontMatter.season, 1)
+        XCTAssertEqual(frontMatter.episodes, 10)
+        XCTAssertEqual(body, "# Notes")
+
+        // Verify no app sections present
+        XCTAssertFalse(frontMatter.hasSettings(for: TestAppSettings.self))
+    }
+
+    func testYAMLGenerationFormat() throws {
+        // Create a frontmatter with app section to verify YAML formatting
+        var frontMatter = ProjectFrontMatter(
+            title: "Format Test",
+            author: "Author",
+            created: ISO8601DateFormatter().date(from: "2025-01-01T00:00:00Z")!,
+            description: "Testing YAML format"
+        )
+
+        let settings = TestAppSettings(theme: "dark", version: 99)
+        try frontMatter.setSettings(settings)
+
+        let generated = parser.generate(frontMatter: frontMatter, body: "# Body")
+
+        // Print for manual verification (will show in test output if needed)
+        // print("\n=== Generated YAML ===\n\(generated)\n======================\n")
+
+        // Verify structure
+        let lines = generated.split(separator: "\n", omittingEmptySubsequences: false)
+
+        // Find myapp section
+        guard let myappIdx = lines.firstIndex(where: { $0 == "myapp:" }) else {
+            XCTFail("myapp section not found at root level")
+            return
+        }
+
+        // Verify myapp is at root level (no leading whitespace)
+        XCTAssertTrue(lines[myappIdx] == "myapp:")
+
+        // Verify next lines are indented properties
+        XCTAssertTrue(lines[myappIdx + 1].starts(with: "  "))
+        XCTAssertTrue(lines[myappIdx + 2].starts(with: "  "))
+    }
+
+    func testTypedSettingsFullRoundTrip() throws {
+        // Parse original YAML without app sections
+        let original = """
+        ---
+        type: project
+        title: My Project
+        author: Author
+        created: 2025-01-01T00:00:00Z
+        description: Original description
+        ---
+
+        # Description
+
+        Original body content.
+        """
+
+        let (frontMatter1, body1) = try parser.parse(content: original)
+
+        XCTAssertEqual(frontMatter1.title, "My Project")
+        XCTAssertEqual(body1, "# Description\n\nOriginal body content.")
+        XCTAssertFalse(frontMatter1.hasSettings(for: TestAppSettings.self))
+
+        // Add typed settings
+        var frontMatter2 = frontMatter1
+        let settings = TestAppSettings(theme: "dark", version: 42)
+        try frontMatter2.setSettings(settings)
+
+        // Generate YAML
+        let generated = parser.generate(frontMatter: frontMatter2, body: body1)
+
+        // Verify generated YAML contains app section
+        XCTAssertTrue(generated.contains("myapp:"))
+        XCTAssertTrue(generated.contains("theme: dark"))
+        XCTAssertTrue(generated.contains("version: 42"))
+
+        // Re-parse
+        let (frontMatter3, body2) = try parser.parse(content: generated)
+
+        // Verify settings survived round-trip
+        let retrievedSettings = try frontMatter3.settings(for: TestAppSettings.self)
+        XCTAssertNotNil(retrievedSettings)
+        XCTAssertEqual(retrievedSettings?.theme, "dark")
+        XCTAssertEqual(retrievedSettings?.version, 42)
+
+        // Verify known fields preserved
+        XCTAssertEqual(frontMatter3.title, "My Project")
+        XCTAssertEqual(frontMatter3.author, "Author")
+        XCTAssertEqual(frontMatter3.description, "Original description")
+        XCTAssertEqual(body2, "# Description\n\nOriginal body content.")
+
+        // Modify settings and generate again
+        var frontMatter4 = frontMatter3
+        let modifiedSettings = TestAppSettings(theme: "light", version: 43)
+        try frontMatter4.setSettings(modifiedSettings)
+
+        let regenerated = parser.generate(frontMatter: frontMatter4, body: body2)
+        let (frontMatter5, _) = try parser.parse(content: regenerated)
+
+        // Verify modified settings
+        let finalSettings = try frontMatter5.settings(for: TestAppSettings.self)
+        XCTAssertEqual(finalSettings?.theme, "light")
+        XCTAssertEqual(finalSettings?.version, 43)
+
+        // Verify known fields still intact
+        XCTAssertEqual(frontMatter5.title, "My Project")
+        XCTAssertEqual(frontMatter5.author, "Author")
+    }
+}
+
+// MARK: - Test Settings Types
+
+/// Test settings type for app sections testing
+private struct TestAppSettings: AppFrontMatterSettings {
+    static let sectionKey = "myapp"
+
+    var theme: String?
+    var version: Int?
+}
+
+/// Second test settings type to verify multiple app sections
+private struct OtherAppSettings: AppFrontMatterSettings {
+    static let sectionKey = "otherapp"
+
+    var enabled: Bool?
+    var count: Int?
 }
