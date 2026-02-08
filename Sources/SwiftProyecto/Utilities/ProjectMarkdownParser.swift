@@ -191,6 +191,13 @@ public struct ProjectMarkdownParser {
             }
         }
 
+        // App-specific settings sections (at root level)
+        if !frontMatter.appSections.isEmpty {
+            for (key, value) in frontMatter.appSections.sorted(by: { $0.key < $1.key }) {
+                yaml += try! generateAppSectionYAML(key: key, value: value)
+            }
+        }
+
         yaml += "---\n"
 
         if !body.isEmpty {
