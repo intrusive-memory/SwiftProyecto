@@ -11,29 +11,53 @@
     <img src="https://img.shields.io/badge/Version-2.5.0-blue.svg" />
 </p>
 
-**SwiftProyecto** is a Swift package providing **file discovery and secure access** for screenplay project management. It discovers files in local directories or git repositories, manages security-scoped bookmarks for sandboxed environments, and provides secure URLs for apps to load and parse files using their own parsers.
+**SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
+
+## Purpose
+
+This project exists to provide **extensible, agentic discovery of projects and project pieces**.
+
+**Problem**: AI coding agents need multiple utilities and multiple passes to correctly understand and render content projects. Without structured metadata, agents must infer project intent, discover components separately, and piece together rendering requirements through trial and error.
+
+**Solution**: SwiftProyecto stores settings, utilities, project intent, and composition information in PROJECT.md front matter. This allows AI agents to:
+- Understand project structure in one pass (not multiple discovery iterations)
+- Access rendering settings, cast lists, and generation config immediately
+- Know what utilities to invoke (hooks, TTS providers, export formats)
+- Comprehend project intent (genre, description, tags) without inference
+
+By providing **structured, machine-readable metadata**, SwiftProyecto reduces cognitive load for AI agents working with content projects.
 
 ## Overview
 
-SwiftProyecto provides:
-- **File Discovery**: Recursively discover files in project folders or git repositories via FileSource abstraction
+SwiftProyecto provides AI agents and applications with comprehensive project understanding through:
+
+- **Agentic Discovery**: Structured metadata that AI agents can consume in one pass
+- **PROJECT.md Front Matter**: Machine-readable project intent, composition, and settings
+  - Project metadata (title, author, genre, tags, description)
+  - Generation config (episodes directory, audio output, file patterns, export format)
+  - Cast lists (character-to-voice mappings for TTS)
+  - Hooks (pre/post-generation scripts for workflow automation)
+  - All accessible via YAML front matter using UNIVERSAL library
+- **File Discovery**: Recursively discover project components in folders or git repositories
 - **Secure File Access**: Security-scoped bookmarks for sandboxed macOS/iOS apps
-- **PROJECT.md Parsing**: Lazy-loaded YAML front matter parser using UNIVERSAL library
-  - Parse PROJECT.md metadata (title, author, season, episodes, genre, tags)
-  - Generate PROJECT.md files from `ProjectFrontMatter` structs
-  - Stateless utility with `parse(fileURL:)` and `parse(content:)` methods
-- **Project Models**: SwiftData models for project metadata and file references
-- **FileNode**: Hierarchical file tree structure for UI display
-- **ProjectService**: Project lifecycle management (create, open, sync, get file URLs)
-- **BookmarkManager**: Centralized security-scoped bookmark management
+- **Hierarchical Structure**: FileNode trees for project navigation
+- **SwiftData Models**: Persistent project metadata and file references
+- **proyecto CLI**: LLM-powered PROJECT.md generation from directory analysis
+
+**What SwiftProyecto Does:**
+- ✅ Provides structured metadata for AI agents to understand projects
+- ✅ Discovers files and builds navigable project structure
+- ✅ Stores rendering settings, utilities, and intent in front matter
+- ✅ Enables single-pass project comprehension (not multi-pass inference)
 
 **What SwiftProyecto Does NOT Do:**
-- ❌ Parse screenplay files (no SwiftCompartido dependency)
-- ❌ Load screenplay document content into memory automatically
-- ❌ Manage screenplay document loading state or caching
+- ❌ Parse content files (no SwiftCompartido dependency)
+- ❌ Render or generate content (provides metadata to renderers)
+- ❌ Load content into memory automatically
+- ❌ Manage content rendering state or caching
 
 **Integration Pattern:**
-Apps using SwiftProyecto call `getSecureURL(for:in:)` to get a file URL, then parse it with their own parsers (e.g., SwiftCompartido). See the "Integration with Document Parsers" section for details.
+AI agents and apps consume PROJECT.md metadata to understand project structure and intent, then use `getSecureURL(for:in:)` to access content files for parsing/rendering. See "Integration with Document Parsers" section for details.
 
 ## Architecture
 

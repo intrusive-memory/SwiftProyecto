@@ -13,21 +13,33 @@ This file provides comprehensive documentation for AI agents working with the Sw
 
 ## Project Overview
 
-SwiftProyecto is a Swift package for **file discovery and project metadata management** in screenplay applications. It provides:
-- Project folder management and file discovery
-- PROJECT.md metadata parsing and generation
-- Security-scoped bookmark handling
-- File tree building for navigation UIs
+SwiftProyecto is a Swift package providing **extensible, agentic discovery of content projects and project components**.
+
+**Purpose**: This project exists to help AI coding agents understand content projects in a single pass, eliminating the need for multiple utilities and discovery iterations. By storing project settings, utilities, intent, and composition in structured PROJECT.md front matter, AI agents can immediately comprehend what a project is, how it's structured, and how to render its content.
+
+**Core Capabilities**:
+- **Agentic Metadata**: Machine-readable PROJECT.md front matter for AI agent consumption
+  - Project intent (title, author, genre, description, tags)
+  - Composition structure (season, episodes, file patterns)
+  - Generation settings (output directories, export formats)
+  - Cast lists (character-to-voice mappings for TTS)
+  - Workflow hooks (pre/post-generation automation)
+- **File Discovery**: Recursively discover project components in folders/git repos
+- **Secure Access**: Security-scoped bookmarks for sandboxed environments
+- **Hierarchical Structure**: FileNode trees for navigation
+- **SwiftData Persistence**: Project metadata and file references
 
 **What SwiftProyecto Does**:
-- ✅ Discovers screenplay files in folders/git repos
-- ✅ Manages PROJECT.md metadata
-- ✅ Provides security-scoped URLs for file access
-- ✅ Builds hierarchical file trees
+- ✅ Provides structured metadata for AI agents to understand projects
+- ✅ Discovers files and builds navigable project structure
+- ✅ Stores rendering settings and utilities in front matter
+- ✅ Enables single-pass project comprehension (not multi-pass inference)
+- ✅ Parses and generates PROJECT.md with YAML front matter
 
 **What SwiftProyecto Does NOT Do**:
-- ❌ Parse screenplay files (use SwiftCompartido)
-- ❌ Store document models (apps handle integration)
+- ❌ Parse content files (use SwiftCompartido or other parsers)
+- ❌ Render or generate content (provides metadata to renderers)
+- ❌ Store content models (apps handle integration)
 - ❌ Display UI (provides data only)
 
 **Platforms**: iOS 26.0+, macOS 26.0+
