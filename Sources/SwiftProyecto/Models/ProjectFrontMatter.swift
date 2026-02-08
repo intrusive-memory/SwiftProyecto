@@ -111,6 +111,13 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     /// Optional text-to-speech generation configuration
     public let tts: TTSConfig?
 
+    // MARK: - App-Specific Settings Storage
+
+    /// Storage for app-specific settings sections.
+    /// Keys are app section identifiers, values are type-erased settings.
+    /// Internal access allows extensions to read, private(set) prevents external modification.
+    internal private(set) var appSections: [String: AnyCodable] = [:]
+
     /// Create a new ProjectFrontMatter instance.
     ///
     /// - Parameters:
@@ -131,6 +138,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     ///   - preGenerateHook: Shell command to run before generation
     ///   - postGenerateHook: Shell command to run after generation
     ///   - tts: Optional TTS generation configuration
+    ///   - appSections: App-specific settings sections (default: empty)
     public init(
         type: String = "project",
         title: String,
@@ -148,7 +156,8 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
         cast: [CastMember]? = nil,
         preGenerateHook: String? = nil,
         postGenerateHook: String? = nil,
-        tts: TTSConfig? = nil
+        tts: TTSConfig? = nil,
+        appSections: [String: AnyCodable] = [:]
     ) {
         self.type = type
         self.title = title
@@ -167,6 +176,94 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
         self.preGenerateHook = preGenerateHook
         self.postGenerateHook = postGenerateHook
         self.tts = tts
+        self.appSections = appSections
+    }
+
+    // MARK: - Custom Codable Implementation
+
+    private enum KnownCodingKeys: String, CodingKey, CaseIterable {
+        case type, title, author, created, description, season
+        case episodes, genre, tags, episodesDir, audioDir
+        case filePattern, exportFormat, cast
+        case preGenerateHook, postGenerateHook, tts
+    }
+
+    private struct DynamicCodingKey: CodingKey {
+        var stringValue: String
+        var intValue: Int?
+
+        init(stringValue: String) {
+            self.stringValue = stringValue
+            self.intValue = nil
+        }
+
+        init?(intValue: Int) {
+            self.stringValue = "\(intValue)"
+            self.intValue = intValue
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        // Encode all known fields
+        var container = encoder.container(keyedBy: KnownCodingKeys.self)
+        try container.encode(type, forKey: .type)
+        try container.encode(title, forKey: .title)
+        try container.encode(author, forKey: .author)
+        try container.encode(created, forKey: .created)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encodeIfPresent(season, forKey: .season)
+        try container.encodeIfPresent(episodes, forKey: .episodes)
+        try container.encodeIfPresent(genre, forKey: .genre)
+        try container.encodeIfPresent(tags, forKey: .tags)
+        try container.encodeIfPresent(episodesDir, forKey: .episodesDir)
+        try container.encodeIfPresent(audioDir, forKey: .audioDir)
+        try container.encodeIfPresent(filePattern, forKey: .filePattern)
+        try container.encodeIfPresent(exportFormat, forKey: .exportFormat)
+        try container.encodeIfPresent(cast, forKey: .cast)
+        try container.encodeIfPresent(preGenerateHook, forKey: .preGenerateHook)
+        try container.encodeIfPresent(postGenerateHook, forKey: .postGenerateHook)
+        try container.encodeIfPresent(tts, forKey: .tts)
+
+        // Encode appSections at root level (if not empty)
+        if !appSections.isEmpty {
+            var rootContainer = encoder.container(keyedBy: DynamicCodingKey.self)
+            for (key, value) in appSections {
+                try rootContainer.encode(value, forKey: DynamicCodingKey(stringValue: key))
+            }
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        // Decode known fields
+        let container = try decoder.container(keyedBy: KnownCodingKeys.self)
+        type = try container.decode(String.self, forKey: .type)
+        title = try container.decode(String.self, forKey: .title)
+        author = try container.decode(String.self, forKey: .author)
+        created = try container.decode(Date.self, forKey: .created)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        season = try container.decodeIfPresent(Int.self, forKey: .season)
+        episodes = try container.decodeIfPresent(Int.self, forKey: .episodes)
+        genre = try container.decodeIfPresent(String.self, forKey: .genre)
+        tags = try container.decodeIfPresent([String].self, forKey: .tags)
+        episodesDir = try container.decodeIfPresent(String.self, forKey: .episodesDir)
+        audioDir = try container.decodeIfPresent(String.self, forKey: .audioDir)
+        filePattern = try container.decodeIfPresent(FilePattern.self, forKey: .filePattern)
+        exportFormat = try container.decodeIfPresent(String.self, forKey: .exportFormat)
+        cast = try container.decodeIfPresent([CastMember].self, forKey: .cast)
+        preGenerateHook = try container.decodeIfPresent(String.self, forKey: .preGenerateHook)
+        postGenerateHook = try container.decodeIfPresent(String.self, forKey: .postGenerateHook)
+        tts = try container.decodeIfPresent(TTSConfig.self, forKey: .tts)
+
+        // Collect remaining keys into appSections
+        let rootContainer = try decoder.container(keyedBy: DynamicCodingKey.self)
+        var sections: [String: AnyCodable] = [:]
+        for key in rootContainer.allKeys {
+            // Skip known keys
+            if !KnownCodingKeys.allCases.contains(where: { $0.stringValue == key.stringValue }) {
+                sections[key.stringValue] = try rootContainer.decode(AnyCodable.self, forKey: key)
+            }
+        }
+        self.appSections = sections
     }
 }
 
