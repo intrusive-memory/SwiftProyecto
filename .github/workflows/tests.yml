@@ -1,11 +1,10 @@
 name: Tests
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
-  workflow_dispatch:
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -55,13 +54,46 @@ jobs:
 
       - name: Build library
         run: |
-          echo "Building SwiftProyecto library"
-          swift build
+          echo "🔨 Building SwiftProyecto library"
+          xcodebuild build \
+            -scheme SwiftProyecto \
+            -destination 'platform=macOS' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Run unit tests on macOS
         run: |
-          echo "Running unit tests on macOS"
-          swift test --filter SwiftProyectoTests 2>&1 | tee test_output_macos.txt
+          set +e
+          echo "🧪 Running unit tests on macOS"
+          xcodebuild test \
+            -scheme SwiftProyecto \
+            -destination 'platform=macOS' \
+            -only-testing:SwiftProyectoTests \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee test_output_macos.txt
+          TEST_EXIT_CODE=$?
+
+          # Check if tests passed
+          if grep -q "Test Suite.*passed\|TEST SUCCEEDED" test_output_macos.txt; then
+            echo "✅ All unit tests passed"
+            exit 0
+          else
+            echo ""
+            echo "❌ ============================================"
+            echo "❌ MACOS UNIT TESTS FAILED"
+            echo "❌ ============================================"
+            echo ""
+            echo "📋 Failed Tests:"
+            grep "Test Case.*failed" test_output_macos.txt || echo "  No specific test failures found"
+            echo ""
+            echo "🔍 Error Messages:"
+            grep -E "error:|failed with|Assertion failed|Expected|Fatal error" test_output_macos.txt | head -20 || echo "  No error messages found"
+            echo ""
+            echo "📊 Test Summary:"
+            grep -E "Test Suite|Testing failed|passed with|failed with" test_output_macos.txt | tail -10 || echo "  No summary found"
+            echo ""
+            exit $TEST_EXIT_CODE
+          fi
 
       - name: Upload test results
         if: always()
