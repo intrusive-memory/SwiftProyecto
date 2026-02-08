@@ -34,6 +34,44 @@ SwiftProyecto is a Swift package for **file discovery and project metadata manag
 
 ---
 
+## 📦 Extending PROJECT.md with App-Specific Settings
+
+**SwiftProyecto 3.0+ supports a plugin architecture** that allows apps to define their own settings sections in PROJECT.md frontmatter without modifying the library.
+
+### Quick Example
+
+```swift
+// 1. Define your settings
+struct MyAppSettings: AppFrontMatterSettings {
+    static let sectionKey = "myapp"
+    var theme: String?
+    var autoSave: Bool?
+}
+
+// 2. Read settings
+let (frontMatter, _) = try parser.parse(fileURL: projectURL)
+let settings = try frontMatter.settings(for: MyAppSettings.self)
+
+// 3. Write settings
+var frontMatter = ProjectFrontMatter(title: "My Project")
+try frontMatter.setSettings(MyAppSettings(theme: "dark"))
+```
+
+**📖 Complete Guide**: See [**Docs/EXTENDING_PROJECT_MD.md**](Docs/EXTENDING_PROJECT_MD.md) for:
+- Step-by-step implementation guide
+- Complete examples (podcast app, screenplay tools)
+- Best practices and common patterns
+- UserDefaults sync, settings migration, multi-app coexistence
+- Troubleshooting
+
+**Key Benefits:**
+- ✅ Type-safe with Codable
+- ✅ No coupling between SwiftProyecto and your app
+- ✅ Multiple apps can store settings in same PROJECT.md
+- ✅ Backward compatible with existing PROJECT.md files
+
+---
+
 ## ⚠️ CRITICAL: Platform Version Enforcement
 
 **This library ONLY supports iOS 26.0+ and macOS 26.0+. NEVER add code that supports older platforms.**
@@ -327,13 +365,13 @@ cast:
     actor: Tom Stovall
     voiceDescription: "Deep, warm baritone with measured pacing and gravitas"
     voices:
-      - apple://en-US/Aaron
-      - elevenlabs://en/wise-elder
+      - apple://com.apple.voice.compact.en-US.Aaron?lang=en
+      - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
   - character: LAO TZU
     actor: Jason Manino
     voiceDescription: "Wise, contemplative voice with subtle Eastern accent"
     voices:
-      - qwen://en/narrative-1
+      - qwen-tts://narrative-1?lang=en
 preGenerateHook: "./scripts/prepare.sh"
 postGenerateHook: "./scripts/upload.sh"
 ---
