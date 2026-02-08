@@ -556,4 +556,157 @@ final class ProjectFrontMatterTests: XCTestCase {
         // Allow for any known fields, but verify no unexpected app section keys
         XCTAssertTrue(expectedKeys.isSubset(of: actualKeys))
     }
+
+    // MARK: - Settings Accessor Tests
+
+    func testSettingsRead_Exists() throws {
+        // Read existing settings returns typed value
+        var frontMatter = ProjectFrontMatter(title: "Test", author: "Author")
+
+        let settings = TestAppSettings(theme: "dark", count: 42)
+        try frontMatter.setSettings(settings)
+
+        let retrieved = try frontMatter.settings(for: TestAppSettings.self)
+        XCTAssertNotNil(retrieved)
+        XCTAssertEqual(retrieved?.theme, "dark")
+        XCTAssertEqual(retrieved?.count, 42)
+    }
+
+    func testSettingsRead_Missing() throws {
+        // Read missing settings returns nil
+        let frontMatter = ProjectFrontMatter(title: "Test", author: "Author")
+
+        let retrieved = try frontMatter.settings(for: TestAppSettings.self)
+        XCTAssertNil(retrieved)
+    }
+
+    func testSettingsRead_WrongType() throws {
+        // Malformed data throws DecodingError
+        var frontMatter = ProjectFrontMatter(title: "Test", author: "Author")
+
+        // Manually insert malformed data directly into appSections
+        // Create an AnyCodable with a structure that can't decode to TestAppSettings
+        // TestAppSettings expects optional String and Int, but we'll give it a nested incompatible structure
+        let badData = ["count": try AnyCodable(["nested": "value"])]  // count should be Int, not a dictionary
+        frontMatter.appSections["testapp"] = try AnyCodable(badData)
+
+        // Attempting to decode should fail because count is a dictionary, not an Int
+        XCTAssertThrowsError(try frontMatter.settings(for: TestAppSettings.self)) { error in
+            XCTAssertTrue(error is DecodingError)
+        }
+    }
+
+    func testSettingsWrite_New() throws {
+        // Set new settings stores correctly
+        var frontMatter = ProjectFrontMatter(title: "Test", author: "Author")
+
+        let settings = TestAppSettings(theme: "dark", count: 42)
+        try frontMatter.setSettings(settings)
+
+        let retrieved = try frontMatter.settings(for: TestAppSettings.self)
+        XCTAssertNotNil(retrieved)
+        XCTAssertEqual(retrieved?.theme, "dark")
+        XCTAssertEqual(retrieved?.count, 42)
+    }
+
+    func testSettingsWrite_Update() throws {
+        // Update existing settings overwrites
+        var frontMatter = ProjectFrontMatter(title: "Test", author: "Author")
+
+        let originalSettings = TestAppSettings(theme: "light", count: 10)
+        try frontMatter.setSettings(originalSettings)
+
+        let updatedSettings = TestAppSettings(theme: "dark", count: 20)
+        try frontMatter.setSettings(updatedSettings)
+
+        let retrieved = try frontMatter.settings(for: TestAppSettings.self)
+        XCTAssertNotNil(retrieved)
+        XCTAssertEqual(retrieved?.theme, "dark")
+        XCTAssertEqual(retrieved?.count, 20)
+    }
+
+    func testSettingsRoundTrip() throws {
+        // Write then read preserves values exactly
+        var frontMatter = ProjectFrontMatter(title: "Test", author: "Author")
+
+        let original = TestAppSettings(theme: "dark", count: 99)
+        try frontMatter.setSettings(original)
+
+        let retrieved = try frontMatter.settings(for: TestAppSettings.self)
+        XCTAssertNotNil(retrieved)
+        XCTAssertEqual(retrieved?.theme, original.theme)
+        XCTAssertEqual(retrieved?.count, original.count)
+    }
+
+    func testHasSettings_True() throws {
+        // Returns true when settings exist
+        var frontMatter = ProjectFrontMatter(title: "Test", author: "Author")
+
+        let settings = TestAppSettings(theme: "dark", count: 42)
+        try frontMatter.setSettings(settings)
+
+        XCTAssertTrue(frontMatter.hasSettings(for: TestAppSettings.self))
+    }
+
+    func testHasSettings_False() throws {
+        // Returns false when settings missing
+        let frontMatter = ProjectFrontMatter(title: "Test", author: "Author")
+
+        XCTAssertFalse(frontMatter.hasSettings(for: TestAppSettings.self))
+    }
+
+    func testMultipleAppSettingsCoexist() throws {
+        // Two different app types work independently
+        var frontMatter = ProjectFrontMatter(title: "Test", author: "Author")
+
+        let testSettings = TestAppSettings(theme: "dark", count: 10)
+        let otherSettings = OtherAppSettings(enabled: true)
+
+        try frontMatter.setSettings(testSettings)
+        try frontMatter.setSettings(otherSettings)
+
+        let retrievedTest = try frontMatter.settings(for: TestAppSettings.self)
+        let retrievedOther = try frontMatter.settings(for: OtherAppSettings.self)
+
+        XCTAssertEqual(retrievedTest?.theme, "dark")
+        XCTAssertEqual(retrievedTest?.count, 10)
+        XCTAssertEqual(retrievedOther?.enabled, true)
+    }
+
+    func testSettingsPreservation() throws {
+        // Updating App A doesn't affect App B
+        var frontMatter = ProjectFrontMatter(title: "Test", author: "Author")
+
+        let testSettings = TestAppSettings(theme: "light", count: 5)
+        let otherSettings = OtherAppSettings(enabled: false)
+
+        try frontMatter.setSettings(testSettings)
+        try frontMatter.setSettings(otherSettings)
+
+        // Update only TestAppSettings
+        let updatedTestSettings = TestAppSettings(theme: "dark", count: 100)
+        try frontMatter.setSettings(updatedTestSettings)
+
+        // Verify TestAppSettings updated
+        let retrievedTest = try frontMatter.settings(for: TestAppSettings.self)
+        XCTAssertEqual(retrievedTest?.theme, "dark")
+        XCTAssertEqual(retrievedTest?.count, 100)
+
+        // Verify OtherAppSettings unchanged
+        let retrievedOther = try frontMatter.settings(for: OtherAppSettings.self)
+        XCTAssertEqual(retrievedOther?.enabled, false)
+    }
+}
+
+// MARK: - Test Settings Types
+
+private struct TestAppSettings: AppFrontMatterSettings {
+    static let sectionKey = "testapp"
+    var theme: String?
+    var count: Int?
+}
+
+private struct OtherAppSettings: AppFrontMatterSettings {
+    static let sectionKey = "otherapp"
+    var enabled: Bool?
 }
