@@ -15,6 +15,7 @@ For detailed project documentation, architecture, and development guidelines, se
 **Key Components**:
 - **Agentic Discovery**: Structured PROJECT.md front matter for AI agent consumption
 - **Project Metadata**: Machine-readable intent, composition, and generation settings
+- **App Settings Extension**: Type-safe, namespaced app-specific settings (v2.6.0+)
 - **File Discovery**: Recursive file enumeration in folders/git repos
 - **Secure Access**: Security-scoped bookmark handling
 - **Hierarchical Structure**: FileNode trees for navigation
