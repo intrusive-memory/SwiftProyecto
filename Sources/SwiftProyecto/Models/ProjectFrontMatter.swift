@@ -115,8 +115,8 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
 
     /// Storage for app-specific settings sections.
     /// Keys are app section identifiers, values are type-erased settings.
-    /// Internal access allows extensions to read and modify within the module.
-    internal var appSections: [String: AnyCodable] = [:]
+    /// Internal access allows extensions to read, private(set) prevents external modification.
+    internal private(set) var appSections: [String: AnyCodable] = [:]
 
     /// Create a new ProjectFrontMatter instance.
     ///

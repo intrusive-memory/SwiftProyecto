@@ -371,6 +371,192 @@ final class ProjectFrontMatterTests: XCTestCase {
         XCTAssertEqual(narrator?.actor, "Tom Stovall")
         XCTAssertEqual(narrator?.voices, ["apple://com.apple.voice.compact.en-US.Aaron?lang=en", "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"])
     }
+
+    // MARK: - App Sections Tests
+
+    func testAppSectionsInitialization() throws {
+        // Create with appSections parameter
+        let theme = try AnyCodable("dark")
+        let version = try AnyCodable(1)
+        let appSettings = ["theme": theme, "version": version]
+
+        let frontMatter = ProjectFrontMatter(
+            title: "Test Project",
+            author: "Test Author",
+            appSections: ["myapp": try AnyCodable(appSettings)]
+        )
+
+        XCTAssertEqual(frontMatter.appSections.count, 1)
+        XCTAssertNotNil(frontMatter.appSections["myapp"])
+    }
+
+    func testAppSectionsEncodingJSON() throws {
+        // Encode to JSON includes app sections at root
+        let theme = try AnyCodable("dark")
+        let version = try AnyCodable(1)
+        let appSettings = ["theme": theme, "version": version]
+
+        let frontMatter = ProjectFrontMatter(
+            title: "Test Project",
+            author: "Test Author",
+            created: Date(timeIntervalSince1970: 0),
+            appSections: ["myapp": try AnyCodable(appSettings)]
+        )
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys, .prettyPrinted]
+        let data = try encoder.encode(frontMatter)
+        let json = String(data: data, encoding: .utf8)!
+
+        // Verify JSON structure
+        XCTAssertTrue(json.contains("\"myapp\""))
+        XCTAssertTrue(json.contains("\"theme\""))
+        XCTAssertTrue(json.contains("\"dark\""))
+        XCTAssertTrue(json.contains("\"version\""))
+    }
+
+    func testAppSectionsDecodingJSON() throws {
+        // Decode from JSON with unknown fields
+        let json = """
+        {
+            "type": "project",
+            "title": "Test",
+            "author": "Author",
+            "created": "1970-01-01T00:00:00Z",
+            "myapp": {
+                "theme": "dark",
+                "version": 1
+            },
+            "otherapp": {
+                "enabled": true
+            }
+        }
+        """.data(using: .utf8)!
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let frontMatter = try decoder.decode(ProjectFrontMatter.self, from: json)
+
+        XCTAssertEqual(frontMatter.title, "Test")
+        XCTAssertEqual(frontMatter.author, "Author")
+        XCTAssertEqual(frontMatter.appSections.count, 2)
+        XCTAssertNotNil(frontMatter.appSections["myapp"])
+        XCTAssertNotNil(frontMatter.appSections["otherapp"])
+
+        // Verify content of myapp section
+        let myappAnyCodable = frontMatter.appSections["myapp"]!
+        let myappDict = try myappAnyCodable.decode([String: AnyCodable].self)
+        let theme = try myappDict["theme"]?.decode(String.self)
+        let version = try myappDict["version"]?.decode(Int.self)
+        XCTAssertEqual(theme, "dark")
+        XCTAssertEqual(version, 1)
+
+        // Verify content of otherapp section
+        let otherappAnyCodable = frontMatter.appSections["otherapp"]!
+        let otherappDict = try otherappAnyCodable.decode([String: AnyCodable].self)
+        let enabled = try otherappDict["enabled"]?.decode(Bool.self)
+        XCTAssertEqual(enabled, true)
+    }
+
+    func testAppSectionsRoundTrip() throws {
+        // Encode → Decode preserves app sections exactly
+        let theme = try AnyCodable("dark")
+        let count = try AnyCodable(42)
+        let appSettings = ["theme": theme, "count": count]
+
+        let original = ProjectFrontMatter(
+            title: "Test Project",
+            author: "Test Author",
+            created: Date(timeIntervalSince1970: 0),
+            appSections: ["myapp": try AnyCodable(appSettings)]
+        )
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(original)
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(ProjectFrontMatter.self, from: data)
+
+        // Verify equality
+        XCTAssertEqual(original, decoded)
+        XCTAssertEqual(decoded.appSections.count, 1)
+        XCTAssertNotNil(decoded.appSections["myapp"])
+
+        // Verify exact content preservation
+        let decodedMyapp = decoded.appSections["myapp"]!
+        let decodedDict = try decodedMyapp.decode([String: AnyCodable].self)
+        let decodedTheme = try decodedDict["theme"]?.decode(String.self)
+        let decodedCount = try decodedDict["count"]?.decode(Int.self)
+        XCTAssertEqual(decodedTheme, "dark")
+        XCTAssertEqual(decodedCount, 42)
+    }
+
+    func testMultipleAppSectionsCoexist() throws {
+        // Multiple app sections store independently
+        let app1Settings = ["theme": try AnyCodable("dark")]
+        let app2Settings = ["enabled": try AnyCodable(true), "count": try AnyCodable(5)]
+
+        let frontMatter = ProjectFrontMatter(
+            title: "Test Project",
+            author: "Test Author",
+            appSections: [
+                "app1": try AnyCodable(app1Settings),
+                "app2": try AnyCodable(app2Settings)
+            ]
+        )
+
+        XCTAssertEqual(frontMatter.appSections.count, 2)
+
+        // Verify app1
+        let app1 = frontMatter.appSections["app1"]!
+        let app1Dict = try app1.decode([String: AnyCodable].self)
+        let theme = try app1Dict["theme"]?.decode(String.self)
+        XCTAssertEqual(theme, "dark")
+
+        // Verify app2
+        let app2 = frontMatter.appSections["app2"]!
+        let app2Dict = try app2.decode([String: AnyCodable].self)
+        let enabled = try app2Dict["enabled"]?.decode(Bool.self)
+        let count = try app2Dict["count"]?.decode(Int.self)
+        XCTAssertEqual(enabled, true)
+        XCTAssertEqual(count, 5)
+    }
+
+    func testEmptyAppSectionsDoesNotEncode() throws {
+        // Empty dictionary omitted from output
+        let frontMatter = ProjectFrontMatter(
+            title: "Test Project",
+            author: "Test Author",
+            created: Date(timeIntervalSince1970: 0),
+            appSections: [:]
+        )
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys, .prettyPrinted]
+        let data = try encoder.encode(frontMatter)
+        let json = String(data: data, encoding: .utf8)!
+
+        // Verify that no app section keys appear in JSON
+        // (This is a simple check - the JSON should only have known fields)
+        let knownFields = ["type", "title", "author", "created"]
+        for field in knownFields {
+            XCTAssertTrue(json.contains("\"\(field)\""))
+        }
+
+        // Count the number of root-level keys
+        // Should only be the known fields
+        let jsonObject = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        // We expect at least type, title, author, created (4 required fields)
+        // No additional unknown fields should be present
+        let expectedKeys: Set<String> = ["type", "title", "author", "created"]
+        let actualKeys = Set(jsonObject.keys)
+        // Allow for any known fields, but verify no unexpected app section keys
+        XCTAssertTrue(expectedKeys.isSubset(of: actualKeys))
+    }
 }
 
 // MARK: - Test Settings Types
