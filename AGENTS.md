@@ -2,9 +2,16 @@
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 2.5.0 (February 2026)
+**Current Version**: 2.6.0 (February 2026)
 
-**Latest Changes**:
+**Latest Changes (v2.6.0)**:
+- AppFrontMatterSettings protocol for extensible app-specific settings
+- Namespaced settings sections in PROJECT.md frontmatter
+- AnyCodable type-erased wrapper for storage
+- Complete extension system with 50+ tests
+- Full backward compatibility maintained
+
+**Previous Changes (v2.5.0)**:
 - CastMember.voiceDescription field for TTS voice selection guidance
 - Inline cast list support in PROJECT.md
 - Cast list discovery and merging helpers
@@ -24,6 +31,7 @@ SwiftProyecto is a Swift package providing **extensible, agentic discovery of co
   - Generation settings (output directories, export formats)
   - Cast lists (character-to-voice mappings for TTS)
   - Workflow hooks (pre/post-generation automation)
+  - App-specific settings (extensible via AppFrontMatterSettings protocol - **NEW in v2.6.0**)
 - **File Discovery**: Recursively discover project components in folders/git repos
 - **Secure Access**: Security-scoped bookmarks for sandboxed environments
 - **Hierarchical Structure**: FileNode trees for navigation
@@ -48,7 +56,7 @@ SwiftProyecto is a Swift package providing **extensible, agentic discovery of co
 
 ## 📦 Extending PROJECT.md with App-Specific Settings
 
-**SwiftProyecto 3.0+ supports a plugin architecture** that allows apps to define their own settings sections in PROJECT.md frontmatter without modifying the library.
+**SwiftProyecto 2.6.0+ supports an extension system** that allows apps to define their own settings sections in PROJECT.md frontmatter without modifying the library.
 
 ### Quick Example
 
@@ -248,6 +256,20 @@ EOF
 - Normalizes to array via `.patterns` property
 - Supports glob patterns (e.g., "*.fountain") and explicit file lists
 - Codable with automatic string/array detection
+
+**AppFrontMatterSettings** - Protocol for app-specific settings extension (v2.6.0+)
+- Defines contract for type-safe, namespaced settings in PROJECT.md
+- Requires `sectionKey` static property for YAML section name
+- Conforms to Codable and Sendable
+- Apps implement this protocol to define their own settings
+- Settings stored in dedicated YAML section (e.g., `myapp:`)
+- See [Docs/EXTENDING_PROJECT_MD.md](../Docs/EXTENDING_PROJECT_MD.md) for complete guide
+
+**AnyCodable** - Type-erased wrapper for Codable values (v2.6.0+)
+- Internal utility for storing app settings without SwiftProyecto knowing their types
+- Wraps any Codable value while preserving encoding/decoding
+- Used by ProjectFrontMatter to store app-specific settings
+- Not exposed in public API (apps use generic `settings(for:)` methods)
 
 **FileNode** - Hierarchical tree structure for file navigation
 - Built from flat ProjectFileReference array

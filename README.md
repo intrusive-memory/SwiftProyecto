@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-2.5.0-blue.svg" />
+    <img src="https://img.shields.io/badge/Version-2.6.0-blue.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -37,6 +37,7 @@ SwiftProyecto provides AI agents and applications with comprehensive project und
   - Generation config (episodes directory, audio output, file patterns, export format)
   - Cast lists (character-to-voice mappings for TTS)
   - Hooks (pre/post-generation scripts for workflow automation)
+  - App-specific settings (extensible via AppFrontMatterSettings protocol - **NEW in v2.6.0**)
   - All accessible via YAML front matter using UNIVERSAL library
 - **File Discovery**: Recursively discover project components in folders or git repositories
 - **Secure File Access**: Security-scoped bookmarks for sandboxed macOS/iOS apps
@@ -132,6 +133,14 @@ SwiftProyecto uses a pluggable FileSource abstraction for discovering files:
 
 ## Features
 
+### ✨ v2.6.0: App-Specific Settings Extension System (February 2026)
+
+- **AppFrontMatterSettings Protocol**: Type-safe extension mechanism for app-specific PROJECT.md settings
+- **Namespaced Settings**: Apps define their own settings sections without modifying SwiftProyecto
+- **Complete Documentation**: See [Docs/EXTENDING_PROJECT_MD.md](Docs/EXTENDING_PROJECT_MD.md) for full guide
+- **Backward Compatible**: Existing PROJECT.md files work without app-specific sections
+- **Multi-App Support**: Multiple apps can store settings in the same PROJECT.md file
+
 ### ✅ v2.0: File Discovery Focus
 
 - **FileSource Abstraction**: Pluggable file discovery via `DirectoryFileSource` and `GitRepositoryFileSource`
@@ -165,16 +174,16 @@ Add SwiftProyecto to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "2.0.0")
+    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "2.6.0")
 ]
 ```
 
 Or add it in Xcode:
 1. File > Add Package Dependencies
 2. Enter: `https://github.com/intrusive-memory/SwiftProyecto.git`
-3. Select version: `2.0.0` or later
+3. Select version: `2.6.0` or later
 
-**Note**: Version 2.0.0 has breaking changes. If you're upgrading from v1.x, see the "Migration from v1.x" section below.
+**Note**: Version 2.6.0 adds app-specific settings extension system. Version 2.0.0 has breaking changes. If you're upgrading from v1.x, see the "Migration from v1.x" section below.
 
 ## Usage
 
@@ -198,7 +207,9 @@ my-series-project/              ← Project root
 
 ### PROJECT.md Format
 
-PROJECT.md uses YAML front matter delimited by `---` to store project metadata:
+PROJECT.md uses YAML front matter delimited by `---` to store project metadata.
+
+**NEW in v2.6.0**: Apps can extend PROJECT.md with their own settings via the `AppFrontMatterSettings` protocol. See [Docs/EXTENDING_PROJECT_MD.md](Docs/EXTENDING_PROJECT_MD.md) for details.
 
 ```markdown
 ---
@@ -537,6 +548,47 @@ struct DocumentLoader<Content: View>: View {
 ```
 
 See `.claude/PHASE2_IMPLEMENTATION.md` in the Produciesta repository for a complete integration example.
+
+### Extending PROJECT.md with App-Specific Settings (v2.6.0+)
+
+**NEW**: Apps can extend PROJECT.md frontmatter with their own namespaced, type-safe settings using the `AppFrontMatterSettings` protocol.
+
+```swift
+// 1. Define your settings
+struct MyAppSettings: AppFrontMatterSettings {
+    static let sectionKey = "myapp"
+    var theme: String?
+    var autoSave: Bool?
+    var exportFormat: String?
+}
+
+// 2. Read settings from PROJECT.md
+let parser = ProjectMarkdownParser()
+let (frontMatter, body) = try parser.parse(fileURL: projectURL)
+let settings = try frontMatter.settings(for: MyAppSettings.self)
+
+print(settings.theme)  // Optional("dark")
+
+// 3. Write settings to PROJECT.md
+var frontMatter = ProjectFrontMatter(title: "My Project", author: "Jane Doe")
+try frontMatter.setSettings(MyAppSettings(theme: "dark", autoSave: true))
+
+let markdown = parser.generate(frontMatter: frontMatter, body: "# Notes")
+// Produces PROJECT.md with myapp section
+```
+
+**Benefits**:
+- ✅ Type-safe with full Codable support
+- ✅ No coupling between SwiftProyecto and your app
+- ✅ Multiple apps can store settings in same PROJECT.md
+- ✅ Backward compatible with existing files
+
+**Complete Guide**: See [**Docs/EXTENDING_PROJECT_MD.md**](Docs/EXTENDING_PROJECT_MD.md) for:
+- Step-by-step implementation
+- Complete examples (podcast app, screenplay tools)
+- Best practices and common patterns
+- UserDefaults sync, migration strategies
+- Troubleshooting
 
 ### PROJECT.md Processing & Command Arguments
 
@@ -964,6 +1016,16 @@ SwiftProyecto is released under the MIT License. See [LICENSE](./LICENSE) for de
 - [Produciesta](https://github.com/intrusive-memory/Produciesta) - Screenplay management iOS/macOS app
 
 ## Status
+
+### ✨ v2.6.0 - App-Specific Settings Extension System (Current - February 2026)
+
+**New Features**:
+- ✅ AppFrontMatterSettings protocol for type-safe app-specific settings
+- ✅ Namespaced settings sections in PROJECT.md frontmatter
+- ✅ AnyCodable type-erased wrapper for storage
+- ✅ Complete extension guide in Docs/EXTENDING_PROJECT_MD.md
+- ✅ 50+ new tests covering all extension system features
+- ✅ Full backward compatibility with existing PROJECT.md files
 
 ### ✅ v2.0.0 - File Discovery Focus
 
