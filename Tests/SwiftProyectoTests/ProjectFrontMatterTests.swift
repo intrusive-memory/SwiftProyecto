@@ -252,12 +252,12 @@ final class ProjectFrontMatterTests: XCTestCase {
           - character: NARRATOR
             actor: Tom Stovall
             voices:
-              - apple://en-US/Aaron
-              - elevenlabs://en/wise-elder
+              - apple://com.apple.voice.compact.en-US.Aaron?lang=en
+              - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
           - character: LAO TZU
             actor: Jason Manino
             voices:
-              - qwen://en/narrative-1
+              - qwen-tts://narrative-1?lang=en
         ---
         """
 
@@ -270,7 +270,7 @@ final class ProjectFrontMatterTests: XCTestCase {
         let narrator = frontMatter.cast?.first { $0.character == "NARRATOR" }
         XCTAssertEqual(narrator?.actor, "Tom Stovall")
         XCTAssertEqual(narrator?.voices.count, 2)
-        XCTAssertEqual(narrator?.voices[0], "apple://en-US/Aaron")
+        XCTAssertEqual(narrator?.voices[0], "apple://com.apple.voice.compact.en-US.Aaron?lang=en")
 
         let laoTzu = frontMatter.cast?.first { $0.character == "LAO TZU" }
         XCTAssertEqual(laoTzu?.actor, "Jason Manino")
@@ -347,7 +347,7 @@ final class ProjectFrontMatterTests: XCTestCase {
                 CastMember(
                     character: "NARRATOR",
                     actor: "Tom Stovall",
-                    voices: ["apple://en-US/Aaron", "elevenlabs://en/wise-elder"]
+                    voices: ["apple://com.apple.voice.compact.en-US.Aaron?lang=en", "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"]
                 ),
                 CastMember(
                     character: "LAO TZU",
@@ -368,6 +368,6 @@ final class ProjectFrontMatterTests: XCTestCase {
 
         let narrator = parsed.cast?.first { $0.character == "NARRATOR" }
         XCTAssertEqual(narrator?.actor, "Tom Stovall")
-        XCTAssertEqual(narrator?.voices, ["apple://en-US/Aaron", "elevenlabs://en/wise-elder"])
+        XCTAssertEqual(narrator?.voices, ["apple://com.apple.voice.compact.en-US.Aaron?lang=en", "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"])
     }
 }

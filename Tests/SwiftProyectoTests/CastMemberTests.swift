@@ -72,7 +72,7 @@ final class CastMemberTests: XCTestCase {
             character: "PROTAGONIST",
             actor: "Alex Jordan",
             gender: .nonBinary,
-            voices: ["apple://en-US/Samantha"]
+            voices: ["apple://com.apple.voice.compact.en-US.Samantha?lang=en"]
         )
 
         XCTAssertEqual(member.character, "PROTAGONIST")
@@ -97,16 +97,16 @@ final class CastMemberTests: XCTestCase {
             character: "COMMENTATOR",
             actor: "Sarah Mitchell",
             voices: [
-                "apple://en-US/Samantha",
-                "elevenlabs://en/wise-elder"
+                "apple://com.apple.voice.compact.en-US.Samantha?lang=en",
+                "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"
             ]
         )
 
         XCTAssertEqual(member.character, "COMMENTATOR")
         XCTAssertEqual(member.actor, "Sarah Mitchell")
         XCTAssertEqual(member.voices.count, 2)
-        XCTAssertEqual(member.voices[0], "apple://en-US/Samantha")
-        XCTAssertEqual(member.voices[1], "elevenlabs://en/wise-elder")
+        XCTAssertEqual(member.voices[0], "apple://com.apple.voice.compact.en-US.Samantha?lang=en")
+        XCTAssertEqual(member.voices[1], "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en")
     }
 
     // MARK: - Convenience Properties
@@ -114,7 +114,7 @@ final class CastMemberTests: XCTestCase {
     func testHasVoices_True() {
         let member = CastMember(
             character: "NARRATOR",
-            voices: ["apple://en-US/Aaron"]
+            voices: ["apple://com.apple.voice.compact.en-US.Aaron?lang=en"]
         )
 
         XCTAssertTrue(member.hasVoices)
@@ -154,12 +154,12 @@ final class CastMemberTests: XCTestCase {
         let member = CastMember(
             character: "NARRATOR",
             voices: [
-                "apple://en-US/Aaron",
-                "elevenlabs://en/wise-elder"
+                "apple://com.apple.voice.compact.en-US.Aaron?lang=en",
+                "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"
             ]
         )
 
-        XCTAssertEqual(member.primaryVoice, "apple://en-US/Aaron")
+        XCTAssertEqual(member.primaryVoice, "apple://com.apple.voice.compact.en-US.Aaron?lang=en")
     }
 
     func testPrimaryVoice_NoVoices() {
@@ -190,7 +190,7 @@ final class CastMemberTests: XCTestCase {
         let member1 = CastMember(
             character: "NARRATOR",
             actor: "Tom Stovall",
-            voices: ["apple://en-US/Aaron"]
+            voices: ["apple://com.apple.voice.compact.en-US.Aaron?lang=en"]
         )
         let member2 = CastMember(
             character: "NARRATOR",
@@ -237,8 +237,8 @@ final class CastMemberTests: XCTestCase {
             actor: "Tom Stovall",
             gender: .male,
             voices: [
-                "apple://en-US/Aaron",
-                "elevenlabs://en/wise-elder"
+                "apple://com.apple.voice.compact.en-US.Aaron?lang=en",
+                "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"
             ]
         )
 
@@ -305,9 +305,9 @@ final class CastMemberTests: XCTestCase {
         let member = CastMember(
             character: "NARRATOR",
             voices: [
-                "apple://en-US/Aaron",
-                "elevenlabs://en/wise-elder",
-                "qwen://en/narrative-1",
+                "apple://com.apple.voice.compact.en-US.Aaron?lang=en",
+                "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en",
+                "qwen-tts://narrative-1?lang=en",
                 "custom-provider://voice-123"
             ]
         )
@@ -355,10 +355,10 @@ final class CastMemberTests: XCTestCase {
         var member = CastMember(character: "NARRATOR")
         XCTAssertEqual(member.voices, [])
 
-        member.voices = ["apple://en-US/Aaron"]
+        member.voices = ["apple://com.apple.voice.compact.en-US.Aaron?lang=en"]
         XCTAssertEqual(member.voices.count, 1)
 
-        member.voices.append("elevenlabs://en/wise-elder")
+        member.voices.append("elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en")
         XCTAssertEqual(member.voices.count, 2)
     }
 

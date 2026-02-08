@@ -56,7 +56,7 @@ public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable
 /// A character-to-voice mapping for audio generation.
 ///
 /// Maps screenplay characters to human actors and TTS voice URIs for
-/// audio generation. Voice URIs follow the hablare spec: `<provider>://<voice_id>`.
+/// audio generation. Voice URIs follow the SwiftHablare spec: `<provider>://<voiceId>?lang=<languageCode>`.
 ///
 /// ## Voice Resolution
 ///
@@ -72,9 +72,9 @@ public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable
 ///     actor: "Tom Stovall",
 ///     gender: .male,
 ///     voices: [
-///         "apple://en-US/Aaron",
-///         "elevenlabs://en/wise-elder",
-///         "qwen://en/narrative-1"
+///         "apple://com.apple.voice.compact.en-US.Aaron?lang=en",
+///         "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en",
+///         "qwen-tts://narrative-1?lang=en"
 ///     ]
 /// )
 /// ```
@@ -87,8 +87,8 @@ public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable
 ///     actor: Tom Stovall
 ///     gender: M
 ///     voices:
-///       - apple://en-US/Aaron
-///       - elevenlabs://en/wise-elder
+///       - apple://com.apple.voice.compact.en-US.Aaron?lang=en
+///       - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
 /// ```
 public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
 
@@ -111,12 +111,12 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     public var voiceDescription: String?
 
     /// Array of voice provider URIs (tries in order, first available wins)
-    /// Format: `<provider>://<voice_id>`
+    /// Format: `<provider>://<voiceId>?lang=<languageCode>`
     ///
     /// Examples:
-    /// - "apple://en-US/Aaron"
-    /// - "elevenlabs://en/wise-elder"
-    /// - "qwen://en/narrative-1"
+    /// - "apple://com.apple.voice.compact.en-US.Aaron?lang=en"
+    /// - "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"
+    /// - "qwen-tts://narrative-1?lang=en"
     /// - "invalid-garbage" (allowed, will be skipped during generation)
     ///
     /// Invalid URIs are permitted and silently skipped at generation time.
@@ -171,10 +171,10 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     /// ```swift
     /// let member = CastMember(
     ///     character: "NARRATOR",
-    ///     voices: ["elevenlabs://voice1", "apple://voice2", "apple://voice3"]
+    ///     voices: ["elevenlabs://voice1?lang=en", "apple://voice2?lang=en", "apple://voice3"]
     /// )
     /// let appleVoices = member.filterVoices(provider: "apple")
-    /// // Returns: ["apple://voice2", "apple://voice3"]
+    /// // Returns: ["apple://voice2?lang=en", "apple://voice3"]
     /// ```
     public func filterVoices(provider: String) -> [String] {
         let normalizedProvider = provider.lowercased()
