@@ -37,7 +37,6 @@ SwiftProyecto provides AI agents and applications with comprehensive project und
   - Generation config (episodes directory, audio output, file patterns, export format)
   - Cast lists (character-to-voice mappings for TTS)
   - Hooks (pre/post-generation scripts for workflow automation)
-  - App-specific settings (extensible via AppFrontMatterSettings protocol - **NEW in v2.6.0**)
   - All accessible via YAML front matter using UNIVERSAL library
 - **File Discovery**: Recursively discover project components in folders or git repositories
 - **Secure File Access**: Security-scoped bookmarks for sandboxed macOS/iOS apps
