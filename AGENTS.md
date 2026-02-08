@@ -2,9 +2,16 @@
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 2.5.0 (February 2026)
+**Current Version**: 2.6.0 (February 2026)
 
-**Latest Changes**:
+**Latest Changes (v2.6.0)**:
+- AppFrontMatterSettings protocol for extensible app-specific settings
+- Namespaced settings sections in PROJECT.md frontmatter
+- AnyCodable type-erased wrapper for storage
+- Complete extension system with 50+ tests
+- Full backward compatibility maintained
+
+**Previous Changes (v2.5.0)**:
 - CastMember.voiceDescription field for TTS voice selection guidance
 - Inline cast list support in PROJECT.md
 - Cast list discovery and merging helpers
@@ -13,24 +20,75 @@ This file provides comprehensive documentation for AI agents working with the Sw
 
 ## Project Overview
 
-SwiftProyecto is a Swift package for **file discovery and project metadata management** in screenplay applications. It provides:
-- Project folder management and file discovery
-- PROJECT.md metadata parsing and generation
-- Security-scoped bookmark handling
-- File tree building for navigation UIs
+SwiftProyecto is a Swift package providing **extensible, agentic discovery of content projects and project components**.
+
+**Purpose**: This project exists to help AI coding agents understand content projects in a single pass, eliminating the need for multiple utilities and discovery iterations. By storing project settings, utilities, intent, and composition in structured PROJECT.md front matter, AI agents can immediately comprehend what a project is, how it's structured, and how to render its content.
+
+**Core Capabilities**:
+- **Agentic Metadata**: Machine-readable PROJECT.md front matter for AI agent consumption
+  - Project intent (title, author, genre, description, tags)
+  - Composition structure (season, episodes, file patterns)
+  - Generation settings (output directories, export formats)
+  - Cast lists (character-to-voice mappings for TTS)
+  - Workflow hooks (pre/post-generation automation)
+  - App-specific settings (extensible via AppFrontMatterSettings protocol - **NEW in v2.6.0**)
+- **File Discovery**: Recursively discover project components in folders/git repos
+- **Secure Access**: Security-scoped bookmarks for sandboxed environments
+- **Hierarchical Structure**: FileNode trees for navigation
+- **SwiftData Persistence**: Project metadata and file references
 
 **What SwiftProyecto Does**:
-- ✅ Discovers screenplay files in folders/git repos
-- ✅ Manages PROJECT.md metadata
-- ✅ Provides security-scoped URLs for file access
-- ✅ Builds hierarchical file trees
+- ✅ Provides structured metadata for AI agents to understand projects
+- ✅ Discovers files and builds navigable project structure
+- ✅ Stores rendering settings and utilities in front matter
+- ✅ Enables single-pass project comprehension (not multi-pass inference)
+- ✅ Parses and generates PROJECT.md with YAML front matter
 
 **What SwiftProyecto Does NOT Do**:
-- ❌ Parse screenplay files (use SwiftCompartido)
-- ❌ Store document models (apps handle integration)
+- ❌ Parse content files (use SwiftCompartido or other parsers)
+- ❌ Render or generate content (provides metadata to renderers)
+- ❌ Store content models (apps handle integration)
 - ❌ Display UI (provides data only)
 
 **Platforms**: iOS 26.0+, macOS 26.0+
+
+---
+
+## 📦 Extending PROJECT.md with App-Specific Settings
+
+**SwiftProyecto 2.6.0+ supports an extension system** that allows apps to define their own settings sections in PROJECT.md frontmatter without modifying the library.
+
+### Quick Example
+
+```swift
+// 1. Define your settings
+struct MyAppSettings: AppFrontMatterSettings {
+    static let sectionKey = "myapp"
+    var theme: String?
+    var autoSave: Bool?
+}
+
+// 2. Read settings
+let (frontMatter, _) = try parser.parse(fileURL: projectURL)
+let settings = try frontMatter.settings(for: MyAppSettings.self)
+
+// 3. Write settings
+var frontMatter = ProjectFrontMatter(title: "My Project")
+try frontMatter.setSettings(MyAppSettings(theme: "dark"))
+```
+
+**📖 Complete Guide**: See [**Docs/EXTENDING_PROJECT_MD.md**](Docs/EXTENDING_PROJECT_MD.md) for:
+- Step-by-step implementation guide
+- Complete examples (podcast app, screenplay tools)
+- Best practices and common patterns
+- UserDefaults sync, settings migration, multi-app coexistence
+- Troubleshooting
+
+**Key Benefits:**
+- ✅ Type-safe with Codable
+- ✅ No coupling between SwiftProyecto and your app
+- ✅ Multiple apps can store settings in same PROJECT.md
+- ✅ Backward compatible with existing PROJECT.md files
 
 ---
 
@@ -199,6 +257,20 @@ EOF
 - Supports glob patterns (e.g., "*.fountain") and explicit file lists
 - Codable with automatic string/array detection
 
+**AppFrontMatterSettings** - Protocol for app-specific settings extension (v2.6.0+)
+- Defines contract for type-safe, namespaced settings in PROJECT.md
+- Requires `sectionKey` static property for YAML section name
+- Conforms to Codable and Sendable
+- Apps implement this protocol to define their own settings
+- Settings stored in dedicated YAML section (e.g., `myapp:`)
+- See [Docs/EXTENDING_PROJECT_MD.md](../Docs/EXTENDING_PROJECT_MD.md) for complete guide
+
+**AnyCodable** - Type-erased wrapper for Codable values (v2.6.0+)
+- Internal utility for storing app settings without SwiftProyecto knowing their types
+- Wraps any Codable value while preserving encoding/decoding
+- Used by ProjectFrontMatter to store app-specific settings
+- Not exposed in public API (apps use generic `settings(for:)` methods)
+
 **FileNode** - Hierarchical tree structure for file navigation
 - Built from flat ProjectFileReference array
 - Supports folders and files
@@ -327,13 +399,13 @@ cast:
     actor: Tom Stovall
     voiceDescription: "Deep, warm baritone with measured pacing and gravitas"
     voices:
-      - apple://en-US/Aaron
-      - elevenlabs://en/wise-elder
+      - apple://com.apple.voice.compact.en-US.Aaron?lang=en
+      - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
   - character: LAO TZU
     actor: Jason Manino
     voiceDescription: "Wise, contemplative voice with subtle Eastern accent"
     voices:
-      - qwen://en/narrative-1
+      - qwen-tts://narrative-1?lang=en
 preGenerateHook: "./scripts/prepare.sh"
 postGenerateHook: "./scripts/upload.sh"
 ---

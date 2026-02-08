@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.6.0] - 2026-02-05
+
+### Added
+
+- `CastMember.filterVoices(provider:)` - Filter voice URIs by provider prefix
+- Supports runtime voice provider filtering for multi-provider cast lists
+- Case-insensitive provider matching
+- Preserves original voice order in filtered results
+
+### Tests
+
+- Added comprehensive unit tests for voice filtering (5 test cases)
+  - `testFilterVoicesAppleProvider` - Single provider match
+  - `testFilterVoicesNoMatches` - No matching provider
+  - `testFilterVoicesEmptyArray` - Empty voices array
+  - `testFilterVoicesCaseInsensitive` - Case insensitive matching
+  - `testFilterVoicesPreservesOrder` - Original order preserved
+
+---
+
 ## [2.5.0] - 2026-02-01
 
 ### Added
@@ -395,7 +415,8 @@ This release completes a major refactoring that transforms SwiftProyecto into a 
 - Basic tests pass (version check, placeholder test)
 - Repository published to GitHub
 
-[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.5.0...HEAD
+[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.6.0...HEAD
+[2.6.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.2...v2.5.0
 [2.1.2]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.0...v2.1.1

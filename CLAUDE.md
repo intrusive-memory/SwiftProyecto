@@ -6,16 +6,23 @@ For detailed project documentation, architecture, and development guidelines, se
 
 ## Quick Reference
 
-**Project**: SwiftProyecto - Swift package for file discovery and project metadata management in screenplay applications
+**Project**: SwiftProyecto - Swift package for **extensible, agentic discovery** of content projects
+
+**Purpose**: Enables AI coding agents to understand content projects in a single pass by providing structured PROJECT.md metadata containing project intent, composition, settings, and utilities.
 
 **Platforms**: iOS 26.0+, macOS 26.0+
 
 **Key Components**:
-- Project folder management and file discovery
-- PROJECT.md metadata parsing and generation
-- Security-scoped bookmark handling
-- File tree building for navigation UIs
-- `proyecto` CLI for AI-powered PROJECT.md generation
+- **Agentic Discovery**: Structured PROJECT.md front matter for AI agent consumption
+- **Project Metadata**: Machine-readable intent, composition, and generation settings
+- **App Settings Extension**: Type-safe, namespaced app-specific settings (v2.6.0+)
+- **File Discovery**: Recursive file enumeration in folders/git repos
+- **Secure Access**: Security-scoped bookmark handling
+- **Hierarchical Structure**: FileNode trees for navigation
+- **proyecto CLI**: LLM-powered PROJECT.md generation from directory analysis
+
+**Why This Exists**:
+AI agents need multiple utilities and passes to understand content projects. SwiftProyecto solves this by storing settings, utilities, intent, and composition in PROJECT.md front matter, enabling single-pass comprehension.
 
 **Important Notes**:
 - ⚠️ ONLY supports iOS 26.0+ and macOS 26.0+ (NEVER add code for older platforms)
