@@ -80,7 +80,7 @@ final class ProjectServiceCastListTests: XCTestCase {
         // All should have nil actor and empty voices
         for member in castList {
             XCTAssertNil(member.actor)
-            XCTAssertEqual(member.voices, [])
+            XCTAssertEqual(member.voices, [:])
         }
     }
 
@@ -295,7 +295,7 @@ final class ProjectServiceCastListTests: XCTestCase {
             CastMember(
                 character: "NARRATOR",
                 actor: "Tom Stovall",
-                voices: ["apple://en-US/Aaron"]
+                voices: ["apple": "com.apple.voice.compact.en-US.Aaron"]
             ),
             CastMember(character: "OLD CHARACTER")
         ]
@@ -312,7 +312,7 @@ final class ProjectServiceCastListTests: XCTestCase {
         // NARRATOR should preserve actor and voices
         let narrator = merged.first { $0.character == "NARRATOR" }
         XCTAssertEqual(narrator?.actor, "Tom Stovall")
-        XCTAssertEqual(narrator?.voices, ["apple://en-US/Aaron"])
+        XCTAssertEqual(narrator?.voices, ["apple": "com.apple.voice.compact.en-US.Aaron"])
 
         // NEW CHARACTER should be added
         XCTAssertTrue(merged.contains { $0.character == "NEW CHARACTER" })

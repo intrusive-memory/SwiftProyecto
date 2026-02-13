@@ -55,14 +55,14 @@ public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable
 
 /// A character-to-voice mapping for audio generation.
 ///
-/// Maps screenplay characters to human actors and TTS voice URIs for
-/// audio generation. Voice URIs follow the SwiftHablare spec: `<provider>://<voiceId>?lang=<languageCode>`.
+/// Maps screenplay characters to human actors and TTS voice identifiers for
+/// audio generation. Voices are specified as key/value pairs where the key is
+/// the provider name and the value is the voice identifier.
 ///
 /// ## Voice Resolution
 ///
-/// Voice URIs are tried in order during generation. The first voice that matches
-/// an enabled provider is used. If no voices match, the default voice is used.
-/// Invalid or unavailable voice URIs are silently skipped.
+/// The appropriate voice is selected based on the enabled TTS provider.
+/// If no voice is specified for the active provider, the default voice is used.
 ///
 /// ## Example
 ///
@@ -72,9 +72,9 @@ public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable
 ///     actor: "Tom Stovall",
 ///     gender: .male,
 ///     voices: [
-///         "apple://com.apple.voice.compact.en-US.Aaron?lang=en",
-///         "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en",
-///         "qwen-tts://narrative-1?lang=en"
+///         "apple": "com.apple.voice.compact.en-US.Aaron",
+///         "elevenlabs": "21m00Tcm4TlvDq8ikWAM",
+///         "qwen-tts": "narrative-1"
 ///     ]
 /// )
 /// ```
@@ -87,8 +87,8 @@ public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable
 ///     actor: Tom Stovall
 ///     gender: M
 ///     voices:
-///       - apple://com.apple.voice.compact.en-US.Aaron?lang=en
-///       - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
+///       apple: com.apple.voice.compact.en-US.Aaron
+///       elevenlabs: 21m00Tcm4TlvDq8ikWAM
 /// ```
 public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
 
@@ -110,17 +110,16 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     /// Example: "Deep, warm baritone with measured pacing and gravitas"
     public var voiceDescription: String?
 
-    /// Array of voice provider URIs (tries in order, first available wins)
-    /// Format: `<provider>://<voiceId>?lang=<languageCode>`
+    /// Dictionary of voice identifiers by provider.
+    /// Keys are provider names (e.g., "apple", "elevenlabs"), values are voice identifiers.
     ///
     /// Examples:
-    /// - "apple://com.apple.voice.compact.en-US.Aaron?lang=en"
-    /// - "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"
-    /// - "qwen-tts://narrative-1?lang=en"
-    /// - "invalid-garbage" (allowed, will be skipped during generation)
+    /// - "apple": "com.apple.voice.compact.en-US.Aaron"
+    /// - "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
+    /// - "qwen-tts": "narrative-1"
     ///
-    /// Invalid URIs are permitted and silently skipped at generation time.
-    public var voices: [String]
+    /// Invalid voice identifiers are permitted and will be handled at generation time.
+    public var voices: [String: String]
 
     /// Unique identifier based on character name
     public var id: String { character }
@@ -131,7 +130,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         actor: String? = nil,
         gender: Gender? = nil,
         voiceDescription: String? = nil,
-        voices: [String] = []
+        voices: [String: String] = [:]
     ) {
         self.character = character
         self.actor = actor
@@ -152,37 +151,49 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         actor != nil && !(actor?.isEmpty ?? true)
     }
 
-    /// Primary voice URI (first in array), if any
-    public var primaryVoice: String? {
-        voices.first
-    }
-
-    /// Filter voices by provider prefix
+    /// Get voice identifier for a specific provider.
     ///
-    /// Returns all voice URIs that match the specified provider, preserving the original order.
-    /// Provider matching is case-insensitive.
+    /// Performs case-insensitive lookup of the provider name.
     ///
     /// - Parameter provider: Provider name (e.g., "apple", "elevenlabs")
-    /// - Returns: Array of voice URIs matching the provider, preserving original order.
-    ///            Returns empty array if no voices match.
+    /// - Returns: Voice identifier if found, nil otherwise
     ///
     /// ## Example
     ///
     /// ```swift
     /// let member = CastMember(
     ///     character: "NARRATOR",
-    ///     voices: ["elevenlabs://voice1?lang=en", "apple://voice2?lang=en", "apple://voice3"]
+    ///     voices: [
+    ///         "apple": "com.apple.voice.premium.en-US.Aaron",
+    ///         "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
+    ///     ]
     /// )
-    /// let appleVoices = member.filterVoices(provider: "apple")
-    /// // Returns: ["apple://voice2?lang=en", "apple://voice3"]
+    /// if let appleVoice = member.voice(for: "apple") {
+    ///     print(appleVoice) // "com.apple.voice.premium.en-US.Aaron"
+    /// }
     /// ```
-    public func filterVoices(provider: String) -> [String] {
-        let normalizedProvider = provider.lowercased()
-        return voices.filter { voiceURI in
-            guard let colonIndex = voiceURI.firstIndex(of: ":") else { return false }
-            let voiceProvider = String(voiceURI[..<colonIndex]).lowercased()
-            return voiceProvider == normalizedProvider
-        }
+    public func voice(for provider: String) -> String? {
+        voices[provider.lowercased()]
+    }
+
+    /// Array of all provider names that have voices assigned.
+    ///
+    /// Returns provider names sorted alphabetically.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let member = CastMember(
+    ///     character: "NARRATOR",
+    ///     voices: [
+    ///         "elevenlabs": "21m00Tcm4TlvDq8ikWAM",
+    ///         "apple": "com.apple.voice.premium.en-US.Aaron"
+    ///     ]
+    /// )
+    /// print(member.providers) // ["apple", "elevenlabs"]
+    /// ```
+    public var providers: [String] {
+        Array(voices.keys).sorted()
     }
 
     // MARK: - Equatable & Hashable
@@ -213,6 +224,6 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         actor = try container.decodeIfPresent(String.self, forKey: .actor)
         gender = try container.decodeIfPresent(Gender.self, forKey: .gender)
         voiceDescription = try container.decodeIfPresent(String.self, forKey: .voiceDescription)
-        voices = try container.decodeIfPresent([String].self, forKey: .voices) ?? []
+        voices = try container.decodeIfPresent([String: String].self, forKey: .voices) ?? [:]
     }
 }

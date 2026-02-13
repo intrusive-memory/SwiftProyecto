@@ -252,12 +252,12 @@ final class ProjectFrontMatterTests: XCTestCase {
           - character: NARRATOR
             actor: Tom Stovall
             voices:
-              - apple://com.apple.voice.compact.en-US.Aaron?lang=en
-              - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
+              apple: com.apple.voice.compact.en-US.Aaron
+              elevenlabs: 21m00Tcm4TlvDq8ikWAM
           - character: LAO TZU
             actor: Jason Manino
             voices:
-              - qwen-tts://narrative-1?lang=en
+              qwen-tts: narrative-1
         ---
         """
 
@@ -270,11 +270,13 @@ final class ProjectFrontMatterTests: XCTestCase {
         let narrator = frontMatter.cast?.first { $0.character == "NARRATOR" }
         XCTAssertEqual(narrator?.actor, "Tom Stovall")
         XCTAssertEqual(narrator?.voices.count, 2)
-        XCTAssertEqual(narrator?.voices[0], "apple://com.apple.voice.compact.en-US.Aaron?lang=en")
+        XCTAssertEqual(narrator?.voices["apple"], "com.apple.voice.compact.en-US.Aaron")
+        XCTAssertEqual(narrator?.voices["elevenlabs"], "21m00Tcm4TlvDq8ikWAM")
 
         let laoTzu = frontMatter.cast?.first { $0.character == "LAO TZU" }
         XCTAssertEqual(laoTzu?.actor, "Jason Manino")
         XCTAssertEqual(laoTzu?.voices.count, 1)
+        XCTAssertEqual(laoTzu?.voices["qwen-tts"], "narrative-1")
     }
 
     func testCast_WithoutCastList() throws {
@@ -347,12 +349,15 @@ final class ProjectFrontMatterTests: XCTestCase {
                 CastMember(
                     character: "NARRATOR",
                     actor: "Tom Stovall",
-                    voices: ["apple://com.apple.voice.compact.en-US.Aaron?lang=en", "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"]
+                    voices: [
+                        "apple": "com.apple.voice.compact.en-US.Aaron",
+                        "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
+                    ]
                 ),
                 CastMember(
                     character: "LAO TZU",
                     actor: "Jason Manino",
-                    voices: []
+                    voices: [:]
                 )
             ]
         )
@@ -368,7 +373,10 @@ final class ProjectFrontMatterTests: XCTestCase {
 
         let narrator = parsed.cast?.first { $0.character == "NARRATOR" }
         XCTAssertEqual(narrator?.actor, "Tom Stovall")
-        XCTAssertEqual(narrator?.voices, ["apple://com.apple.voice.compact.en-US.Aaron?lang=en", "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"])
+        XCTAssertEqual(narrator?.voices, [
+            "apple": "com.apple.voice.compact.en-US.Aaron",
+            "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
+        ])
     }
 
     // MARK: - App Sections Tests
