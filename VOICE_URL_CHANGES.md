@@ -283,10 +283,10 @@ func testProviders_ReturnsSortedKeys() {
         voices: [
             "elevenlabs": "voice2",
             "apple": "voice1",
-            "qwen-tts": "voice3"
+            "voxalta": "voice3"
         ]
     )
-    XCTAssertEqual(member.providers, ["apple", "elevenlabs", "qwen-tts"])
+    XCTAssertEqual(member.providers, ["apple", "elevenlabs", "voxalta"])
 }
 
 func testProviders_EmptyWhenNoVoices() {
@@ -323,7 +323,7 @@ func testVoiceIDs_ValidFormats() {
         voices: [
             "apple": "com.apple.voice.compact.en-US.Aaron",
             "elevenlabs": "21m00Tcm4TlvDq8ikWAM",
-            "qwen-tts": "narrative-1"
+            "voxalta": "narrative-1"
         ]
     )
 
@@ -388,7 +388,7 @@ cast:
     actor: Jason Manino
     gender: M
     voices:
-      qwen-tts: narrative-1
+      voxalta: narrative-1
 ---
 """
 ```
@@ -418,7 +418,7 @@ cast:
     actor: Jason Manino
     gender: M
     voices:
-      qwen-tts: male-voice-1
+      voxalta: male-voice-1
       apple: com.apple.voice.premium.en-US.Tom
 ```
 
@@ -428,7 +428,7 @@ cast:
 |----------|-----|-----------------|---------|
 | **Apple TTS** | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `com.apple.voice.compact.en-US.Samantha` |
 | **ElevenLabs** | `elevenlabs` | Unique voice ID (alphanumeric) | `21m00Tcm4TlvDq8ikWAM` |
-| **Qwen TTS** | `qwen-tts` | Voice name or ID | `female-voice-1` |
+| **Qwen TTS** | `voxalta` | Voice name or ID | `female-voice-1` |
 
 **Update examples (line ~298):**
 
@@ -443,8 +443,8 @@ elevenlabs: 21m00Tcm4TlvDq8ikWAM
 elevenlabs: pNInz6obpgDQGcFmaJgB
 
 # Qwen voices
-qwen-tts: female-voice-1
-qwen-tts: male-voice-1
+voxalta: female-voice-1
+voxalta: male-voice-1
 ```
 
 #### `AGENTS.md`

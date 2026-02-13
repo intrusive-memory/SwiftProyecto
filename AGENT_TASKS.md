@@ -91,9 +91,9 @@ voices:
    ```swift
    let member = CastMember(
        character: "TEST",
-       voices: ["elevenlabs": "v2", "apple": "v1", "qwen-tts": "v3"]
+       voices: ["elevenlabs": "v2", "apple": "v1", "voxalta": "v3"]
    )
-   XCTAssertEqual(member.providers, ["apple", "elevenlabs", "qwen-tts"])
+   XCTAssertEqual(member.providers, ["apple", "elevenlabs", "voxalta"])
    ```
 
 ### Completion Criteria

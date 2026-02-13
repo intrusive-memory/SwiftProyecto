@@ -74,7 +74,7 @@ public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable
 ///     voices: [
 ///         "apple": "com.apple.voice.compact.en-US.Aaron",
 ///         "elevenlabs": "21m00Tcm4TlvDq8ikWAM",
-///         "qwen-tts": "narrative-1"
+///         "voxalta": "narrative-1"
 ///     ]
 /// )
 /// ```
@@ -116,7 +116,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     /// Examples:
     /// - "apple": "com.apple.voice.compact.en-US.Aaron"
     /// - "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
-    /// - "qwen-tts": "narrative-1"
+    /// - "voxalta": "narrative-1"
     ///
     /// Invalid voice identifiers are permitted and will be handled at generation time.
     public var voices: [String: String]

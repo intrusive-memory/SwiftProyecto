@@ -270,7 +270,7 @@ cast:
     actor: Jason Manino
     gender: M
     voices:
-      qwen-tts: male-voice-1
+      voxalta: male-voice-1
       apple: com.apple.voice.premium.en-US.Tom
 ---
 ```
@@ -283,7 +283,7 @@ cast:
 |----------|-----|-----------------|------------------|
 | **Apple TTS** | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `com.apple.voice.compact.en-US.Samantha` |
 | **ElevenLabs** | `elevenlabs` | Unique voice ID (alphanumeric) | `21m00Tcm4TlvDq8ikWAM` |
-| **Qwen TTS** | `qwen-tts` | Voice name or ID | `female-voice-1` |
+| **VoxAlta** | `voxalta` | Voice name or ID | `female-voice-1` |
 
 **Apple Voice Quality Levels**:
 - `premium` - High-quality enhanced voices
@@ -303,7 +303,7 @@ voices:
 voices:
   apple: com.apple.voice.compact.en-US.Samantha
   elevenlabs: pNInz6obpgDQGcFmaJgB
-  qwen-tts: female-voice-1
+  voxalta: female-voice-1
 ```
 
 **Voice Resolution**: During audio generation, voices are tried in order. The first voice matching an enabled provider is used. If no voices match or a voice URI is invalid, it is skipped and the next is tried. If all voices fail, the default voice is used.
@@ -311,7 +311,7 @@ voices:
 **Finding Voice IDs**:
 - **Apple**: Use `AVSpeechSynthesisVoice.speechVoices()` to list available voices and their identifiers
 - **ElevenLabs**: Find voice IDs in your ElevenLabs dashboard under "Voices"
-- **Qwen TTS**: Run `hablare voices` CLI command to list available voices
+- **VoxAlta**: Run `hablare voices` CLI command to list available voices
 
 #### Automatic Cast List Discovery
 

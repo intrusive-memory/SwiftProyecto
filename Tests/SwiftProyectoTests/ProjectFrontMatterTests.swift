@@ -257,7 +257,7 @@ final class ProjectFrontMatterTests: XCTestCase {
           - character: LAO TZU
             actor: Jason Manino
             voices:
-              qwen-tts: narrative-1
+              voxalta: narrative-1
         ---
         """
 
@@ -276,7 +276,7 @@ final class ProjectFrontMatterTests: XCTestCase {
         let laoTzu = frontMatter.cast?.first { $0.character == "LAO TZU" }
         XCTAssertEqual(laoTzu?.actor, "Jason Manino")
         XCTAssertEqual(laoTzu?.voices.count, 1)
-        XCTAssertEqual(laoTzu?.voices["qwen-tts"], "narrative-1")
+        XCTAssertEqual(laoTzu?.voices["voxalta"], "narrative-1")
     }
 
     func testCast_WithoutCastList() throws {
