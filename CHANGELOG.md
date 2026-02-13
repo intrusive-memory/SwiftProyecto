@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### BREAKING CHANGES
+
+- **Voice representation changed from URL-style to key/value pairs**
+  - `CastMember.voices` is now `[String: String]` instead of `[String]`
+  - Voice URIs like `apple://com.apple.voice.premium.en-US.Aaron?lang=en` are now key/value pairs: `apple: com.apple.voice.premium.en-US.Aaron`
+  - Removed `filterVoices(provider:)` method (use dictionary subscript instead: `voices["apple"]`)
+  - Removed `primaryVoice` property (use `voice(for:)` method instead)
+  - Added `voice(for provider: String) -> String?` method for provider-specific lookup
+  - Added `providers` property to list all available providers
+  - All existing PROJECT.md files must be migrated to new format
+
+### Migration Guide
+
+**Old format (URL-style):**
+```yaml
+voices:
+  - apple://com.apple.voice.premium.en-US.Aaron?lang=en
+  - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
+```
+
+**New format (Key/Value):**
+```yaml
+voices:
+  apple: com.apple.voice.premium.en-US.Aaron
+  elevenlabs: 21m00Tcm4TlvDq8ikWAM
+```
+
+**Code changes:**
+```swift
+// Old
+let appleVoices = member.filterVoices(provider: "apple")
+let firstVoice = member.primaryVoice
+
+// New
+if let appleVoice = member.voice(for: "apple") {
+    // Use apple voice
+}
+let allProviders = member.providers
+```
+
 ---
 
 ## [2.6.0] - 2026-02-05
