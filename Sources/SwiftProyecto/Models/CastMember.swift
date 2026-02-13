@@ -55,8 +55,9 @@ public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable
 
 /// A character-to-voice mapping for audio generation.
 ///
-/// Maps screenplay characters to human actors and TTS voice URIs for
-/// audio generation. Voice URIs follow the SwiftHablare spec: `<provider>://<voiceId>?lang=<languageCode>`.
+/// Maps screenplay characters to human actors and TTS voice identifiers for
+/// audio generation. Voices are specified as key/value pairs where the key is
+/// the provider name and the value is the voice identifier.
 ///
 /// ## Voice Resolution
 ///
@@ -71,9 +72,9 @@ public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable
 ///     actor: "Tom Stovall",
 ///     gender: .male,
 ///     voices: [
-///         "apple://com.apple.voice.compact.en-US.Aaron?lang=en",
-///         "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en",
-///         "qwen-tts://narrative-1?lang=en"
+///         "apple": "com.apple.voice.compact.en-US.Aaron",
+///         "elevenlabs": "21m00Tcm4TlvDq8ikWAM",
+///         "qwen-tts": "narrative-1"
 ///     ]
 /// )
 /// ```
@@ -86,8 +87,8 @@ public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable
 ///     actor: Tom Stovall
 ///     gender: M
 ///     voices:
-///       - apple://com.apple.voice.compact.en-US.Aaron?lang=en
-///       - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
+///       apple: com.apple.voice.compact.en-US.Aaron
+///       elevenlabs: 21m00Tcm4TlvDq8ikWAM
 /// ```
 public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
 
@@ -109,14 +110,13 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     /// Example: "Deep, warm baritone with measured pacing and gravitas"
     public var voiceDescription: String?
 
-    /// Array of voice provider URIs (tries in order, first available wins)
-    /// Format: `<provider>://<voiceId>?lang=<languageCode>`
+    /// Dictionary of voice identifiers by provider.
+    /// Keys are provider names (e.g., "apple", "elevenlabs"), values are voice identifiers.
     ///
     /// Examples:
-    /// - "apple://com.apple.voice.compact.en-US.Aaron?lang=en"
-    /// - "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"
-    /// - "qwen-tts://narrative-1?lang=en"
-    /// - "invalid-garbage" (allowed, will be skipped during generation)
+    /// - "apple": "com.apple.voice.compact.en-US.Aaron"
+    /// - "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
+    /// - "qwen-tts": "narrative-1"
     ///
     /// Invalid voice identifiers are permitted and will be handled at generation time.
     public var voices: [String: String]
@@ -130,7 +130,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         actor: String? = nil,
         gender: Gender? = nil,
         voiceDescription: String? = nil,
-        voices: [String] = []
+        voices: [String: String] = [:]
     ) {
         self.character = character
         self.actor = actor
@@ -196,34 +196,6 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         Array(voices.keys).sorted()
     }
 
-    /// Filter voices by provider prefix
-    ///
-    /// Returns all voice URIs that match the specified provider, preserving the original order.
-    /// Provider matching is case-insensitive.
-    ///
-    /// - Parameter provider: Provider name (e.g., "apple", "elevenlabs")
-    /// - Returns: Array of voice URIs matching the provider, preserving original order.
-    ///            Returns empty array if no voices match.
-    ///
-    /// ## Example
-    ///
-    /// ```swift
-    /// let member = CastMember(
-    ///     character: "NARRATOR",
-    ///     voices: ["elevenlabs://voice1?lang=en", "apple://voice2?lang=en", "apple://voice3"]
-    /// )
-    /// let appleVoices = member.filterVoices(provider: "apple")
-    /// // Returns: ["apple://voice2?lang=en", "apple://voice3"]
-    /// ```
-    public func filterVoices(provider: String) -> [String] {
-        let normalizedProvider = provider.lowercased()
-        return voices.filter { voiceURI in
-            guard let colonIndex = voiceURI.firstIndex(of: ":") else { return false }
-            let voiceProvider = String(voiceURI[..<colonIndex]).lowercased()
-            return voiceProvider == normalizedProvider
-        }
-    }
-
     // MARK: - Equatable & Hashable
 
     /// Two cast members are equal if they have the same character name
@@ -252,6 +224,6 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         actor = try container.decodeIfPresent(String.self, forKey: .actor)
         gender = try container.decodeIfPresent(Gender.self, forKey: .gender)
         voiceDescription = try container.decodeIfPresent(String.self, forKey: .voiceDescription)
-        voices = try container.decodeIfPresent([String].self, forKey: .voices) ?? []
+        voices = try container.decodeIfPresent([String: String].self, forKey: .voices) ?? [:]
     }
 }

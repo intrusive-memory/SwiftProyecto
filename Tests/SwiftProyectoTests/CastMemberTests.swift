@@ -72,7 +72,7 @@ final class CastMemberTests: XCTestCase {
             character: "PROTAGONIST",
             actor: "Alex Jordan",
             gender: .nonBinary,
-            voices: ["apple://com.apple.voice.compact.en-US.Samantha?lang=en"]
+            voices: ["apple": "com.apple.voice.compact.en-US.Samantha"]
         )
 
         XCTAssertEqual(member.character, "PROTAGONIST")
@@ -97,16 +97,16 @@ final class CastMemberTests: XCTestCase {
             character: "COMMENTATOR",
             actor: "Sarah Mitchell",
             voices: [
-                "apple://com.apple.voice.compact.en-US.Samantha?lang=en",
-                "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"
+                "apple": "com.apple.voice.compact.en-US.Samantha",
+                "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
             ]
         )
 
         XCTAssertEqual(member.character, "COMMENTATOR")
         XCTAssertEqual(member.actor, "Sarah Mitchell")
         XCTAssertEqual(member.voices.count, 2)
-        XCTAssertEqual(member.voices[0], "apple://com.apple.voice.compact.en-US.Samantha?lang=en")
-        XCTAssertEqual(member.voices[1], "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en")
+        XCTAssertEqual(member.voices["apple"], "com.apple.voice.compact.en-US.Samantha")
+        XCTAssertEqual(member.voices["elevenlabs"], "21m00Tcm4TlvDq8ikWAM")
     }
 
     // MARK: - Convenience Properties
@@ -114,7 +114,7 @@ final class CastMemberTests: XCTestCase {
     func testHasVoices_True() {
         let member = CastMember(
             character: "NARRATOR",
-            voices: ["apple://com.apple.voice.compact.en-US.Aaron?lang=en"]
+            voices: ["apple": "com.apple.voice.compact.en-US.Aaron"]
         )
 
         XCTAssertTrue(member.hasVoices)
@@ -156,12 +156,12 @@ final class CastMemberTests: XCTestCase {
         let member = CastMember(
             character: "TEST",
             voices: [
-                "apple://com.apple.voice.compact.en-US.Aaron?lang=en",
-                "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"
+                "apple": "com.apple.voice.compact.en-US.Aaron",
+                "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
             ]
         )
-
-        XCTAssertEqual(member.primaryVoice, "apple://com.apple.voice.compact.en-US.Aaron?lang=en")
+        XCTAssertEqual(member.voice(for: "apple"), "com.apple.voice.compact.en-US.Aaron")
+        XCTAssertEqual(member.voice(for: "elevenlabs"), "21m00Tcm4TlvDq8ikWAM")
     }
 
     func testVoiceForProvider_NotFound() {
@@ -194,10 +194,10 @@ final class CastMemberTests: XCTestCase {
             voices: [
                 "elevenlabs": "voice2",
                 "apple": "voice1",
-                "voxalta": "voice3"
+                "qwen-tts": "voice3"
             ]
         )
-        XCTAssertEqual(member.providers, ["apple", "elevenlabs", "voxalta"])
+        XCTAssertEqual(member.providers, ["apple", "elevenlabs", "qwen-tts"])
     }
 
     func testProviders_EmptyWhenNoVoices() {
@@ -235,7 +235,7 @@ final class CastMemberTests: XCTestCase {
         let member1 = CastMember(
             character: "NARRATOR",
             actor: "Tom Stovall",
-            voices: ["apple://com.apple.voice.compact.en-US.Aaron?lang=en"]
+            voices: ["apple": "com.apple.voice.compact.en-US.Aaron"]
         )
         let member2 = CastMember(
             character: "NARRATOR",
@@ -282,8 +282,8 @@ final class CastMemberTests: XCTestCase {
             actor: "Tom Stovall",
             gender: .male,
             voices: [
-                "apple://com.apple.voice.compact.en-US.Aaron?lang=en",
-                "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en"
+                "apple": "com.apple.voice.compact.en-US.Aaron",
+                "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
             ]
         )
 
@@ -350,10 +350,10 @@ final class CastMemberTests: XCTestCase {
         let member = CastMember(
             character: "NARRATOR",
             voices: [
-                "apple://com.apple.voice.compact.en-US.Aaron?lang=en",
-                "elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en",
-                "qwen-tts://narrative-1?lang=en",
-                "custom-provider://voice-123"
+                "apple": "com.apple.voice.compact.en-US.Aaron",
+                "elevenlabs": "21m00Tcm4TlvDq8ikWAM",
+                "qwen-tts": "narrative-1",
+                "custom-provider": "voice-123"
             ]
         )
 
@@ -400,10 +400,10 @@ final class CastMemberTests: XCTestCase {
         var member = CastMember(character: "NARRATOR")
         XCTAssertEqual(member.voices, [:])
 
-        member.voices = ["apple://com.apple.voice.compact.en-US.Aaron?lang=en"]
+        member.voices = ["apple": "com.apple.voice.compact.en-US.Aaron"]
         XCTAssertEqual(member.voices.count, 1)
 
-        member.voices.append("elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en")
+        member.voices["elevenlabs"] = "21m00Tcm4TlvDq8ikWAM"
         XCTAssertEqual(member.voices.count, 2)
         XCTAssertEqual(member.voices["elevenlabs"], "21m00Tcm4TlvDq8ikWAM")
     }
@@ -420,39 +420,5 @@ final class CastMemberTests: XCTestCase {
 
         member.gender = nil
         XCTAssertNil(member.gender)
-    }
-
-    // MARK: - filterVoices() Tests
-
-    func testFilterVoicesAppleProvider() {
-        let member = CastMember(
-            character: "TEST",
-            voices: ["apple://voice1", "elevenlabs://voice2", "apple://voice3"]
-        )
-        XCTAssertEqual(member.filterVoices(provider: "apple"), ["apple://voice1", "apple://voice3"])
-    }
-
-    func testFilterVoicesNoMatches() {
-        let member = CastMember(character: "TEST", voices: ["apple://voice1"])
-        XCTAssertEqual(member.filterVoices(provider: "elevenlabs"), [])
-    }
-
-    func testFilterVoicesEmptyArray() {
-        let member = CastMember(character: "TEST", voices: [])
-        XCTAssertEqual(member.filterVoices(provider: "apple"), [])
-    }
-
-    func testFilterVoicesCaseInsensitive() {
-        let member = CastMember(character: "TEST", voices: ["APPLE://voice1", "Apple://voice2"])
-        XCTAssertEqual(member.filterVoices(provider: "apple").count, 2)
-    }
-
-    func testFilterVoicesPreservesOrder() {
-        let member = CastMember(
-            character: "TEST",
-            voices: ["elevenlabs://v1", "apple://v2", "elevenlabs://v3", "apple://v4"]
-        )
-        let filtered = member.filterVoices(provider: "apple")
-        XCTAssertEqual(filtered, ["apple://v2", "apple://v4"])
     }
 }
