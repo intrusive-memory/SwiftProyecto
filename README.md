@@ -262,50 +262,48 @@ created: 2025-01-28T00:00:00Z
 cast:
   - character: NARRATOR
     actor: Tom Stovall
+    gender: M
     voices:
-      - apple://com.apple.voice.compact.en-US.Aaron?lang=en
-      - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
+      apple: com.apple.voice.compact.en-US.Aaron
+      elevenlabs: 21m00Tcm4TlvDq8ikWAM
   - character: LAO TZU
     actor: Jason Manino
+    gender: M
     voices:
-      - qwen-tts://male-voice-1?lang=en
-      - apple://com.apple.voice.premium.en-US.Tom?lang=en
+      qwen-tts: male-voice-1
+      apple: com.apple.voice.premium.en-US.Tom
 ---
 ```
 
-**Voice URI Format**: `<providerId>://<voiceId>?lang=<languageCode>`
-
-This format follows the [SwiftHablare VoiceURI specification](https://github.com/intrusive-memory/SwiftHablare):
-- `providerId`: Voice provider identifier (lowercase)
-- `voiceId`: Provider-specific voice identifier (case-sensitive)
-- `lang`: Optional language code parameter (e.g., `en`, `es`, `fr`)
+**Voice Format**: Key/value pairs where the key is the provider name and the value is the voice identifier.
 
 **Supported Providers & Voice ID Formats**:
 
-| Provider | providerId | Voice ID Format | Example |
-|----------|-----------|-----------------|---------|
-| **Apple TTS** | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `apple://com.apple.voice.compact.en-US.Samantha?lang=en` |
-| **ElevenLabs** | `elevenlabs` | Unique voice ID (alphanumeric) | `elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en` |
-| **Qwen TTS** | `qwen-tts` | Voice name or ID | `qwen-tts://female-voice-1?lang=en` |
+| Provider | Key | Voice ID Format | Example Voice ID |
+|----------|-----|-----------------|------------------|
+| **Apple TTS** | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `com.apple.voice.compact.en-US.Samantha` |
+| **ElevenLabs** | `elevenlabs` | Unique voice ID (alphanumeric) | `21m00Tcm4TlvDq8ikWAM` |
+| **Qwen TTS** | `qwen-tts` | Voice name or ID | `female-voice-1` |
 
 **Apple Voice Quality Levels**:
 - `premium` - High-quality enhanced voices
 - `compact` - Standard quality voices (default)
 
-**Example Voice URIs**:
+**Example Voice Configurations**:
 ```yaml
 # Apple TTS voices
-- apple://com.apple.voice.premium.en-US.Allison?lang=en
-- apple://com.apple.voice.compact.en-US.Samantha?lang=en
-- apple://com.apple.voice.premium.es-ES.Monica?lang=es
+voices:
+  apple: com.apple.voice.premium.en-US.Allison
 
 # ElevenLabs voices (voice ID from ElevenLabs dashboard)
-- elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
-- elevenlabs://pNInz6obpgDQGcFmaJgB?lang=en
+voices:
+  elevenlabs: 21m00Tcm4TlvDq8ikWAM
 
-# Qwen TTS voices (local on-device inference)
-- qwen-tts://female-voice-1?lang=en
-- qwen-tts://male-voice-1?lang=zh
+# Multiple providers for fallback
+voices:
+  apple: com.apple.voice.compact.en-US.Samantha
+  elevenlabs: pNInz6obpgDQGcFmaJgB
+  qwen-tts: female-voice-1
 ```
 
 **Voice Resolution**: During audio generation, voices are tried in order. The first voice matching an enabled provider is used. If no voices match or a voice URI is invalid, it is skipped and the next is tried. If all voices fail, the default voice is used.
