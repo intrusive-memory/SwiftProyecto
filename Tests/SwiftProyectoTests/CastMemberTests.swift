@@ -194,10 +194,10 @@ final class CastMemberTests: XCTestCase {
             voices: [
                 "elevenlabs": "voice2",
                 "apple": "voice1",
-                "qwen-tts": "voice3"
+                "voxalta": "voice3"
             ]
         )
-        XCTAssertEqual(member.providers, ["apple", "elevenlabs", "qwen-tts"])
+        XCTAssertEqual(member.providers, ["apple", "elevenlabs", "voxalta"])
     }
 
     func testProviders_EmptyWhenNoVoices() {
@@ -352,7 +352,7 @@ final class CastMemberTests: XCTestCase {
             voices: [
                 "apple": "com.apple.voice.compact.en-US.Aaron",
                 "elevenlabs": "21m00Tcm4TlvDq8ikWAM",
-                "qwen-tts": "narrative-1",
+                "voxalta": "narrative-1",
                 "custom-provider": "voice-123"
             ]
         )

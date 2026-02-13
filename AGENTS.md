@@ -242,7 +242,7 @@ EOF
   - Examples:
     - `apple: com.apple.voice.compact.en-US.Samantha` (Apple TTS)
     - `elevenlabs: 21m00Tcm4TlvDq8ikWAM` (ElevenLabs)
-    - `qwen-tts: female-voice-1` (Qwen TTS)
+    - `voxalta: female-voice-1` (VoxAlta)
 - **voiceDescription** (v2.5.0+): Optional description of desired voice characteristics for TTS voice selection
   - Used by CastMatcher in SwiftHablare to guide intelligent voice selection
   - Example: "Deep, warm baritone with measured pacing and gravitas"
@@ -405,7 +405,7 @@ cast:
     actor: Jason Manino
     voiceDescription: "Wise, contemplative voice with subtle Eastern accent"
     voices:
-      qwen-tts: narrative-1
+      voxalta: narrative-1
 preGenerateHook: "./scripts/prepare.sh"
 postGenerateHook: "./scripts/upload.sh"
 ---
@@ -556,7 +556,7 @@ Follows [SwiftHablare VoiceURI specification](https://github.com/intrusive-memor
 |----------|-----|-----------------|------------------|
 | Apple TTS | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `com.apple.voice.compact.en-US.Samantha` |
 | ElevenLabs | `elevenlabs` | Unique voice ID (alphanumeric) | `21m00Tcm4TlvDq8ikWAM` |
-| Qwen TTS | `qwen-tts` | Voice name or ID | `female-voice-1` |
+| VoxAlta | `voxalta` | Voice name or ID | `female-voice-1` |
 
 ### Audio Generation Iterator Pattern
 
