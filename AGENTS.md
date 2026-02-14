@@ -2,9 +2,15 @@
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 2.6.0 (February 2026)
+**Current Version**: 3.0.0 (February 2026)
 
-**Latest Changes (v2.6.0)**:
+**Latest Changes (v3.0.0)**:
+- **BREAKING**: Voice representation migrated from URL-style to key/value pairs
+- Simpler API: `voice(for: "apple")` replaces `filterVoices(provider:)`
+- Faster voice lookups with dictionary-based storage
+- Better type safety with provider names as keys
+
+**Previous Changes (v2.6.0)**:
 - AppFrontMatterSettings protocol for extensible app-specific settings
 - Namespaced settings sections in PROJECT.md frontmatter
 - AnyCodable type-erased wrapper for storage

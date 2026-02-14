@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-2.6.0-blue.svg" />
+    <img src="https://img.shields.io/badge/Version-3.0.0-blue.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -133,6 +133,15 @@ SwiftProyecto uses a pluggable FileSource abstraction for discovering files:
 
 ## Features
 
+### 🔥 v3.0.0: Voice Format Migration (February 2026)
+
+**BREAKING CHANGE**: Voice representation migrated from URL-style strings to key/value pairs.
+
+- **Old format**: `voices: ["apple://com.apple.voice.premium.en-US.Aaron?lang=en"]`
+- **New format**: `voices: { apple: "com.apple.voice.premium.en-US.Aaron" }`
+- **Benefits**: Simpler API, faster lookups, better type safety
+- **Migration**: See "Migration from v2.x to v3.0" section below
+
 ### ✨ v2.6.0: App-Specific Settings Extension System (February 2026)
 
 - **AppFrontMatterSettings Protocol**: Type-safe extension mechanism for app-specific PROJECT.md settings
@@ -174,16 +183,16 @@ Add SwiftProyecto to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "2.6.0")
+    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "3.0.0")
 ]
 ```
 
 Or add it in Xcode:
 1. File > Add Package Dependencies
 2. Enter: `https://github.com/intrusive-memory/SwiftProyecto.git`
-3. Select version: `2.6.0` or later
+3. Select version: `3.0.0` or later
 
-**Note**: Version 2.6.0 adds app-specific settings extension system. Version 2.0.0 has breaking changes. If you're upgrading from v1.x, see the "Migration from v1.x" section below.
+**Note**: Version 3.0.0 has breaking changes (voice format migration). Version 2.6.0 added app-specific settings. If you're upgrading from v1.x or v2.x, see the migration sections below.
 
 ## Usage
 

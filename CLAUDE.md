@@ -12,9 +12,12 @@ For detailed project documentation, architecture, and development guidelines, se
 
 **Platforms**: iOS 26.0+, macOS 26.0+
 
+**Current Version**: 3.0.0
+
 **Key Components**:
 - **Agentic Discovery**: Structured PROJECT.md front matter for AI agent consumption
 - **Project Metadata**: Machine-readable intent, composition, and generation settings
+- **Voice Format**: Key/value pairs for TTS provider mappings (v3.0.0+)
 - **App Settings Extension**: Type-safe, namespaced app-specific settings (v2.6.0+)
 - **File Discovery**: Recursive file enumeration in folders/git repos
 - **Secure Access**: Security-scoped bookmark handling
