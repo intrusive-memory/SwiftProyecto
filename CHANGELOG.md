@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [3.0.0] - 2026-02-13
+
 ### BREAKING CHANGES
 
 - **Voice representation changed from URL-style to key/value pairs**
@@ -17,6 +21,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `voice(for provider: String) -> String?` method for provider-specific lookup
   - Added `providers` property to list all available providers
   - All existing PROJECT.md files must be migrated to new format
+
+### Added
+
+- **Audio Generation Configuration**: Complete CLI support fields in `ProjectFrontMatter`
+  - `episodesDir`: Relative path to episode files (default: "episodes")
+  - `audioDir`: Relative path for audio output (default: "audio")
+  - `filePattern`: Glob pattern(s) for file discovery (String or [String])
+  - `exportFormat`: Audio export format (default: "m4a")
+  - `preGenerateHook`: Shell command to run before generation
+  - `postGenerateHook`: Shell command to run after generation
+  - Convenience accessors: `resolvedEpisodesDir`, `resolvedAudioDir`, `resolvedFilePatterns`, `resolvedExportFormat`
+- **Cast List Discovery**: Character extraction from .fountain files
+  - `discoverCastList(for:)` in `ProjectService`: Automatically extracts CHARACTER elements
+  - `mergeCastLists(discovered:existing:)`: Merges discovered with existing, preserving user edits
+  - Comprehensive tests for discovery and merge logic
+- **Gender Field**: Added `Gender` enum to `CastMember` (M, F, NB, NS)
+- **Voice Description Field**: Added optional `voiceDescription: String?` to `CastMember` for TTS voice selection guidance
+
+### Changed
+
+- `ProjectFrontMatter` initializer includes all new generation configuration parameters
+- `ProjectMarkdownParser.generate()` outputs generation config fields in YAML
+- Cast list stored directly in PROJECT.md (not separate custom-pages.json file)
 
 ### Migration Guide
 
@@ -455,7 +482,8 @@ This release completes a major refactoring that transforms SwiftProyecto into a 
 - Basic tests pass (version check, placeholder test)
 - Repository published to GitHub
 
-[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.6.0...HEAD
+[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.6.0...v3.0.0
 [2.6.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.2...v2.5.0
 [2.1.2]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.1...v2.1.2

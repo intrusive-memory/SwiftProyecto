@@ -724,7 +724,7 @@ let registry = DocumentRegistry(
 context.insert(registry)
 ```
 
-See `.claude/REFACTORING_PLAN.md` for complete Produciesta integration guide.
+**Note**: The refactoring to remove document loading from SwiftProyecto is complete. Apps should implement their own DocumentRegistry pattern to link ProjectFileReference with parsed documents.
 
 ---
 
