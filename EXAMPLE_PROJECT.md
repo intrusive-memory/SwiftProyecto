@@ -17,17 +17,17 @@ cast:
     actor: Tom Stovall
     gender: M
     voices:
-      - apple://en-US/Aaron
+      apple: com.apple.voice.compact.en-US.Aaron
   - character: NARRATOR
     actor: Jason Manino
     gender: M
     voices:
-      - apple://en-US/Daniel
+      apple: com.apple.voice.compact.en-US.Daniel
   - character: POETIC VOICE
     actor: Sarah Mitchell
     gender: F
     voices:
-      - apple://en-US/Samantha
+      apple: com.apple.voice.compact.en-US.Samantha
 ---
 
 # Meditations Podcast

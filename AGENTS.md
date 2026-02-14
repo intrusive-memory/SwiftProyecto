@@ -2,9 +2,15 @@
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 2.6.0 (February 2026)
+**Current Version**: 3.0.0 (February 2026)
 
-**Latest Changes (v2.6.0)**:
+**Latest Changes (v3.0.0)**:
+- **BREAKING**: Voice representation migrated from URL-style to key/value pairs
+- Simpler API: `voice(for: "apple")` replaces `filterVoices(provider:)`
+- Faster voice lookups with dictionary-based storage
+- Better type safety with provider names as keys
+
+**Previous Changes (v2.6.0)**:
 - AppFrontMatterSettings protocol for extensible app-specific settings
 - Namespaced settings sections in PROJECT.md frontmatter
 - AnyCodable type-erased wrapper for storage
@@ -237,19 +243,19 @@ EOF
 
 **CastMember** - Character-to-voice mapping for audio generation
 - Maps screenplay characters to actors and TTS voice URIs
-- Fields: character (String), actor (String?), gender (Gender?), voiceDescription (String?), voices ([String])
-- Voice URI format: `<providerId>://<voiceId>?lang=<languageCode>` (follows SwiftHablare VoiceURI spec)
+- Fields: character (String), actor (String?), gender (Gender?), voiceDescription (String?), voices ([String: String])
+- Voice format: Key/value pairs where key is provider name, value is voice identifier
   - Examples:
-    - `apple://com.apple.voice.compact.en-US.Samantha?lang=en` (Apple TTS)
-    - `elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en` (ElevenLabs)
-    - `qwen-tts://female-voice-1?lang=en` (Qwen TTS)
+    - `apple: com.apple.voice.compact.en-US.Samantha` (Apple TTS)
+    - `elevenlabs: 21m00Tcm4TlvDq8ikWAM` (ElevenLabs)
+    - `voxalta: female-voice-1` (VoxAlta)
 - **voiceDescription** (v2.5.0+): Optional description of desired voice characteristics for TTS voice selection
   - Used by CastMatcher in SwiftHablare to guide intelligent voice selection
   - Example: "Deep, warm baritone with measured pacing and gravitas"
 - Stored inline in PROJECT.md cast array
 - Identity based on character name (mutable for renaming)
-- Voice resolution: First matching enabled provider is used, falls back to default if none match
-- No validation of voice URIs in model - validation happens at generation time
+- Voice resolution: Appropriate voice is selected based on enabled TTS provider
+- No validation of voice identifiers in model - validation happens at generation time
 
 **FilePattern** - Flexible file pattern type for generation config
 - Accepts single string or array of strings
@@ -399,13 +405,13 @@ cast:
     actor: Tom Stovall
     voiceDescription: "Deep, warm baritone with measured pacing and gravitas"
     voices:
-      - apple://com.apple.voice.compact.en-US.Aaron?lang=en
-      - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
+      apple: com.apple.voice.compact.en-US.Aaron
+      elevenlabs: 21m00Tcm4TlvDq8ikWAM
   - character: LAO TZU
     actor: Jason Manino
     voiceDescription: "Wise, contemplative voice with subtle Eastern accent"
     voices:
-      - qwen-tts://narrative-1?lang=en
+      voxalta: narrative-1
 preGenerateHook: "./scripts/prepare.sh"
 postGenerateHook: "./scripts/upload.sh"
 ---
@@ -552,11 +558,11 @@ try updatedMarkdown.write(
 
 Follows [SwiftHablare VoiceURI specification](https://github.com/intrusive-memory/SwiftHablare):
 
-| Provider | providerId | Voice ID Format | Example |
-|----------|-----------|-----------------|---------|
-| Apple TTS | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `apple://com.apple.voice.compact.en-US.Samantha?lang=en` |
-| ElevenLabs | `elevenlabs` | Unique voice ID (alphanumeric) | `elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en` |
-| Qwen TTS | `qwen-tts` | Voice name or ID | `qwen-tts://female-voice-1?lang=en` |
+| Provider | Key | Voice ID Format | Example Voice ID |
+|----------|-----|-----------------|------------------|
+| Apple TTS | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `com.apple.voice.compact.en-US.Samantha` |
+| ElevenLabs | `elevenlabs` | Unique voice ID (alphanumeric) | `21m00Tcm4TlvDq8ikWAM` |
+| VoxAlta | `voxalta` | Voice name or ID | `female-voice-1` |
 
 ### Audio Generation Iterator Pattern
 

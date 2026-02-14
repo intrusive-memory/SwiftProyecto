@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-2.6.0-blue.svg" />
+    <img src="https://img.shields.io/badge/Version-3.0.0-blue.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -133,6 +133,15 @@ SwiftProyecto uses a pluggable FileSource abstraction for discovering files:
 
 ## Features
 
+### 🔥 v3.0.0: Voice Format Migration (February 2026)
+
+**BREAKING CHANGE**: Voice representation migrated from URL-style strings to key/value pairs.
+
+- **Old format**: `voices: ["apple://com.apple.voice.premium.en-US.Aaron?lang=en"]`
+- **New format**: `voices: { apple: "com.apple.voice.premium.en-US.Aaron" }`
+- **Benefits**: Simpler API, faster lookups, better type safety
+- **Migration**: See "Migration from v2.x to v3.0" section below
+
 ### ✨ v2.6.0: App-Specific Settings Extension System (February 2026)
 
 - **AppFrontMatterSettings Protocol**: Type-safe extension mechanism for app-specific PROJECT.md settings
@@ -174,16 +183,16 @@ Add SwiftProyecto to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "2.6.0")
+    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "3.0.0")
 ]
 ```
 
 Or add it in Xcode:
 1. File > Add Package Dependencies
 2. Enter: `https://github.com/intrusive-memory/SwiftProyecto.git`
-3. Select version: `2.6.0` or later
+3. Select version: `3.0.0` or later
 
-**Note**: Version 2.6.0 adds app-specific settings extension system. Version 2.0.0 has breaking changes. If you're upgrading from v1.x, see the "Migration from v1.x" section below.
+**Note**: Version 3.0.0 has breaking changes (voice format migration). Version 2.6.0 added app-specific settings. If you're upgrading from v1.x or v2.x, see the migration sections below.
 
 ## Usage
 
@@ -262,50 +271,48 @@ created: 2025-01-28T00:00:00Z
 cast:
   - character: NARRATOR
     actor: Tom Stovall
+    gender: M
     voices:
-      - apple://com.apple.voice.compact.en-US.Aaron?lang=en
-      - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
+      apple: com.apple.voice.compact.en-US.Aaron
+      elevenlabs: 21m00Tcm4TlvDq8ikWAM
   - character: LAO TZU
     actor: Jason Manino
+    gender: M
     voices:
-      - qwen-tts://male-voice-1?lang=en
-      - apple://com.apple.voice.premium.en-US.Tom?lang=en
+      voxalta: male-voice-1
+      apple: com.apple.voice.premium.en-US.Tom
 ---
 ```
 
-**Voice URI Format**: `<providerId>://<voiceId>?lang=<languageCode>`
-
-This format follows the [SwiftHablare VoiceURI specification](https://github.com/intrusive-memory/SwiftHablare):
-- `providerId`: Voice provider identifier (lowercase)
-- `voiceId`: Provider-specific voice identifier (case-sensitive)
-- `lang`: Optional language code parameter (e.g., `en`, `es`, `fr`)
+**Voice Format**: Key/value pairs where the key is the provider name and the value is the voice identifier.
 
 **Supported Providers & Voice ID Formats**:
 
-| Provider | providerId | Voice ID Format | Example |
-|----------|-----------|-----------------|---------|
-| **Apple TTS** | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `apple://com.apple.voice.compact.en-US.Samantha?lang=en` |
-| **ElevenLabs** | `elevenlabs` | Unique voice ID (alphanumeric) | `elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en` |
-| **Qwen TTS** | `qwen-tts` | Voice name or ID | `qwen-tts://female-voice-1?lang=en` |
+| Provider | Key | Voice ID Format | Example Voice ID |
+|----------|-----|-----------------|------------------|
+| **Apple TTS** | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `com.apple.voice.compact.en-US.Samantha` |
+| **ElevenLabs** | `elevenlabs` | Unique voice ID (alphanumeric) | `21m00Tcm4TlvDq8ikWAM` |
+| **VoxAlta** | `voxalta` | Voice name or ID | `female-voice-1` |
 
 **Apple Voice Quality Levels**:
 - `premium` - High-quality enhanced voices
 - `compact` - Standard quality voices (default)
 
-**Example Voice URIs**:
+**Example Voice Configurations**:
 ```yaml
 # Apple TTS voices
-- apple://com.apple.voice.premium.en-US.Allison?lang=en
-- apple://com.apple.voice.compact.en-US.Samantha?lang=en
-- apple://com.apple.voice.premium.es-ES.Monica?lang=es
+voices:
+  apple: com.apple.voice.premium.en-US.Allison
 
 # ElevenLabs voices (voice ID from ElevenLabs dashboard)
-- elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
-- elevenlabs://pNInz6obpgDQGcFmaJgB?lang=en
+voices:
+  elevenlabs: 21m00Tcm4TlvDq8ikWAM
 
-# Qwen TTS voices (local on-device inference)
-- qwen-tts://female-voice-1?lang=en
-- qwen-tts://male-voice-1?lang=zh
+# Multiple providers for fallback
+voices:
+  apple: com.apple.voice.compact.en-US.Samantha
+  elevenlabs: pNInz6obpgDQGcFmaJgB
+  voxalta: female-voice-1
 ```
 
 **Voice Resolution**: During audio generation, voices are tried in order. The first voice matching an enabled provider is used. If no voices match or a voice URI is invalid, it is skipped and the next is tried. If all voices fail, the default voice is used.
@@ -313,7 +320,7 @@ This format follows the [SwiftHablare VoiceURI specification](https://github.com
 **Finding Voice IDs**:
 - **Apple**: Use `AVSpeechSynthesisVoice.speechVoices()` to list available voices and their identifiers
 - **ElevenLabs**: Find voice IDs in your ElevenLabs dashboard under "Voices"
-- **Qwen TTS**: Run `hablare voices` CLI command to list available voices
+- **VoxAlta**: Run `hablare voices` CLI command to list available voices
 
 #### Automatic Cast List Discovery
 
@@ -859,12 +866,69 @@ make install
 swift test
 ```
 
-**Status**: All 184 tests passing with v2.0 API. Test suite includes:
+**Status**: All 361 tests passing. Test suite includes:
 - FileSource abstraction tests (DirectoryFileSource, GitRepositoryFileSource)
 - ProjectMarkdownParser tests with UNIVERSAL library
 - ProjectService tests for async file discovery
 - BookmarkManager tests for security-scoped access
 - ProjectModel and ProjectFileReference tests
+
+## Migration from v2.x to v3.0
+
+SwiftProyecto v3.0 changes how voices are represented in `CastMember` and PROJECT.md files.
+
+### What Changed
+
+**Voice Format**: Array of URL-style strings → Dictionary of key/value pairs
+
+| v2.x Format | v3.0 Format |
+|-------------|-------------|
+| `voices: ["apple://voice.id?lang=en"]` | `voices: { apple: "voice.id" }` |
+
+### Migration Steps
+
+1. **Update PROJECT.md files**:
+   ```yaml
+   # OLD (v2.x)
+   cast:
+     - character: NARRATOR
+       voices:
+         - apple://com.apple.voice.premium.en-US.Aaron?lang=en
+         - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
+
+   # NEW (v3.0)
+   cast:
+     - character: NARRATOR
+       voices:
+         apple: com.apple.voice.premium.en-US.Aaron
+         elevenlabs: 21m00Tcm4TlvDq8ikWAM
+   ```
+
+2. **Update code using CastMember API**:
+   ```swift
+   // OLD (v2.x)
+   let appleVoices = member.filterVoices(provider: "apple")
+   let firstVoice = member.primaryVoice
+
+   // NEW (v3.0)
+   if let appleVoice = member.voice(for: "apple") {
+       // Use apple voice
+   }
+   let allProviders = member.providers  // Array of provider names
+   ```
+
+3. **API Changes**:
+   - ❌ Removed: `CastMember.primaryVoice`
+   - ❌ Removed: `CastMember.filterVoices(provider:)`
+   - ✅ Added: `CastMember.voice(for:)` - Get voice for specific provider
+   - ✅ Added: `CastMember.providers` - Array of all provider names
+
+### Benefits of v3.0
+
+- ✅ **Simpler**: No URL parsing required
+- ✅ **Faster**: Direct dictionary lookup vs. array filtering
+- ✅ **Type-safe**: Provider names as keys, voice IDs as values
+- ✅ **More maintainable**: Clear separation of provider and voice ID
 
 ## Migration from v1.x to v2.0
 

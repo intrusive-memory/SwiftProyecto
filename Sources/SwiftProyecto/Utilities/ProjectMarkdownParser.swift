@@ -157,10 +157,13 @@ public struct ProjectMarkdownParser {
                 if let actor = member.actor {
                     yaml += "    actor: \(escapeYAMLString(actor))\n"
                 }
+                if let gender = member.gender {
+                    yaml += "    gender: \(gender.rawValue)\n"
+                }
                 if !member.voices.isEmpty {
                     yaml += "    voices:\n"
-                    for voice in member.voices {
-                        yaml += "      - \(escapeYAMLString(voice))\n"
+                    for (provider, voiceId) in member.voices.sorted(by: { $0.key < $1.key }) {
+                        yaml += "      \(provider): \(escapeYAMLString(voiceId))\n"
                     }
                 }
             }

@@ -1,102 +1,99 @@
-# SwiftProyecto Library Tasks - Provider Filtering Feature
+# SwiftProyecto Library Tasks - Voice API (COMPLETED)
 
 **Project:** SwiftProyecto (Swift package library)
 **Location:** `/Users/stovak/Projects/SwiftProyecto`
 **Branch:** `development`
-**Context:** Independent tasks for adding provider filtering to CastMember
+**Status:** ✅ COMPLETED in v2.7.0
+
+**Note:** This document describes the historical filterVoices feature. As of v2.7.0, voices use key/value pairs instead of URLs.
 
 ---
 
-## Task 1: Add CastMember.filterVoices(provider:) method
+## Task 1: ✅ COMPLETED - Voice representation migrated to key/value pairs
 
 **File:** `Sources/SwiftProyecto/Models/CastMember.swift`
-**Dependencies:** None
-**Estimated effort:** 15 minutes
+**Status:** Completed in v2.7.0
 
-### Context
-CastMember has a `voices: [String]` array containing voice URIs like:
-- `"apple://com.apple.voice.enhanced.en-US.Reed"`
-- `"elevenlabs://voice123"`
+### Context (Historical)
+CastMember previously used `voices: [String]` array containing voice URIs.
+This was replaced with `voices: [String: String]` dictionary in v2.7.0.
 
-Projects may have multi-provider setups (ElevenLabs first, Apple fallback). Consumers need to filter this array by provider at runtime.
-
-### Requirements
-Add a public instance method to CastMember:
-
+### Current Implementation (v2.7.0+)
 ```swift
-/// Filter voices by provider prefix
+/// Get voice identifier for a specific provider
 /// - Parameter provider: Provider name (e.g., "apple", "elevenlabs")
-/// - Returns: Array of voice URIs matching the provider, preserving original order
-public func filterVoices(provider: String) -> [String] {
-    // Filter voices array to only those starting with "<provider>://"
-    // Example: provider="apple" returns only "apple://..." URIs
+/// - Returns: Voice identifier if found, nil otherwise
+public func voice(for provider: String) -> String? {
+    voices[provider.lowercased()]
+}
+
+/// Array of all provider names that have voices assigned
+public var providers: [String] {
+    Array(voices.keys).sorted()
 }
 ```
 
-### Implementation Notes
-- Case-insensitive provider matching
-- Preserve original array order
-- Return empty array if no matches (don't throw errors)
-- Handle edge cases: empty voices array, nil provider
+### Migration
+Old format:
+```yaml
+voices:
+  - apple://com.apple.voice.premium.en-US.Aaron?lang=en
+  - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
+```
 
-### Test Criteria
-- Input: `["apple://voice1", "elevenlabs://voice2", "apple://voice3"]`, provider: `"apple"`
-- Output: `["apple://voice1", "apple://voice3"]`
-
-### Completion Criteria
-- Method added to CastMember.swift
-- Code compiles without errors
-- All existing tests still pass
-- Ready for Task 2 (unit tests)
+New format:
+```yaml
+voices:
+  apple: com.apple.voice.premium.en-US.Aaron
+  elevenlabs: 21m00Tcm4TlvDq8ikWAM
+```
 
 ---
 
-## Task 2: Add CastMemberTests.testFilterVoices() unit tests
+## Task 2: ✅ COMPLETED - Unit tests for voice API
 
 **File:** `Tests/SwiftProyectoTests/CastMemberTests.swift`
-**Dependencies:** Task 1 complete
-**Estimated effort:** 20 minutes
+**Status:** Completed in v2.7.0
 
-### Context
-CastMember.filterVoices() needs comprehensive test coverage for the following scenarios.
+### Current Test Cases (v2.7.0+)
 
-### Test Cases Required
-
-1. **testFilterVoicesAppleProvider** - Single provider match
+1. **testVoiceForProvider_Found** - Provider lookup
    ```swift
    let member = CastMember(
        character: "TEST",
-       voices: ["apple://voice1", "elevenlabs://voice2", "apple://voice3"]
+       voices: [
+           "apple": "com.apple.voice.compact.en-US.Aaron",
+           "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
+       ]
    )
-   XCTAssertEqual(member.filterVoices(provider: "apple"), ["apple://voice1", "apple://voice3"])
+   XCTAssertEqual(member.voice(for: "apple"), "com.apple.voice.compact.en-US.Aaron")
    ```
 
-2. **testFilterVoicesNoMatches** - No matching provider
+2. **testVoiceForProvider_NotFound** - Missing provider
    ```swift
-   let member = CastMember(character: "TEST", voices: ["apple://voice1"])
-   XCTAssertEqual(member.filterVoices(provider: "elevenlabs"), [])
+   let member = CastMember(character: "TEST", voices: ["apple": "voice1"])
+   XCTAssertNil(member.voice(for: "elevenlabs"))
    ```
 
-3. **testFilterVoicesEmptyArray** - Empty voices array
+3. **testVoiceForProvider_EmptyVoices** - Empty dictionary
    ```swift
-   let member = CastMember(character: "TEST", voices: [])
-   XCTAssertEqual(member.filterVoices(provider: "apple"), [])
+   let member = CastMember(character: "TEST", voices: [:])
+   XCTAssertNil(member.voice(for: "apple"))
    ```
 
-4. **testFilterVoicesCaseInsensitive** - Case insensitive matching
+4. **testVoiceForProvider_CaseInsensitive** - Case insensitive matching
    ```swift
-   let member = CastMember(character: "TEST", voices: ["APPLE://voice1", "Apple://voice2"])
-   XCTAssertEqual(member.filterVoices(provider: "apple").count, 2)
+   let member = CastMember(character: "TEST", voices: ["apple": "voice1"])
+   XCTAssertEqual(member.voice(for: "APPLE"), "voice1")
    ```
 
-5. **testFilterVoicesPreservesOrder** - Original order preserved
+5. **testProviders_ReturnsSortedKeys** - List all providers
    ```swift
    let member = CastMember(
        character: "TEST",
-       voices: ["elevenlabs://v1", "apple://v2", "elevenlabs://v3", "apple://v4"]
+       voices: ["elevenlabs": "v2", "apple": "v1", "voxalta": "v3"]
    )
-   let filtered = member.filterVoices(provider: "apple")
-   XCTAssertEqual(filtered, ["apple://v2", "apple://v4"])
+   XCTAssertEqual(member.providers, ["apple", "elevenlabs", "voxalta"])
    ```
 
 ### Completion Criteria

@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### BREAKING CHANGES
+
+- **Voice representation changed from URL-style to key/value pairs**
+  - `CastMember.voices` is now `[String: String]` instead of `[String]`
+  - Voice URIs like `apple://com.apple.voice.premium.en-US.Aaron?lang=en` are now key/value pairs: `apple: com.apple.voice.premium.en-US.Aaron`
+  - Removed `filterVoices(provider:)` method (use dictionary subscript instead: `voices["apple"]`)
+  - Removed `primaryVoice` property (use `voice(for:)` method instead)
+  - Added `voice(for provider: String) -> String?` method for provider-specific lookup
+  - Added `providers` property to list all available providers
+  - All existing PROJECT.md files must be migrated to new format
+
+### Migration Guide
+
+**Old format (URL-style):**
+```yaml
+voices:
+  - apple://com.apple.voice.premium.en-US.Aaron?lang=en
+  - elevenlabs://21m00Tcm4TlvDq8ikWAM?lang=en
+```
+
+**New format (Key/Value):**
+```yaml
+voices:
+  apple: com.apple.voice.premium.en-US.Aaron
+  elevenlabs: 21m00Tcm4TlvDq8ikWAM
+```
+
+**Code changes:**
+```swift
+// Old
+let appleVoices = member.filterVoices(provider: "apple")
+let firstVoice = member.primaryVoice
+
+// New
+if let appleVoice = member.voice(for: "apple") {
+    // Use apple voice
+}
+let allProviders = member.providers
+```
+
 ---
 
 ## [2.6.0] - 2026-02-05
@@ -44,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `cast: [CastMember]?` field in `ProjectFrontMatter` for storing cast list inline
   - `discoverCastList(for:)` in `ProjectService`: Automatically extracts CHARACTER elements from .fountain files
   - `mergeCastLists()` helper: Merges discovered characters with existing cast, preserving user edits
-  - Voice URI format: `<provider>://<voice_id>` (e.g., `apple://en-US/Aaron`, `elevenlabs://en/wise-elder`)
+  - Voice format: Key/value pairs (e.g., `apple: com.apple.voice.compact.en-US.Aaron`, `elevenlabs: 21m00Tcm4TlvDq8ikWAM`) - Updated to key/value in v2.7.0
   - Comprehensive tests for CastMember model, parsing, generation, and discovery
 
 ### Changed
