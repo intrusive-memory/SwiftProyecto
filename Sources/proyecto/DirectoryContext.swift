@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftCompartido
 
 /// Context information gathered from analyzing a directory.
 /// This is collected once and reused across all LLM queries.
@@ -80,8 +81,10 @@ struct DirectoryAnalyzer {
                         detectedExtensions.insert(ext)
                     }
 
-                    // Count screenplay files (.fountain, .fdx, .highland, .md excluding root)
-                    let screenplayExtensions = ["fountain", "fdx", "highland"]
+                    // Count screenplay files using SwiftCompartido's supported extensions
+                    // Note: We use supportedScreenplayExtensions (not supportedFileExtensions)
+                    // to exclude platform-specific formats (PDF, Pandoc) from directory analysis
+                    let screenplayExtensions = GuionParsedElementCollection.supportedScreenplayExtensions
                     if screenplayExtensions.contains(ext) {
                         screenplayFileCount += 1
                     } else if ext == "md" {
@@ -101,7 +104,9 @@ struct DirectoryAnalyzer {
 
         // Detect file patterns
         var patterns: [String] = []
-        let interestingExtensions = ["fountain", "fdx", "md", "txt", "mp3", "m4a", "wav", "aif"]
+        // Include all screenplay extensions plus audio formats and text
+        let interestingExtensions = GuionParsedElementCollection.supportedScreenplayExtensions
+            + ["txt", "mp3", "m4a", "wav", "aif"]
         for ext in interestingExtensions where detectedExtensions.contains(ext) {
             patterns.append("*.\(ext)")
         }
