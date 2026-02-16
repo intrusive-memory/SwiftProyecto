@@ -718,16 +718,3 @@ private struct OtherAppSettings: AppFrontMatterSettings {
     static let sectionKey = "otherapp"
     var enabled: Bool?
 }
-
-// MARK: - Test Settings Types
-
-private struct TestAppSettings: AppFrontMatterSettings {
-    static let sectionKey = "testapp"
-    var theme: String?
-    var count: Int?
-}
-
-private struct OtherAppSettings: AppFrontMatterSettings {
-    static let sectionKey = "otherapp"
-    var enabled: Bool?
-}

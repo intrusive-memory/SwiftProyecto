@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.1.0] - 2026-02-15
+
+### Added
+
+- **ProjectDiscovery Service**: New service for locating PROJECT.md from any file path
+  - `findProjectMd(from:)`: Searches current, parent, and episodes-parent directories
+  - Case-insensitive "episodes" folder detection (handles "episodes", "EPISODES", "Episodes")
+  - `readCast(from:filterByProvider:)`: Read cast list with optional provider filtering
+- **ProjectMarkdownParser.write()**: Atomic file writing for PROJECT.md
+  - `write(frontMatter:body:to:)`: Generates and writes PROJECT.md content atomically
+- **ProjectFrontMatter Cast Helpers**: Safe cast mutation methods
+  - `withCast(_:)`: Replace entire cast list (returns new instance)
+  - `mergingCast(_:forProvider:)`: Additive merge that preserves other provider voices
+- **Comprehensive Test Suite**: 20 new tests covering discovery, cast reading, cast merging, and file writing
+- **PROJECT.md Modification Rules**: Documented in AGENTS.md with API boundaries and ownership clarification
+
+### Fixed
+
+- **Cast Export Data Loss**: `mergingCast` prevents overwriting other providers' voices during cast updates
+- **Episodes Folder Detection**: PROJECT.md now correctly found when starting from episodes subdirectory
+- **Duplicate Test Settings Types**: Removed duplicate `TestAppSettings`/`OtherAppSettings` struct declarations in `ProjectFrontMatterTests.swift`
+
+---
+
 ## [3.0.0] - 2026-02-13
 
 ### BREAKING CHANGES
@@ -482,7 +506,8 @@ This release completes a major refactoring that transforms SwiftProyecto into a 
 - Basic tests pass (version check, placeholder test)
 - Repository published to GitHub
 
-[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.6.0...v3.0.0
 [2.6.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.1.2...v2.5.0

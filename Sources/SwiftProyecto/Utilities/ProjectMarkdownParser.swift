@@ -362,3 +362,42 @@ public struct ProjectMarkdownParser {
         }
     }
 }
+
+// MARK: - File Writing
+
+extension ProjectMarkdownParser {
+
+    /// Write PROJECT.md content to a file on disk.
+    ///
+    /// Generates the PROJECT.md content from the provided front matter and body,
+    /// then writes it atomically to the specified URL. Atomic writes ensure that
+    /// the file is either fully written or not modified at all, preventing corruption.
+    ///
+    /// ## Usage
+    ///
+    /// ```swift
+    /// let parser = ProjectMarkdownParser()
+    /// let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
+    ///
+    /// // Modify front matter as needed
+    /// let updated = frontMatter.mergingCast(newCast, forProvider: "apple")
+    ///
+    /// // Write back to disk
+    /// try parser.write(frontMatter: updated, body: body, to: projectMdURL)
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - frontMatter: The project metadata to serialize.
+    ///   - body: The body content to include after the YAML front matter.
+    ///   - url: The file URL to write to. The file will be created if it does not exist,
+    ///     or overwritten if it does.
+    /// - Throws: An error if the file cannot be written to the specified URL.
+    public func write(
+        frontMatter: ProjectFrontMatter,
+        body: String,
+        to url: URL
+    ) throws {
+        let content = generate(frontMatter: frontMatter, body: body)
+        try content.write(to: url, atomically: true, encoding: .utf8)
+    }
+}

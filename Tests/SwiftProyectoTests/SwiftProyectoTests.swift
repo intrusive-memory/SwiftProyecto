@@ -3,7 +3,7 @@ import XCTest
 
 final class SwiftProyectoTests: XCTestCase {
     func testVersion() {
-        XCTAssertEqual(SwiftProyecto.version, "2.6.0")
+        XCTAssertEqual(SwiftProyecto.version, "3.1.0")
     }
 
     func testExample() {

@@ -318,3 +318,135 @@ public extension ProjectFrontMatter {
             postGenerateHook != nil
     }
 }
+
+// MARK: - Cast Mutation Helpers
+
+public extension ProjectFrontMatter {
+
+    /// Create a copy of this front matter with the cast list replaced.
+    ///
+    /// Returns a new `ProjectFrontMatter` instance with all fields preserved
+    /// except the cast, which is replaced with the provided value.
+    ///
+    /// **Warning**: This replaces the entire cast list. If you need to update
+    /// voices for a single provider while preserving other providers' voices,
+    /// use ``mergingCast(_:forProvider:)`` instead.
+    ///
+    /// ## Usage
+    ///
+    /// ```swift
+    /// let newCast = [CastMember(character: "NARRATOR", voices: ["apple": "voice-id"])]
+    /// let updated = frontMatter.withCast(newCast)
+    /// ```
+    ///
+    /// - Parameter cast: The new cast list, or `nil` to remove the cast section entirely.
+    /// - Returns: A new `ProjectFrontMatter` with the updated cast.
+    func withCast(_ cast: [CastMember]?) -> ProjectFrontMatter {
+        ProjectFrontMatter(
+            type: type,
+            title: title,
+            author: author,
+            created: created,
+            description: description,
+            season: season,
+            episodes: episodes,
+            genre: genre,
+            tags: tags,
+            episodesDir: episodesDir,
+            audioDir: audioDir,
+            filePattern: filePattern,
+            exportFormat: exportFormat,
+            cast: cast,
+            preGenerateHook: preGenerateHook,
+            postGenerateHook: postGenerateHook,
+            tts: tts,
+            appSections: appSections
+        )
+    }
+
+    /// Merge cast member voices for a specific provider, preserving all other provider voices.
+    ///
+    /// This is the **safe** way to update cast voices. For each character in `newCast`:
+    /// - If the character already exists in the current cast, the voice for `providerID`
+    ///   is updated (or added), while all other provider voices are preserved.
+    /// - If the character does not exist in the current cast, it is added as-is.
+    ///
+    /// Characters in the existing cast that are not present in `newCast` are preserved unchanged.
+    ///
+    /// ## Usage
+    ///
+    /// ```swift
+    /// // Existing cast has ElevenLabs voice for NARRATOR
+    /// // newCast has Apple voice for NARRATOR
+    /// let updated = frontMatter.mergingCast(newCast, forProvider: "apple")
+    /// // Result: NARRATOR has both ElevenLabs and Apple voices
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// ```yaml
+    /// # Before: Has ElevenLabs voice
+    /// cast:
+    ///   - character: NARRATOR
+    ///     voices:
+    ///       elevenlabs: 21m00Tcm4TlvDq8ikWAM
+    ///
+    /// # After mergingCast with Apple provider:
+    /// cast:
+    ///   - character: NARRATOR
+    ///     voices:
+    ///       apple: com.apple.voice.premium.en-US.Aaron
+    ///       elevenlabs: 21m00Tcm4TlvDq8ikWAM
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - newCast: The cast members with voices to merge in. Only the voice for `providerID`
+    ///     is extracted from each member.
+    ///   - providerID: The provider whose voices are being updated (e.g., "apple", "elevenlabs").
+    /// - Returns: A new `ProjectFrontMatter` with the merged cast.
+    func mergingCast(_ newCast: [CastMember], forProvider providerID: String) -> ProjectFrontMatter {
+        let existingCast = cast ?? []
+
+        // Build a lookup of existing cast by character name
+        var mergedByCharacter: [String: CastMember] = [:]
+        for member in existingCast {
+            mergedByCharacter[member.character] = member
+        }
+
+        // Merge in new cast voices for the specified provider
+        for newMember in newCast {
+            if var existing = mergedByCharacter[newMember.character] {
+                // Character exists: update only the specified provider's voice
+                if let newVoice = newMember.voices[providerID] {
+                    existing.voices[providerID] = newVoice
+                }
+                mergedByCharacter[newMember.character] = existing
+            } else {
+                // New character: add it as-is
+                mergedByCharacter[newMember.character] = newMember
+            }
+        }
+
+        // Preserve original ordering: existing characters first, then new ones
+        var result: [CastMember] = []
+        var seen: Set<String> = []
+
+        // Add existing characters in their original order (with merged voices)
+        for member in existingCast {
+            if let merged = mergedByCharacter[member.character] {
+                result.append(merged)
+                seen.insert(member.character)
+            }
+        }
+
+        // Add new characters that were not in the existing cast
+        for newMember in newCast where !seen.contains(newMember.character) {
+            if let merged = mergedByCharacter[newMember.character] {
+                result.append(merged)
+                seen.insert(newMember.character)
+            }
+        }
+
+        return withCast(result)
+    }
+}
