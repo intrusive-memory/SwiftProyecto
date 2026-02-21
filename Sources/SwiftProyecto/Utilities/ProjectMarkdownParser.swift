@@ -192,6 +192,9 @@ public struct ProjectMarkdownParser {
             if let voiceURI = tts.voiceURI {
                 yaml += "  voiceURI: \(escapeYAMLString(voiceURI))\n"
             }
+            if let model = tts.model {
+                yaml += "  model: \(escapeYAMLString(model))\n"
+            }
         }
 
         // App-specific settings sections (at root level)
