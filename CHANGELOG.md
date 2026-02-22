@@ -151,7 +151,7 @@ let allProviders = member.providers
 
 ### Changed
 
-- **Shared Models Directory** - Updated help text to reference shared model cache at `~/Library/Caches/intrusive-memory/Models/LLM/`
+- **Shared Models Directory** - Updated help text to reference shared model cache at `~/Library/SharedModels/`
 
 ---
 

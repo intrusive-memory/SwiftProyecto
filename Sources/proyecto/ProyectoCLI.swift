@@ -46,7 +46,7 @@ struct DownloadCommand: AsyncParsableCommand {
         abstract: "Download an LLM model for use with proyecto",
         discussion: """
             Downloads a model from HuggingFace for local LLM inference.
-            Models are stored in ~/Library/Caches/intrusive-memory/Models/LLM/
+            Models are stored in ~/Library/SharedModels/
 
             The default model is optimized for PROJECT.md generation:
               mlx-community/Phi-3-mini-4k-instruct-4bit (~2.15 GB)
