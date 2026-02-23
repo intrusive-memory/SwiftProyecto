@@ -214,6 +214,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         case character
         case actor
         case gender
+        case voicePrompt
         case voiceDescription
         case voices
     }
@@ -223,7 +224,18 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
         character = try container.decode(String.self, forKey: .character)
         actor = try container.decodeIfPresent(String.self, forKey: .actor)
         gender = try container.decodeIfPresent(Gender.self, forKey: .gender)
-        voiceDescription = try container.decodeIfPresent(String.self, forKey: .voiceDescription)
+        // Support both "voicePrompt" (preferred) and "voiceDescription" (legacy)
+        voiceDescription = try container.decodeIfPresent(String.self, forKey: .voicePrompt)
+            ?? container.decodeIfPresent(String.self, forKey: .voiceDescription)
         voices = try container.decodeIfPresent([String: String].self, forKey: .voices) ?? [:]
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(character, forKey: .character)
+        try container.encodeIfPresent(actor, forKey: .actor)
+        try container.encodeIfPresent(gender, forKey: .gender)
+        try container.encodeIfPresent(voiceDescription, forKey: .voicePrompt)
+        try container.encode(voices, forKey: .voices)
     }
 }
