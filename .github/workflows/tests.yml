@@ -1,10 +1,11 @@
 name: Tests
 
 on:
-  workflow_dispatch:
   pull_request:
-    branches: [main]
+    branches: [main, development]
     types: [opened, synchronize, reopened]
+  push:
+    branches: [main, development]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -38,7 +39,7 @@ jobs:
 
   # Step 2: macOS Unit Tests
   unit-tests-macos:
-    name: macOS Unit Tests
+    name: Test on macOS
     runs-on: macos-26
     needs: [code-quality]
 
@@ -54,7 +55,6 @@ jobs:
 
       - name: Build library
         run: |
-          echo "🔨 Building SwiftProyecto library"
           xcodebuild build \
             -scheme SwiftProyecto \
             -destination 'platform=macOS' \
@@ -64,9 +64,8 @@ jobs:
       - name: Run unit tests on macOS
         run: |
           set +e
-          echo "🧪 Running unit tests on macOS"
           xcodebuild test \
-            -scheme SwiftProyecto \
+            -scheme SwiftProyecto-Package \
             -destination 'platform=macOS' \
             -only-testing:SwiftProyectoTests \
             CODE_SIGNING_ALLOWED=NO \
@@ -75,21 +74,21 @@ jobs:
 
           # Check if tests passed
           if grep -q "Test Suite.*passed\|TEST SUCCEEDED" test_output_macos.txt; then
-            echo "✅ All unit tests passed"
+            echo "All unit tests passed"
             exit 0
           else
             echo ""
-            echo "❌ ============================================"
-            echo "❌ MACOS UNIT TESTS FAILED"
-            echo "❌ ============================================"
+            echo "============================================"
+            echo "MACOS UNIT TESTS FAILED"
+            echo "============================================"
             echo ""
-            echo "📋 Failed Tests:"
+            echo "Failed Tests:"
             grep "Test Case.*failed" test_output_macos.txt || echo "  No specific test failures found"
             echo ""
-            echo "🔍 Error Messages:"
+            echo "Error Messages:"
             grep -E "error:|failed with|Assertion failed|Expected|Fatal error" test_output_macos.txt | head -20 || echo "  No error messages found"
             echo ""
-            echo "📊 Test Summary:"
+            echo "Test Summary:"
             grep -E "Test Suite|Testing failed|passed with|failed with" test_output_macos.txt | tail -10 || echo "  No summary found"
             echo ""
             exit $TEST_EXIT_CODE

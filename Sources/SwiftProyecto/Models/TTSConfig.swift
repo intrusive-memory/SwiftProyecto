@@ -42,15 +42,20 @@ public struct TTSConfig: Codable, Sendable, Equatable {
     /// Portable hablare:// URI referencing the voice
     public let voiceURI: String?
 
+    /// Model size/variant for providers that support multiple models (e.g. VoxAlta: "0.6b", "1.7b", "8bit", "4bit")
+    public let model: String?
+
     public init(
         providerId: String? = nil,
         voiceId: String? = nil,
         languageCode: String? = nil,
-        voiceURI: String? = nil
+        voiceURI: String? = nil,
+        model: String? = nil
     ) {
         self.providerId = providerId
         self.voiceId = voiceId
         self.languageCode = languageCode
         self.voiceURI = voiceURI
+        self.model = model
     }
 }

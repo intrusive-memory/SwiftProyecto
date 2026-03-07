@@ -1,0 +1,26 @@
+{
+  "configurations" : [
+    {
+      "id" : "1",
+      "name" : "Configuration 1",
+      "options" : {}
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:",
+      "identifier" : "SwiftProyectoTests",
+      "name" : "SwiftProyectoTests"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "SwiftProyectoTests",
+        "name" : "SwiftProyectoTests"
+      }
+    }
+  ],
+  "version" : 1
+}

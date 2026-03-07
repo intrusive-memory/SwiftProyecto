@@ -1,0 +1,60 @@
+name: Performance Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      iterations:
+        description: 'Number of iterations for performance tests'
+        required: false
+        default: '10'
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  performance-tests:
+    name: Performance Tests
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build library (Release)
+        run: |
+          xcodebuild build \
+            -scheme SwiftProyecto \
+            -destination 'platform=macOS' \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run performance tests
+        run: |
+          echo "Running performance tests with ${{ github.event.inputs.iterations || '10' }} iterations"
+          xcodebuild test \
+            -scheme SwiftProyecto-Package \
+            -destination 'platform=macOS' \
+            -only-testing:SwiftProyectoTests \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee performance_output.txt
+
+          echo "Performance test run complete"
+          grep -E "Test Suite|passed|failed" performance_output.txt | tail -10
+
+      - name: Upload performance results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-test-results
+          path: performance_output.txt
+          retention-days: 30

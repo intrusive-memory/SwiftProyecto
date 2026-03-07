@@ -1,0 +1,32 @@
+{
+  "configurations" : [
+    {
+      "id" : "1",
+      "name" : "Configuration 1",
+      "options" : {
+        "performanceMetrics" : {
+          "com.apple.XCTPerformanceMetric_WallClockTime" : {
+            "enabled" : true
+          }
+        }
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:",
+      "identifier" : "SwiftProyectoTests",
+      "name" : "SwiftProyectoTests"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "SwiftProyectoTests",
+        "name" : "SwiftProyectoTests"
+      }
+    }
+  ],
+  "version" : 1
+}
