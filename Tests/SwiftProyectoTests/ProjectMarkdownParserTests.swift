@@ -814,6 +814,71 @@ final class ProjectMarkdownParserTests: XCTestCase {
         XCTAssertEqual(body, "# Notes")
     }
 
+    func testParse_TTSConfigWithActionLineVoice() throws {
+        let content = """
+        ---
+        type: project
+        title: My Series
+        author: Jane Doe
+        created: 2025-11-17T10:30:00Z
+        tts:
+          providerId: apple
+          voiceId: com.apple.voice.compact.en-US.Samantha
+          languageCode: en
+          voiceURI: "hablare://apple/com.apple.voice.compact.en-US.Samantha?lang=en"
+          actionLineVoice: "apple://com.apple.voice.premium.en-US.Ava"
+        ---
+        """
+
+        let (frontMatter, _) = try parser.parse(content: content)
+
+        XCTAssertNotNil(frontMatter.tts)
+        XCTAssertEqual(frontMatter.tts?.actionLineVoice, "apple://com.apple.voice.premium.en-US.Ava")
+    }
+
+    func testRoundTrip_TTSConfigWithActionLineVoice() throws {
+        let tts = TTSConfig(
+            providerId: "voxalta",
+            voiceId: "narrative-main",
+            languageCode: "en",
+            voiceURI: "hablare://voxalta/narrative-main?lang=en",
+            model: "0.6b",
+            actionLineVoice: "voxalta://narrative-action"
+        )
+        let original = ProjectFrontMatter(
+            title: "Action Line Test",
+            author: "Test Author",
+            created: ISO8601DateFormatter().date(from: "2025-11-17T10:30:00Z")!,
+            tts: tts
+        )
+
+        let generated = parser.generate(frontMatter: original, body: "# Notes")
+        let (parsed, body) = try parser.parse(content: generated)
+
+        XCTAssertEqual(parsed.tts?.actionLineVoice, tts.actionLineVoice)
+        XCTAssertEqual(body, "# Notes")
+    }
+
+    func testParse_TTSConfigActionLineVoiceOptional() throws {
+        let content = """
+        ---
+        type: project
+        title: No Action Voice
+        author: Jane Doe
+        created: 2025-11-17T10:30:00Z
+        tts:
+          providerId: apple
+          voiceId: com.apple.voice.compact.en-US.Samantha
+          languageCode: en
+        ---
+        """
+
+        let (frontMatter, _) = try parser.parse(content: content)
+
+        XCTAssertNotNil(frontMatter.tts)
+        XCTAssertNil(frontMatter.tts?.actionLineVoice)  // Backward compatibility
+    }
+
     // MARK: - App Sections Tests
 
     func testParseYAMLWithAppSection() throws {

@@ -45,17 +45,22 @@ public struct TTSConfig: Codable, Sendable, Equatable {
     /// Model size/variant for providers that support multiple models (e.g. VoxAlta: "0.6b", "1.7b", "8bit", "4bit")
     public let model: String?
 
+    /// Optional voice URI for action lines (dialogue parentheticals, stage directions)
+    public let actionLineVoice: String?
+
     public init(
         providerId: String? = nil,
         voiceId: String? = nil,
         languageCode: String? = nil,
         voiceURI: String? = nil,
-        model: String? = nil
+        model: String? = nil,
+        actionLineVoice: String? = nil
     ) {
         self.providerId = providerId
         self.voiceId = voiceId
         self.languageCode = languageCode
         self.voiceURI = voiceURI
         self.model = model
+        self.actionLineVoice = actionLineVoice
     }
 }
