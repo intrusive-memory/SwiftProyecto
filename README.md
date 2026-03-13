@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-3.0.0-blue.svg" />
+    <img src="https://img.shields.io/badge/Version-3.2.0-blue.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -132,6 +132,13 @@ SwiftProyecto uses a pluggable FileSource abstraction for discovering files:
 - ~100 lines of code deduplication
 
 ## Features
+
+### ✨ v3.2.0: Action Line Voice Support (March 2026)
+
+- **TTSConfig.actionLineVoice**: Optional field for separate voice selection for action lines/stage directions
+- **Enables creative audio**: Use different voices for dialogue vs action/parentheticals
+- **Backward compatible**: Optional field defaults to nil when absent
+- **Produciesta integration**: Powers action line voice feature in Produciesta audio generation
 
 ### 🔥 v3.0.0: Voice Format Migration (February 2026)
 
