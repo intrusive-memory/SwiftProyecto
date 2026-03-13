@@ -198,6 +198,9 @@ public struct ProjectMarkdownParser {
             if let model = tts.model {
                 yaml += "  model: \(escapeYAMLString(model))\n"
             }
+            if let actionLineVoice = tts.actionLineVoice {
+                yaml += "  actionLineVoice: \(escapeYAMLString(actionLineVoice))\n"
+            }
         }
 
         // App-specific settings sections (at root level)
