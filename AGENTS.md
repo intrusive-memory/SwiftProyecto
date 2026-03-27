@@ -2,9 +2,12 @@
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 3.2.0 (March 2026)
+**Current Version**: 3.2.1 (March 2026)
 
-**Latest Changes (v3.2.0)**:
+**Latest Changes (v3.2.1)**:
+- Patch release: Documentation updates and version synchronization
+
+**Previous Changes (v3.2.0)**:
 - `TTSConfig.actionLineVoice` field for configurable action line voice in audio generation
 - Enables separate voice selection for dialogue vs action/stage directions
 - Backward compatible (optional field, defaults to nil)
