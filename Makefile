@@ -16,9 +16,9 @@ resolve:
 	xcodebuild -resolvePackageDependencies -scheme $(SCHEME) -destination '$(DESTINATION)'
 	@echo "Package dependencies resolved."
 
-# Development build (swift build - fast but no Metal shaders)
+# Development build with xcodebuild
 build:
-	swift build --product $(SCHEME)
+	xcodebuild build -scheme SwiftProyecto-Package -destination '$(DESTINATION)' CODE_SIGNING_ALLOWED=NO
 
 # Release build with xcodebuild + copy to bin
 release: resolve
@@ -62,7 +62,7 @@ install: resolve
 
 # Run tests
 test:
-	swift test
+	xcodebuild test -scheme SwiftProyecto-Package -destination '$(DESTINATION)' CODE_SIGNING_ALLOWED=NO
 
 # Clean build artifacts
 clean:
@@ -77,7 +77,7 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  resolve  - Resolve all SPM package dependencies"
-	@echo "  build    - Development build (swift build, no Metal shaders)"
+	@echo "  build    - Development build with xcodebuild"
 	@echo "  install  - Debug build with xcodebuild + copy to ./bin (default)"
 	@echo "  release  - Release build with xcodebuild + copy to ./bin"
 	@echo "  test     - Run tests"
