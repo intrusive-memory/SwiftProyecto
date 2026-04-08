@@ -34,7 +34,7 @@ struct ProyectoCLI: AsyncParsableCommand {
               proyecto validate                 # Validate PROJECT.md in current directory
               proyecto validate /path/to/dir    # Validate PROJECT.md in specific directory
             """,
-        version: "2.6.0",
+        version: SwiftProyecto.version,
         subcommands: [InitCommand.self, DownloadCommand.self, ValidateCommand.self],
         defaultSubcommand: InitCommand.self
     )
