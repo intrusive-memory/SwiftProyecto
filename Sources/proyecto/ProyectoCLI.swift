@@ -31,9 +31,11 @@ struct ProyectoCLI: AsyncParsableCommand {
               proyecto init --author "Jane Doe" # Override author field
               proyecto init --update            # Update existing PROJECT.md
               proyecto download                 # Download default LLM model
+              proyecto validate                 # Validate PROJECT.md in current directory
+              proyecto validate /path/to/dir    # Validate PROJECT.md in specific directory
             """,
-        version: "2.5.0",
-        subcommands: [InitCommand.self, DownloadCommand.self],
+        version: "2.6.0",
+        subcommands: [InitCommand.self, DownloadCommand.self, ValidateCommand.self],
         defaultSubcommand: InitCommand.self
     )
 }
@@ -85,6 +87,142 @@ struct DownloadCommand: AsyncParsableCommand {
 
         if showProgress {
             print("\nDownload complete!")
+        }
+    }
+}
+
+// MARK: - Validate Command
+
+struct ValidateCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "validate",
+        abstract: "Validate a PROJECT.md file",
+        discussion: """
+            Validates the structure and content of a PROJECT.md file.
+
+            Checks for:
+              - Valid YAML front matter delimiters (---)
+              - Required fields (type, title, author, created)
+              - Valid date formats (ISO 8601)
+              - Proper YAML syntax
+
+            Examples:
+              proyecto validate                       # Validate PROJECT.md in current directory
+              proyecto validate /path/to/project      # Validate PROJECT.md in specific directory
+              proyecto validate /path/to/PROJECT.md   # Validate specific file
+              proyecto validate --verbose             # Show parsed metadata on success
+            """
+    )
+
+    @Argument(help: "Path to directory containing PROJECT.md or path to PROJECT.md file (default: current directory)")
+    var path: String?
+
+    @Flag(name: .shortAndLong, help: "Show parsed metadata on successful validation")
+    var verbose: Bool = false
+
+    mutating func run() throws {
+        // Resolve path
+        let inputPath = path ?? FileManager.default.currentDirectoryPath
+        let inputURL = URL(fileURLWithPath: inputPath).standardizedFileURL
+
+        // Determine if path is a directory or file
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: inputURL.path, isDirectory: &isDir) else {
+            throw ProyectoError.directoryNotFound(inputURL.path)
+        }
+
+        // Get PROJECT.md file URL
+        let projectMdURL: URL
+        if isDir.boolValue {
+            projectMdURL = inputURL.appendingPathComponent("PROJECT.md")
+        } else if inputURL.lastPathComponent == "PROJECT.md" {
+            projectMdURL = inputURL
+        } else {
+            throw ValidationError("Path must be a directory containing PROJECT.md or a PROJECT.md file")
+        }
+
+        // Check if PROJECT.md exists
+        guard FileManager.default.fileExists(atPath: projectMdURL.path) else {
+            throw ProyectoError.projectMdNotFound(projectMdURL.path)
+        }
+
+        // Parse and validate
+        let parser = ProjectMarkdownParser()
+        do {
+            let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
+
+            // Success!
+            print("✅ Valid PROJECT.md: \(projectMdURL.path)")
+            print()
+
+            if verbose {
+                print("Parsed metadata:")
+                print("  Type: \(frontMatter.type)")
+                print("  Title: \(frontMatter.title)")
+                print("  Author: \(frontMatter.author)")
+
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateStyle = .medium
+                dateFormatter.timeStyle = .none
+                print("  Created: \(dateFormatter.string(from: frontMatter.created))")
+
+                if let description = frontMatter.description {
+                    print("  Description: \(description.prefix(80))\(description.count > 80 ? "..." : "")")
+                }
+                if let season = frontMatter.season {
+                    print("  Season: \(season)")
+                }
+                if let episodes = frontMatter.episodes {
+                    print("  Episodes: \(episodes)")
+                }
+                if let genre = frontMatter.genre {
+                    print("  Genre: \(genre)")
+                }
+                if let tags = frontMatter.tags {
+                    print("  Tags: \(tags.joined(separator: ", "))")
+                }
+                if let episodesDir = frontMatter.episodesDir {
+                    print("  Episodes Directory: \(episodesDir)")
+                }
+                if let audioDir = frontMatter.audioDir {
+                    print("  Audio Directory: \(audioDir)")
+                }
+                if let filePattern = frontMatter.filePattern {
+                    print("  File Pattern: \(filePattern)")
+                }
+                if let exportFormat = frontMatter.exportFormat {
+                    print("  Export Format: \(exportFormat)")
+                }
+                if let cast = frontMatter.cast, !cast.isEmpty {
+                    print("  Cast: \(cast.count) member(s)")
+                }
+                if frontMatter.tts != nil {
+                    print("  TTS Configuration: present")
+                }
+                if frontMatter.preGenerateHook != nil {
+                    print("  Pre-generate Hook: present")
+                }
+                if frontMatter.postGenerateHook != nil {
+                    print("  Post-generate Hook: present")
+                }
+
+                print()
+                print("Body content: \(body.isEmpty ? "empty" : "\(body.count) characters")")
+            }
+
+        } catch let error as ProjectMarkdownParser.ParserError {
+            // Validation failed - show detailed error
+            print("❌ Invalid PROJECT.md: \(projectMdURL.path)")
+            print()
+            print("Error: \(error.localizedDescription)")
+            throw ExitCode.validationFailure
+
+        } catch {
+            // Other errors
+            print("❌ Failed to validate PROJECT.md: \(projectMdURL.path)")
+            print()
+            print("Error: \(error.localizedDescription)")
+            throw ExitCode.failure
         }
     }
 }
@@ -248,6 +386,7 @@ struct InitCommand: AsyncParsableCommand {
 enum ProyectoError: LocalizedError {
     case directoryNotFound(String)
     case projectMdExists(String)
+    case projectMdNotFound(String)
     case parseError(String)
     case llmError(String)
 
@@ -257,6 +396,8 @@ enum ProyectoError: LocalizedError {
             return "Directory not found: \(path)"
         case .projectMdExists(let path):
             return "PROJECT.md already exists at \(path). Use --update to merge or --force to overwrite."
+        case .projectMdNotFound(let path):
+            return "PROJECT.md not found: \(path)"
         case .parseError(let message):
             return "Parse error: \(message)"
         case .llmError(let message):
