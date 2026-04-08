@@ -22,9 +22,9 @@ import Foundation
 /// - ``ProjectService``
 /// - ``ModelContainerFactory``
 public struct SwiftProyecto {
-    /// The current version of SwiftProyecto
-    public static let version = "3.2.1"
+  /// The current version of SwiftProyecto
+  public static let version = "3.3.0"
 
-    /// Private initializer - SwiftProyecto is a namespace
-    private init() {}
+  /// Private initializer - SwiftProyecto is a namespace
+  private init() {}
 }

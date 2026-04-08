@@ -30,37 +30,37 @@ import Foundation
 /// Captures the voice provider, voice identifier, language, and a portable
 /// `hablare://` URI that can be resolved by SwiftHablare at runtime.
 public struct TTSConfig: Codable, Sendable, Equatable {
-    /// Provider identifier (e.g. "apple", "elevenlabs", "qwen")
-    public let providerId: String?
+  /// Provider identifier (e.g. "apple", "elevenlabs", "qwen")
+  public let providerId: String?
 
-    /// Provider-specific voice identifier
-    public let voiceId: String?
+  /// Provider-specific voice identifier
+  public let voiceId: String?
 
-    /// BCP-47 language code (e.g. "en", "es", "fr")
-    public let languageCode: String?
+  /// BCP-47 language code (e.g. "en", "es", "fr")
+  public let languageCode: String?
 
-    /// Portable hablare:// URI referencing the voice
-    public let voiceURI: String?
+  /// Portable hablare:// URI referencing the voice
+  public let voiceURI: String?
 
-    /// Model size/variant for providers that support multiple models (e.g. VoxAlta: "0.6b", "1.7b", "8bit", "4bit")
-    public let model: String?
+  /// Model size/variant for providers that support multiple models (e.g. VoxAlta: "0.6b", "1.7b", "8bit", "4bit")
+  public let model: String?
 
-    /// Optional voice URI for action lines (dialogue parentheticals, stage directions)
-    public let actionLineVoice: String?
+  /// Optional voice URI for action lines (dialogue parentheticals, stage directions)
+  public let actionLineVoice: String?
 
-    public init(
-        providerId: String? = nil,
-        voiceId: String? = nil,
-        languageCode: String? = nil,
-        voiceURI: String? = nil,
-        model: String? = nil,
-        actionLineVoice: String? = nil
-    ) {
-        self.providerId = providerId
-        self.voiceId = voiceId
-        self.languageCode = languageCode
-        self.voiceURI = voiceURI
-        self.model = model
-        self.actionLineVoice = actionLineVoice
-    }
+  public init(
+    providerId: String? = nil,
+    voiceId: String? = nil,
+    languageCode: String? = nil,
+    voiceURI: String? = nil,
+    model: String? = nil,
+    actionLineVoice: String? = nil
+  ) {
+    self.providerId = providerId
+    self.voiceId = voiceId
+    self.languageCode = languageCode
+    self.voiceURI = voiceURI
+    self.model = model
+    self.actionLineVoice = actionLineVoice
+  }
 }

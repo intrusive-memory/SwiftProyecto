@@ -48,69 +48,69 @@ import SwiftData
 ///
 @Model
 public final class ProjectFileReference {
-    /// Unique identifier
-    @Attribute(.unique) public var id: UUID
+  /// Unique identifier
+  @Attribute(.unique) public var id: UUID
 
-    /// Relative path from project root (e.g., "season-01/episode-01.fountain")
-    public var relativePath: String
+  /// Relative path from project root (e.g., "season-01/episode-01.fountain")
+  public var relativePath: String
 
-    /// Filename for display (e.g., "episode-01.fountain")
-    public var filename: String
+  /// Filename for display (e.g., "episode-01.fountain")
+  public var filename: String
 
-    /// File extension without dot (e.g., "fountain", "fdx", "md")
-    public var fileExtension: String
+  /// File extension without dot (e.g., "fountain", "fdx", "md")
+  public var fileExtension: String
 
-    /// Last known file modification date from filesystem
-    /// This is updated during every sync operation to reflect current disk state
-    public var lastKnownModificationDate: Date?
+  /// Last known file modification date from filesystem
+  /// This is updated during every sync operation to reflect current disk state
+  public var lastKnownModificationDate: Date?
 
-    /// Security-scoped bookmark data for direct file access
-    /// If nil, the file URL is constructed from project bookmark + relative path
-    public var bookmarkData: Data?
+  /// Security-scoped bookmark data for direct file access
+  /// If nil, the file URL is constructed from project bookmark + relative path
+  public var bookmarkData: Data?
 
-    /// Parent project this file belongs to
-    @Relationship(inverse: \ProjectModel.fileReferences)
-    public var project: ProjectModel?
+  /// Parent project this file belongs to
+  @Relationship(inverse: \ProjectModel.fileReferences)
+  public var project: ProjectModel?
 
-    /// Create a new project file reference.
-    ///
-    /// - Parameters:
-    ///   - id: Unique identifier (generated if not provided)
-    ///   - relativePath: Path relative to project root
-    ///   - filename: Display filename
-    ///   - fileExtension: File extension without dot
-    ///   - lastKnownModificationDate: Optional modification date
-    ///   - bookmarkData: Optional security-scoped bookmark data
-    public init(
-        id: UUID = UUID(),
-        relativePath: String,
-        filename: String,
-        fileExtension: String,
-        lastKnownModificationDate: Date? = nil,
-        bookmarkData: Data? = nil
-    ) {
-        self.id = id
-        self.relativePath = relativePath
-        self.filename = filename
-        self.fileExtension = fileExtension
-        self.lastKnownModificationDate = lastKnownModificationDate
-        self.bookmarkData = bookmarkData
-    }
+  /// Create a new project file reference.
+  ///
+  /// - Parameters:
+  ///   - id: Unique identifier (generated if not provided)
+  ///   - relativePath: Path relative to project root
+  ///   - filename: Display filename
+  ///   - fileExtension: File extension without dot
+  ///   - lastKnownModificationDate: Optional modification date
+  ///   - bookmarkData: Optional security-scoped bookmark data
+  public init(
+    id: UUID = UUID(),
+    relativePath: String,
+    filename: String,
+    fileExtension: String,
+    lastKnownModificationDate: Date? = nil,
+    bookmarkData: Data? = nil
+  ) {
+    self.id = id
+    self.relativePath = relativePath
+    self.filename = filename
+    self.fileExtension = fileExtension
+    self.lastKnownModificationDate = lastKnownModificationDate
+    self.bookmarkData = bookmarkData
+  }
 }
 
 // MARK: - Convenience Properties
 
-public extension ProjectFileReference {
-    /// Display name with folder context for disambiguation
-    ///
-    /// For files in root: "episode-01.fountain"
-    /// For files in subfolders: "season-01 / episode-01.fountain"
-    var displayNameWithPath: String {
-        let components = relativePath.split(separator: "/")
-        if components.count > 1 {
-            let folderPath = components.dropLast().joined(separator: " / ")
-            return "\(folderPath) / \(filename)"
-        }
-        return filename
+extension ProjectFileReference {
+  /// Display name with folder context for disambiguation
+  ///
+  /// For files in root: "episode-01.fountain"
+  /// For files in subfolders: "season-01 / episode-01.fountain"
+  public var displayNameWithPath: String {
+    let components = relativePath.split(separator: "/")
+    if components.count > 1 {
+      let folderPath = components.dropLast().joined(separator: " / ")
+      return "\(folderPath) / \(filename)"
     }
+    return filename
+  }
 }

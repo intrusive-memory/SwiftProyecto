@@ -129,36 +129,36 @@ import Foundation
 /// - `ProjectFrontMatter.setSettings(_:)`: Write typed settings
 /// - `ProjectFrontMatter.hasSettings(for:)`: Check if settings exist
 public protocol AppFrontMatterSettings: Codable, Sendable {
-    /// Unique key for this app's settings section in YAML frontmatter.
-    ///
-    /// This key identifies where your app's settings are stored in the PROJECT.md
-    /// frontmatter. It must be unique across all apps using the same PROJECT.md file.
-    ///
-    /// ## Requirements
-    ///
-    /// - Must be unique across all apps
-    /// - Must remain stable (never change after first use)
-    /// - Should be descriptive and app-specific
-    ///
-    /// ## Examples
-    ///
-    /// ```swift
-    /// static let sectionKey = "myapp"              // ✅ Good
-    /// static let sectionKey = "com.example.app"    // ✅ Good
-    /// static let sectionKey = "settings"           // ❌ Too generic
-    /// ```
-    ///
-    /// ## Naming Recommendations
-    ///
-    /// - **App Name**: Use your application name (e.g., "podcast", "screenplay")
-    /// - **Bundle ID**: Use your bundle identifier (e.g., "com.example.myapp")
-    /// - **Avoid Generic Names**: Don't use "config", "settings", "data", etc.
-    ///
-    /// ## Stability Warning
-    ///
-    /// Never change the `sectionKey` after your app has been released. Changing it
-    /// will cause existing PROJECT.md files to lose their settings data. If you must
-    /// change the key, implement a migration that reads from the old key and writes
-    /// to the new key.
-    static var sectionKey: String { get }
+  /// Unique key for this app's settings section in YAML frontmatter.
+  ///
+  /// This key identifies where your app's settings are stored in the PROJECT.md
+  /// frontmatter. It must be unique across all apps using the same PROJECT.md file.
+  ///
+  /// ## Requirements
+  ///
+  /// - Must be unique across all apps
+  /// - Must remain stable (never change after first use)
+  /// - Should be descriptive and app-specific
+  ///
+  /// ## Examples
+  ///
+  /// ```swift
+  /// static let sectionKey = "myapp"              // ✅ Good
+  /// static let sectionKey = "com.example.app"    // ✅ Good
+  /// static let sectionKey = "settings"           // ❌ Too generic
+  /// ```
+  ///
+  /// ## Naming Recommendations
+  ///
+  /// - **App Name**: Use your application name (e.g., "podcast", "screenplay")
+  /// - **Bundle ID**: Use your bundle identifier (e.g., "com.example.myapp")
+  /// - **Avoid Generic Names**: Don't use "config", "settings", "data", etc.
+  ///
+  /// ## Stability Warning
+  ///
+  /// Never change the `sectionKey` after your app has been released. Changing it
+  /// will cause existing PROJECT.md files to lose their settings data. If you must
+  /// change the key, implement a migration that reads from the old key and writes
+  /// to the new key.
+  static var sectionKey: String { get }
 }

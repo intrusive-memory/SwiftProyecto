@@ -2,10 +2,14 @@
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 3.2.1 (March 2026)
+**Current Version**: 3.3.0 (April 2026)
 
-**Latest Changes (v3.2.1)**:
-- Patch release: Documentation updates and version synchronization
+**Latest Changes (v3.3.0)**:
+- Add `proyecto validate` command to validate PROJECT.md files
+- Support directory or direct file path arguments for validation
+- Add --verbose flag to show parsed metadata
+- Add 9 comprehensive integration tests for CLI validation
+- Synchronized proyecto CLI version with library version
 
 **Previous Changes (v3.2.0)**:
 - `TTSConfig.actionLineVoice` field for configurable action line voice in audio generation

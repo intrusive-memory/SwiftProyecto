@@ -30,27 +30,27 @@ import Foundation
 /// Used to specify the expected or preferred gender for a character role,
 /// or to indicate that gender is not a factor for the role.
 public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable {
-    /// Male
-    case male = "M"
+  /// Male
+  case male = "M"
 
-    /// Female
-    case female = "F"
+  /// Female
+  case female = "F"
 
-    /// Non-binary
-    case nonBinary = "NB"
+  /// Non-binary
+  case nonBinary = "NB"
 
-    /// Not specified - role doesn't depend on character's gender
-    case notSpecified = "NS"
+  /// Not specified - role doesn't depend on character's gender
+  case notSpecified = "NS"
 
-    /// Display name for UI presentation
-    public var displayName: String {
-        switch self {
-        case .male: return "Male"
-        case .female: return "Female"
-        case .nonBinary: return "Non-Binary"
-        case .notSpecified: return "Not Specified"
-        }
+  /// Display name for UI presentation
+  public var displayName: String {
+    switch self {
+    case .male: return "Male"
+    case .female: return "Female"
+    case .nonBinary: return "Non-Binary"
+    case .notSpecified: return "Not Specified"
     }
+  }
 }
 
 /// A character-to-voice mapping for audio generation.
@@ -92,150 +92,151 @@ public enum Gender: String, Codable, Sendable, Equatable, Hashable, CaseIterable
 /// ```
 public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
 
-    /// Character name (as it appears in .fountain CHARACTER elements)
-    /// Example: "NARRATOR", "LAO TZU", "COMMENTATOR"
-    /// This is mutable to allow character renaming
-    public var character: String
+  /// Character name (as it appears in .fountain CHARACTER elements)
+  /// Example: "NARRATOR", "LAO TZU", "COMMENTATOR"
+  /// This is mutable to allow character renaming
+  public var character: String
 
-    /// Optional actor/voice artist name (for credits/reference)
-    /// Example: "Tom Stovall", "Jason Manino"
-    public var actor: String?
+  /// Optional actor/voice artist name (for credits/reference)
+  /// Example: "Tom Stovall", "Jason Manino"
+  public var actor: String?
 
-    /// Optional gender specification for the character role
-    /// Defaults to .notSpecified if not provided
-    public var gender: Gender?
+  /// Optional gender specification for the character role
+  /// Defaults to .notSpecified if not provided
+  public var gender: Gender?
 
-    /// Optional description of the desired voice characteristics for this character.
-    /// Used by CastMatcher to guide TTS voice selection.
-    /// Example: "Deep, warm baritone with measured pacing and gravitas"
-    public var voiceDescription: String?
+  /// Optional description of the desired voice characteristics for this character.
+  /// Used by CastMatcher to guide TTS voice selection.
+  /// Example: "Deep, warm baritone with measured pacing and gravitas"
+  public var voiceDescription: String?
 
-    /// Dictionary of voice identifiers by provider.
-    /// Keys are provider names (e.g., "apple", "elevenlabs"), values are voice identifiers.
-    ///
-    /// Examples:
-    /// - "apple": "com.apple.voice.compact.en-US.Aaron"
-    /// - "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
-    /// - "voxalta": "narrative-1"
-    ///
-    /// Invalid voice identifiers are permitted and will be handled at generation time.
-    public var voices: [String: String]
+  /// Dictionary of voice identifiers by provider.
+  /// Keys are provider names (e.g., "apple", "elevenlabs"), values are voice identifiers.
+  ///
+  /// Examples:
+  /// - "apple": "com.apple.voice.compact.en-US.Aaron"
+  /// - "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
+  /// - "voxalta": "narrative-1"
+  ///
+  /// Invalid voice identifiers are permitted and will be handled at generation time.
+  public var voices: [String: String]
 
-    /// Unique identifier based on character name
-    public var id: String { character }
+  /// Unique identifier based on character name
+  public var id: String { character }
 
-    /// Create a new cast member
-    public init(
-        character: String,
-        actor: String? = nil,
-        gender: Gender? = nil,
-        voiceDescription: String? = nil,
-        voices: [String: String] = [:]
-    ) {
-        self.character = character
-        self.actor = actor
-        self.gender = gender
-        self.voiceDescription = voiceDescription
-        self.voices = voices
-    }
+  /// Create a new cast member
+  public init(
+    character: String,
+    actor: String? = nil,
+    gender: Gender? = nil,
+    voiceDescription: String? = nil,
+    voices: [String: String] = [:]
+  ) {
+    self.character = character
+    self.actor = actor
+    self.gender = gender
+    self.voiceDescription = voiceDescription
+    self.voices = voices
+  }
 
-    // MARK: - Convenience
+  // MARK: - Convenience
 
-    /// Returns true if at least one voice is assigned
-    public var hasVoices: Bool {
-        !voices.isEmpty
-    }
+  /// Returns true if at least one voice is assigned
+  public var hasVoices: Bool {
+    !voices.isEmpty
+  }
 
-    /// Returns true if actor name is assigned
-    public var hasActor: Bool {
-        actor != nil && !(actor?.isEmpty ?? true)
-    }
+  /// Returns true if actor name is assigned
+  public var hasActor: Bool {
+    actor != nil && !(actor?.isEmpty ?? true)
+  }
 
-    /// Get voice identifier for a specific provider.
-    ///
-    /// Performs case-insensitive lookup of the provider name.
-    ///
-    /// - Parameter provider: Provider name (e.g., "apple", "elevenlabs")
-    /// - Returns: Voice identifier if found, nil otherwise
-    ///
-    /// ## Example
-    ///
-    /// ```swift
-    /// let member = CastMember(
-    ///     character: "NARRATOR",
-    ///     voices: [
-    ///         "apple": "com.apple.voice.premium.en-US.Aaron",
-    ///         "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
-    ///     ]
-    /// )
-    /// if let appleVoice = member.voice(for: "apple") {
-    ///     print(appleVoice) // "com.apple.voice.premium.en-US.Aaron"
-    /// }
-    /// ```
-    public func voice(for provider: String) -> String? {
-        voices[provider.lowercased()]
-    }
+  /// Get voice identifier for a specific provider.
+  ///
+  /// Performs case-insensitive lookup of the provider name.
+  ///
+  /// - Parameter provider: Provider name (e.g., "apple", "elevenlabs")
+  /// - Returns: Voice identifier if found, nil otherwise
+  ///
+  /// ## Example
+  ///
+  /// ```swift
+  /// let member = CastMember(
+  ///     character: "NARRATOR",
+  ///     voices: [
+  ///         "apple": "com.apple.voice.premium.en-US.Aaron",
+  ///         "elevenlabs": "21m00Tcm4TlvDq8ikWAM"
+  ///     ]
+  /// )
+  /// if let appleVoice = member.voice(for: "apple") {
+  ///     print(appleVoice) // "com.apple.voice.premium.en-US.Aaron"
+  /// }
+  /// ```
+  public func voice(for provider: String) -> String? {
+    voices[provider.lowercased()]
+  }
 
-    /// Array of all provider names that have voices assigned.
-    ///
-    /// Returns provider names sorted alphabetically.
-    ///
-    /// ## Example
-    ///
-    /// ```swift
-    /// let member = CastMember(
-    ///     character: "NARRATOR",
-    ///     voices: [
-    ///         "elevenlabs": "21m00Tcm4TlvDq8ikWAM",
-    ///         "apple": "com.apple.voice.premium.en-US.Aaron"
-    ///     ]
-    /// )
-    /// print(member.providers) // ["apple", "elevenlabs"]
-    /// ```
-    public var providers: [String] {
-        Array(voices.keys).sorted()
-    }
+  /// Array of all provider names that have voices assigned.
+  ///
+  /// Returns provider names sorted alphabetically.
+  ///
+  /// ## Example
+  ///
+  /// ```swift
+  /// let member = CastMember(
+  ///     character: "NARRATOR",
+  ///     voices: [
+  ///         "elevenlabs": "21m00Tcm4TlvDq8ikWAM",
+  ///         "apple": "com.apple.voice.premium.en-US.Aaron"
+  ///     ]
+  /// )
+  /// print(member.providers) // ["apple", "elevenlabs"]
+  /// ```
+  public var providers: [String] {
+    Array(voices.keys).sorted()
+  }
 
-    // MARK: - Equatable & Hashable
+  // MARK: - Equatable & Hashable
 
-    /// Two cast members are equal if they have the same character name
-    public static func == (lhs: CastMember, rhs: CastMember) -> Bool {
-        lhs.character == rhs.character
-    }
+  /// Two cast members are equal if they have the same character name
+  public static func == (lhs: CastMember, rhs: CastMember) -> Bool {
+    lhs.character == rhs.character
+  }
 
-    /// Hash based on character name only
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(character)
-    }
+  /// Hash based on character name only
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(character)
+  }
 
-    // MARK: - Codable
+  // MARK: - Codable
 
-    enum CodingKeys: String, CodingKey {
-        case character
-        case actor
-        case gender
-        case voicePrompt
-        case voiceDescription
-        case voices
-    }
+  enum CodingKeys: String, CodingKey {
+    case character
+    case actor
+    case gender
+    case voicePrompt
+    case voiceDescription
+    case voices
+  }
 
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        character = try container.decode(String.self, forKey: .character)
-        actor = try container.decodeIfPresent(String.self, forKey: .actor)
-        gender = try container.decodeIfPresent(Gender.self, forKey: .gender)
-        // Support both "voicePrompt" (preferred) and "voiceDescription" (legacy)
-        voiceDescription = try container.decodeIfPresent(String.self, forKey: .voicePrompt)
-            ?? container.decodeIfPresent(String.self, forKey: .voiceDescription)
-        voices = try container.decodeIfPresent([String: String].self, forKey: .voices) ?? [:]
-    }
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    character = try container.decode(String.self, forKey: .character)
+    actor = try container.decodeIfPresent(String.self, forKey: .actor)
+    gender = try container.decodeIfPresent(Gender.self, forKey: .gender)
+    // Support both "voicePrompt" (preferred) and "voiceDescription" (legacy)
+    voiceDescription =
+      try container.decodeIfPresent(String.self, forKey: .voicePrompt)
+      ?? container.decodeIfPresent(String.self, forKey: .voiceDescription)
+    voices = try container.decodeIfPresent([String: String].self, forKey: .voices) ?? [:]
+  }
 
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(character, forKey: .character)
-        try container.encodeIfPresent(actor, forKey: .actor)
-        try container.encodeIfPresent(gender, forKey: .gender)
-        try container.encodeIfPresent(voiceDescription, forKey: .voicePrompt)
-        try container.encode(voices, forKey: .voices)
-    }
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(character, forKey: .character)
+    try container.encodeIfPresent(actor, forKey: .actor)
+    try container.encodeIfPresent(gender, forKey: .gender)
+    try container.encodeIfPresent(voiceDescription, forKey: .voicePrompt)
+    try container.encode(voices, forKey: .voices)
+  }
 }
