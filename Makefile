@@ -7,7 +7,7 @@ BIN_DIR = ./bin
 DESTINATION = platform=macOS,arch=arm64
 DERIVED_DATA = $(HOME)/Library/Developer/Xcode/DerivedData
 
-.PHONY: all build release install clean test resolve help
+.PHONY: all build release install clean test lint resolve help
 
 all: install
 
@@ -64,6 +64,11 @@ install: resolve
 test:
 	xcodebuild test -scheme SwiftProyecto-Package -destination '$(DESTINATION)' CODE_SIGNING_ALLOWED=NO
 
+# Format Swift source files with swift-format
+lint:
+	swift format -i -r .
+	@echo "Swift source files formatted."
+
 # Clean build artifacts
 clean:
 	swift package clean
@@ -81,6 +86,7 @@ help:
 	@echo "  install  - Debug build with xcodebuild + copy to ./bin (default)"
 	@echo "  release  - Release build with xcodebuild + copy to ./bin"
 	@echo "  test     - Run tests"
+	@echo "  lint     - Format Swift source files with swift-format"
 	@echo "  clean    - Clean build artifacts"
 	@echo "  help     - Show this help"
 	@echo ""

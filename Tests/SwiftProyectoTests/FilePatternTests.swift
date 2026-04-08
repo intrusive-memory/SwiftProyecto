@@ -1,246 +1,247 @@
 import XCTest
+
 @testable import SwiftProyecto
 
 final class FilePatternTests: XCTestCase {
 
-    // MARK: - Initialization Tests
+  // MARK: - Initialization Tests
 
-    func testInit_SinglePattern() {
-        let pattern = FilePattern("*.fountain")
+  func testInit_SinglePattern() {
+    let pattern = FilePattern("*.fountain")
 
-        XCTAssertTrue(pattern.isSingle)
-        XCTAssertEqual(pattern.patterns, ["*.fountain"])
+    XCTAssertTrue(pattern.isSingle)
+    XCTAssertEqual(pattern.patterns, ["*.fountain"])
+  }
+
+  func testInit_MultiplePatterns() {
+    let pattern = FilePattern(["*.fountain", "*.fdx"])
+
+    XCTAssertFalse(pattern.isSingle)
+    XCTAssertEqual(pattern.patterns, ["*.fountain", "*.fdx"])
+  }
+
+  func testInit_SingleElementArray_CollapsesToSingle() {
+    let pattern = FilePattern(["*.fountain"])
+
+    XCTAssertTrue(pattern.isSingle)
+    XCTAssertEqual(pattern.patterns, ["*.fountain"])
+  }
+
+  // MARK: - ExpressibleByStringLiteral Tests
+
+  func testStringLiteral() {
+    let pattern: FilePattern = "*.fountain"
+
+    XCTAssertTrue(pattern.isSingle)
+    XCTAssertEqual(pattern.patterns, ["*.fountain"])
+  }
+
+  // MARK: - ExpressibleByArrayLiteral Tests
+
+  func testArrayLiteral_Multiple() {
+    let pattern: FilePattern = ["*.fountain", "*.fdx", "*.highland"]
+
+    XCTAssertFalse(pattern.isSingle)
+    XCTAssertEqual(pattern.patterns, ["*.fountain", "*.fdx", "*.highland"])
+  }
+
+  func testArrayLiteral_Single() {
+    let pattern: FilePattern = ["*.fountain"]
+
+    XCTAssertTrue(pattern.isSingle)
+    XCTAssertEqual(pattern.patterns, ["*.fountain"])
+  }
+
+  // MARK: - Codable Tests - Decoding
+
+  func testDecode_SingleString() throws {
+    let json = "\"*.fountain\""
+    let data = json.data(using: .utf8)!
+
+    let pattern = try JSONDecoder().decode(FilePattern.self, from: data)
+
+    XCTAssertTrue(pattern.isSingle)
+    XCTAssertEqual(pattern.patterns, ["*.fountain"])
+  }
+
+  func testDecode_Array() throws {
+    let json = "[\"*.fountain\", \"*.fdx\"]"
+    let data = json.data(using: .utf8)!
+
+    let pattern = try JSONDecoder().decode(FilePattern.self, from: data)
+
+    XCTAssertFalse(pattern.isSingle)
+    XCTAssertEqual(pattern.patterns, ["*.fountain", "*.fdx"])
+  }
+
+  func testDecode_EmptyArray() throws {
+    let json = "[]"
+    let data = json.data(using: .utf8)!
+
+    let pattern = try JSONDecoder().decode(FilePattern.self, from: data)
+
+    XCTAssertEqual(pattern.patterns, [])
+  }
+
+  func testDecode_InvalidType_ThrowsError() {
+    let json = "123"
+    let data = json.data(using: .utf8)!
+
+    XCTAssertThrowsError(try JSONDecoder().decode(FilePattern.self, from: data)) { error in
+      guard let decodingError = error as? DecodingError else {
+        XCTFail("Expected DecodingError")
+        return
+      }
+      if case .typeMismatch = decodingError {
+        // Expected
+      } else {
+        XCTFail("Expected typeMismatch error")
+      }
     }
+  }
 
-    func testInit_MultiplePatterns() {
-        let pattern = FilePattern(["*.fountain", "*.fdx"])
+  // MARK: - Codable Tests - Encoding
 
-        XCTAssertFalse(pattern.isSingle)
-        XCTAssertEqual(pattern.patterns, ["*.fountain", "*.fdx"])
-    }
+  func testEncode_SingleString() throws {
+    let pattern: FilePattern = .single("*.fountain")
 
-    func testInit_SingleElementArray_CollapsesToSingle() {
-        let pattern = FilePattern(["*.fountain"])
+    let data = try JSONEncoder().encode(pattern)
+    let json = String(data: data, encoding: .utf8)!
 
-        XCTAssertTrue(pattern.isSingle)
-        XCTAssertEqual(pattern.patterns, ["*.fountain"])
-    }
+    XCTAssertEqual(json, "\"*.fountain\"")
+  }
 
-    // MARK: - ExpressibleByStringLiteral Tests
+  func testEncode_Array() throws {
+    let pattern: FilePattern = .multiple(["*.fountain", "*.fdx"])
 
-    func testStringLiteral() {
-        let pattern: FilePattern = "*.fountain"
+    let data = try JSONEncoder().encode(pattern)
+    let json = String(data: data, encoding: .utf8)!
 
-        XCTAssertTrue(pattern.isSingle)
-        XCTAssertEqual(pattern.patterns, ["*.fountain"])
-    }
+    XCTAssertEqual(json, "[\"*.fountain\",\"*.fdx\"]")
+  }
 
-    // MARK: - ExpressibleByArrayLiteral Tests
+  // MARK: - Round-trip Tests
 
-    func testArrayLiteral_Multiple() {
-        let pattern: FilePattern = ["*.fountain", "*.fdx", "*.highland"]
+  func testRoundTrip_SingleString() throws {
+    let original: FilePattern = .single("*.fountain")
 
-        XCTAssertFalse(pattern.isSingle)
-        XCTAssertEqual(pattern.patterns, ["*.fountain", "*.fdx", "*.highland"])
-    }
+    let data = try JSONEncoder().encode(original)
+    let decoded = try JSONDecoder().decode(FilePattern.self, from: data)
 
-    func testArrayLiteral_Single() {
-        let pattern: FilePattern = ["*.fountain"]
+    XCTAssertEqual(original, decoded)
+  }
 
-        XCTAssertTrue(pattern.isSingle)
-        XCTAssertEqual(pattern.patterns, ["*.fountain"])
-    }
+  func testRoundTrip_Array() throws {
+    let original: FilePattern = .multiple(["*.fountain", "*.fdx", "*.highland"])
 
-    // MARK: - Codable Tests - Decoding
+    let data = try JSONEncoder().encode(original)
+    let decoded = try JSONDecoder().decode(FilePattern.self, from: data)
 
-    func testDecode_SingleString() throws {
-        let json = "\"*.fountain\""
-        let data = json.data(using: .utf8)!
+    XCTAssertEqual(original, decoded)
+  }
 
-        let pattern = try JSONDecoder().decode(FilePattern.self, from: data)
+  // MARK: - Equatable Tests
 
-        XCTAssertTrue(pattern.isSingle)
-        XCTAssertEqual(pattern.patterns, ["*.fountain"])
-    }
+  func testEquatable_SingleEqual() {
+    let pattern1: FilePattern = .single("*.fountain")
+    let pattern2: FilePattern = .single("*.fountain")
 
-    func testDecode_Array() throws {
-        let json = "[\"*.fountain\", \"*.fdx\"]"
-        let data = json.data(using: .utf8)!
+    XCTAssertEqual(pattern1, pattern2)
+  }
 
-        let pattern = try JSONDecoder().decode(FilePattern.self, from: data)
+  func testEquatable_SingleNotEqual() {
+    let pattern1: FilePattern = .single("*.fountain")
+    let pattern2: FilePattern = .single("*.fdx")
 
-        XCTAssertFalse(pattern.isSingle)
-        XCTAssertEqual(pattern.patterns, ["*.fountain", "*.fdx"])
-    }
+    XCTAssertNotEqual(pattern1, pattern2)
+  }
 
-    func testDecode_EmptyArray() throws {
-        let json = "[]"
-        let data = json.data(using: .utf8)!
+  func testEquatable_MultipleEqual() {
+    let pattern1: FilePattern = .multiple(["*.fountain", "*.fdx"])
+    let pattern2: FilePattern = .multiple(["*.fountain", "*.fdx"])
 
-        let pattern = try JSONDecoder().decode(FilePattern.self, from: data)
+    XCTAssertEqual(pattern1, pattern2)
+  }
 
-        XCTAssertEqual(pattern.patterns, [])
-    }
+  func testEquatable_MultipleNotEqual_DifferentOrder() {
+    let pattern1: FilePattern = .multiple(["*.fountain", "*.fdx"])
+    let pattern2: FilePattern = .multiple(["*.fdx", "*.fountain"])
 
-    func testDecode_InvalidType_ThrowsError() {
-        let json = "123"
-        let data = json.data(using: .utf8)!
+    // Order matters
+    XCTAssertNotEqual(pattern1, pattern2)
+  }
 
-        XCTAssertThrowsError(try JSONDecoder().decode(FilePattern.self, from: data)) { error in
-            guard let decodingError = error as? DecodingError else {
-                XCTFail("Expected DecodingError")
-                return
-            }
-            if case .typeMismatch = decodingError {
-                // Expected
-            } else {
-                XCTFail("Expected typeMismatch error")
-            }
-        }
-    }
+  func testEquatable_SingleVsMultiple() {
+    let pattern1: FilePattern = .single("*.fountain")
+    let pattern2: FilePattern = .multiple(["*.fountain"])
 
-    // MARK: - Codable Tests - Encoding
+    // Different cases, even if same patterns
+    XCTAssertNotEqual(pattern1, pattern2)
+  }
 
-    func testEncode_SingleString() throws {
-        let pattern: FilePattern = .single("*.fountain")
+  // MARK: - CustomStringConvertible Tests
 
-        let data = try JSONEncoder().encode(pattern)
-        let json = String(data: data, encoding: .utf8)!
+  func testDescription_Single() {
+    let pattern: FilePattern = .single("*.fountain")
 
-        XCTAssertEqual(json, "\"*.fountain\"")
-    }
+    XCTAssertEqual(pattern.description, "*.fountain")
+  }
 
-    func testEncode_Array() throws {
-        let pattern: FilePattern = .multiple(["*.fountain", "*.fdx"])
+  func testDescription_Multiple() {
+    let pattern: FilePattern = .multiple(["*.fountain", "*.fdx"])
 
-        let data = try JSONEncoder().encode(pattern)
-        let json = String(data: data, encoding: .utf8)!
+    XCTAssertEqual(pattern.description, "[*.fountain, *.fdx]")
+  }
 
-        XCTAssertEqual(json, "[\"*.fountain\",\"*.fdx\"]")
-    }
+  // MARK: - Patterns Property Tests
 
-    // MARK: - Round-trip Tests
+  func testPatterns_Single() {
+    let pattern: FilePattern = .single("*.fountain")
 
-    func testRoundTrip_SingleString() throws {
-        let original: FilePattern = .single("*.fountain")
+    XCTAssertEqual(pattern.patterns, ["*.fountain"])
+  }
 
-        let data = try JSONEncoder().encode(original)
-        let decoded = try JSONDecoder().decode(FilePattern.self, from: data)
+  func testPatterns_Multiple() {
+    let pattern: FilePattern = .multiple(["file1.fountain", "file2.fountain", "file3.fountain"])
 
-        XCTAssertEqual(original, decoded)
-    }
+    XCTAssertEqual(pattern.patterns, ["file1.fountain", "file2.fountain", "file3.fountain"])
+  }
 
-    func testRoundTrip_Array() throws {
-        let original: FilePattern = .multiple(["*.fountain", "*.fdx", "*.highland"])
+  // MARK: - Edge Cases
 
-        let data = try JSONEncoder().encode(original)
-        let decoded = try JSONDecoder().decode(FilePattern.self, from: data)
+  func testDecode_ArrayWithSingleElement() throws {
+    let json = "[\"*.fountain\"]"
+    let data = json.data(using: .utf8)!
 
-        XCTAssertEqual(original, decoded)
-    }
+    let pattern = try JSONDecoder().decode(FilePattern.self, from: data)
 
-    // MARK: - Equatable Tests
+    // Decoding an array always results in .multiple, even for single element
+    XCTAssertFalse(pattern.isSingle)
+    XCTAssertEqual(pattern.patterns, ["*.fountain"])
+  }
 
-    func testEquatable_SingleEqual() {
-        let pattern1: FilePattern = .single("*.fountain")
-        let pattern2: FilePattern = .single("*.fountain")
+  func testPatternWithSpecialCharacters() {
+    let pattern: FilePattern = "chapter-[0-9]*.fountain"
 
-        XCTAssertEqual(pattern1, pattern2)
-    }
+    XCTAssertEqual(pattern.patterns, ["chapter-[0-9]*.fountain"])
+  }
 
-    func testEquatable_SingleNotEqual() {
-        let pattern1: FilePattern = .single("*.fountain")
-        let pattern2: FilePattern = .single("*.fdx")
+  func testPatternWithPath() {
+    let pattern: FilePattern = "episodes/*.fountain"
 
-        XCTAssertNotEqual(pattern1, pattern2)
-    }
+    XCTAssertEqual(pattern.patterns, ["episodes/*.fountain"])
+  }
 
-    func testEquatable_MultipleEqual() {
-        let pattern1: FilePattern = .multiple(["*.fountain", "*.fdx"])
-        let pattern2: FilePattern = .multiple(["*.fountain", "*.fdx"])
+  func testExplicitFileList() {
+    let pattern: FilePattern = .multiple([
+      "00-prologue.fountain",
+      "01-act-one.fountain",
+      "02-act-two.fountain",
+      "03-epilogue.fountain",
+    ])
 
-        XCTAssertEqual(pattern1, pattern2)
-    }
-
-    func testEquatable_MultipleNotEqual_DifferentOrder() {
-        let pattern1: FilePattern = .multiple(["*.fountain", "*.fdx"])
-        let pattern2: FilePattern = .multiple(["*.fdx", "*.fountain"])
-
-        // Order matters
-        XCTAssertNotEqual(pattern1, pattern2)
-    }
-
-    func testEquatable_SingleVsMultiple() {
-        let pattern1: FilePattern = .single("*.fountain")
-        let pattern2: FilePattern = .multiple(["*.fountain"])
-
-        // Different cases, even if same patterns
-        XCTAssertNotEqual(pattern1, pattern2)
-    }
-
-    // MARK: - CustomStringConvertible Tests
-
-    func testDescription_Single() {
-        let pattern: FilePattern = .single("*.fountain")
-
-        XCTAssertEqual(pattern.description, "*.fountain")
-    }
-
-    func testDescription_Multiple() {
-        let pattern: FilePattern = .multiple(["*.fountain", "*.fdx"])
-
-        XCTAssertEqual(pattern.description, "[*.fountain, *.fdx]")
-    }
-
-    // MARK: - Patterns Property Tests
-
-    func testPatterns_Single() {
-        let pattern: FilePattern = .single("*.fountain")
-
-        XCTAssertEqual(pattern.patterns, ["*.fountain"])
-    }
-
-    func testPatterns_Multiple() {
-        let pattern: FilePattern = .multiple(["file1.fountain", "file2.fountain", "file3.fountain"])
-
-        XCTAssertEqual(pattern.patterns, ["file1.fountain", "file2.fountain", "file3.fountain"])
-    }
-
-    // MARK: - Edge Cases
-
-    func testDecode_ArrayWithSingleElement() throws {
-        let json = "[\"*.fountain\"]"
-        let data = json.data(using: .utf8)!
-
-        let pattern = try JSONDecoder().decode(FilePattern.self, from: data)
-
-        // Decoding an array always results in .multiple, even for single element
-        XCTAssertFalse(pattern.isSingle)
-        XCTAssertEqual(pattern.patterns, ["*.fountain"])
-    }
-
-    func testPatternWithSpecialCharacters() {
-        let pattern: FilePattern = "chapter-[0-9]*.fountain"
-
-        XCTAssertEqual(pattern.patterns, ["chapter-[0-9]*.fountain"])
-    }
-
-    func testPatternWithPath() {
-        let pattern: FilePattern = "episodes/*.fountain"
-
-        XCTAssertEqual(pattern.patterns, ["episodes/*.fountain"])
-    }
-
-    func testExplicitFileList() {
-        let pattern: FilePattern = .multiple([
-            "00-prologue.fountain",
-            "01-act-one.fountain",
-            "02-act-two.fountain",
-            "03-epilogue.fountain"
-        ])
-
-        XCTAssertEqual(pattern.patterns.count, 4)
-        XCTAssertEqual(pattern.patterns[0], "00-prologue.fountain")
-        XCTAssertEqual(pattern.patterns[3], "03-epilogue.fountain")
-    }
+    XCTAssertEqual(pattern.patterns.count, 4)
+    XCTAssertEqual(pattern.patterns[0], "00-prologue.fountain")
+    XCTAssertEqual(pattern.patterns[3], "03-epilogue.fountain")
+  }
 }

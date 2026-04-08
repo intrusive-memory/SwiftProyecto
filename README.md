@@ -133,6 +133,17 @@ SwiftProyecto uses a pluggable FileSource abstraction for discovering files:
 
 ## Features
 
+### ✨ v3.3.0: proyecto validate Command (April 2026)
+
+- **proyecto validate**: New CLI command to validate PROJECT.md files
+  - Validates frontmatter syntax and structure
+  - Supports directory or direct file path arguments
+  - `--verbose` flag to show parsed metadata
+  - Returns exit code 0 for valid files, 1 for errors
+- **9 comprehensive integration tests** for validation command
+- **Synchronized CLI version** with library version (both 3.3.0)
+- **Better error messages** for invalid PROJECT.md files
+
 ### ✨ v3.2.0: Action Line Voice Support (March 2026)
 
 - **TTSConfig.actionLineVoice**: Optional field for separate voice selection for action lines/stage directions

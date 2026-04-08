@@ -53,112 +53,112 @@ import Foundation
 /// ```
 ///
 public enum FilePattern: Codable, Equatable, Sendable {
-    /// A single pattern string (e.g., "*.fountain")
-    case single(String)
+  /// A single pattern string (e.g., "*.fountain")
+  case single(String)
 
-    /// Multiple pattern strings (e.g., ["*.fountain", "*.fdx"])
-    case multiple([String])
+  /// Multiple pattern strings (e.g., ["*.fountain", "*.fdx"])
+  case multiple([String])
 
-    /// Normalize to array for processing.
-    ///
-    /// Returns the pattern(s) as an array, regardless of whether this was
-    /// created from a single string or an array.
-    public var patterns: [String] {
-        switch self {
-        case .single(let pattern):
-            return [pattern]
-        case .multiple(let patterns):
-            return patterns
-        }
+  /// Normalize to array for processing.
+  ///
+  /// Returns the pattern(s) as an array, regardless of whether this was
+  /// created from a single string or an array.
+  public var patterns: [String] {
+    switch self {
+    case .single(let pattern):
+      return [pattern]
+    case .multiple(let patterns):
+      return patterns
     }
+  }
 
-    /// Returns true if this contains only a single pattern.
-    public var isSingle: Bool {
-        if case .single = self {
-            return true
-        }
-        return false
+  /// Returns true if this contains only a single pattern.
+  public var isSingle: Bool {
+    if case .single = self {
+      return true
     }
+    return false
+  }
 
-    // MARK: - Codable
+  // MARK: - Codable
 
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
 
-        // Try decoding as array first (more specific)
-        if let array = try? container.decode([String].self) {
-            self = .multiple(array)
-        } else if let string = try? container.decode(String.self) {
-            self = .single(string)
-        } else {
-            throw DecodingError.typeMismatch(
-                FilePattern.self,
-                DecodingError.Context(
-                    codingPath: decoder.codingPath,
-                    debugDescription: "Expected String or [String] for filePattern"
-                )
-            )
-        }
+    // Try decoding as array first (more specific)
+    if let array = try? container.decode([String].self) {
+      self = .multiple(array)
+    } else if let string = try? container.decode(String.self) {
+      self = .single(string)
+    } else {
+      throw DecodingError.typeMismatch(
+        FilePattern.self,
+        DecodingError.Context(
+          codingPath: decoder.codingPath,
+          debugDescription: "Expected String or [String] for filePattern"
+        )
+      )
     }
+  }
 
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch self {
-        case .single(let pattern):
-            try container.encode(pattern)
-        case .multiple(let patterns):
-            try container.encode(patterns)
-        }
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    switch self {
+    case .single(let pattern):
+      try container.encode(pattern)
+    case .multiple(let patterns):
+      try container.encode(patterns)
     }
+  }
 }
 
 // MARK: - Convenience Initializers
 
-public extension FilePattern {
-    /// Create a FilePattern from a single string.
-    init(_ pattern: String) {
-        self = .single(pattern)
-    }
+extension FilePattern {
+  /// Create a FilePattern from a single string.
+  public init(_ pattern: String) {
+    self = .single(pattern)
+  }
 
-    /// Create a FilePattern from an array of strings.
-    init(_ patterns: [String]) {
-        if patterns.count == 1 {
-            self = .single(patterns[0])
-        } else {
-            self = .multiple(patterns)
-        }
+  /// Create a FilePattern from an array of strings.
+  public init(_ patterns: [String]) {
+    if patterns.count == 1 {
+      self = .single(patterns[0])
+    } else {
+      self = .multiple(patterns)
     }
+  }
 }
 
 // MARK: - ExpressibleByStringLiteral
 
 extension FilePattern: ExpressibleByStringLiteral {
-    public init(stringLiteral value: String) {
-        self = .single(value)
-    }
+  public init(stringLiteral value: String) {
+    self = .single(value)
+  }
 }
 
 // MARK: - ExpressibleByArrayLiteral
 
 extension FilePattern: ExpressibleByArrayLiteral {
-    public init(arrayLiteral elements: String...) {
-        if elements.count == 1 {
-            self = .single(elements[0])
-        } else {
-            self = .multiple(elements)
-        }
+  public init(arrayLiteral elements: String...) {
+    if elements.count == 1 {
+      self = .single(elements[0])
+    } else {
+      self = .multiple(elements)
     }
+  }
 }
 
 // MARK: - CustomStringConvertible
 
 extension FilePattern: CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case .single(let pattern):
-            return pattern
-        case .multiple(let patterns):
-            return "[\(patterns.joined(separator: ", "))]"
-        }
+  public var description: String {
+    switch self {
+    case .single(let pattern):
+      return pattern
+    case .multiple(let patterns):
+      return "[\(patterns.joined(separator: ", "))]"
     }
+  }
 }
