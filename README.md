@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-3.3.0-blue.svg" />
+    <img src="https://img.shields.io/badge/Version-3.4.0-blue.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -132,6 +132,13 @@ SwiftProyecto uses a pluggable FileSource abstraction for discovering files:
 - ~100 lines of code deduplication
 
 ## Features
+
+### ✨ v3.4.0: Dependency Updates (April 2026)
+
+- **SwiftBruja 1.4.0**: Improved LLM inference performance and stability
+- **Default Model**: Updated to Llama-3.2-1B-Instruct-4bit (faster, more efficient)
+- **SwiftAcervo 0.6.0**: Latest audio processing features
+- **Synchronized dependencies**: All dependencies updated to latest resolved versions
 
 ### ✨ v3.3.0: proyecto validate Command (April 2026)
 
