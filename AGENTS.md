@@ -2,9 +2,15 @@
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 3.3.0 (April 2026)
+**Current Version**: 3.4.0 (April 2026)
 
-**Latest Changes (v3.3.0)**:
+**Latest Changes (v3.4.0)**:
+- Updated SwiftBruja to 1.4.0 (improved LLM inference performance)
+- Updated default model to Llama-3.2-1B-Instruct-4bit (faster, more efficient)
+- Updated SwiftAcervo to 0.6.0 (latest audio processing features)
+- Synchronized all dependencies to latest resolved versions
+
+**Previous Changes (v3.3.0)**:
 - Add `proyecto validate` command to validate PROJECT.md files
 - Support directory or direct file path arguments for validation
 - Add --verbose flag to show parsed metadata
