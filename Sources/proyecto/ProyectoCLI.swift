@@ -51,7 +51,7 @@ struct DownloadCommand: AsyncParsableCommand {
       Models are stored in ~/Library/SharedModels/
 
       The default model is optimized for PROJECT.md generation:
-        mlx-community/Phi-3-mini-4k-instruct-4bit (~2.15 GB)
+        mlx-community/Llama-3.2-1B-Instruct-4bit (~679 MB)
 
       Examples:
         proyecto download                                    # Download default model
