@@ -2,6 +2,7 @@
 // Copyright (c) 2025 Intrusive Memory
 
 import Foundation
+import SwiftAcervo
 
 /// SwiftProyecto provides data models and services for managing screenplay projects.
 ///

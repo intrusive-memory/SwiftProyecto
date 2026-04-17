@@ -28,7 +28,8 @@ let package = Package(
     .target(
       name: "SwiftProyecto",
       dependencies: [
-        .product(name: "Universal", package: "universal")
+        .product(name: "Universal", package: "universal"),
+        .product(name: "SwiftAcervo", package: "SwiftAcervo")
       ],
       swiftSettings: [
         .enableUpcomingFeature("StrictConcurrency")
