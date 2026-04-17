@@ -57,46 +57,51 @@ jobs:
         run: |
           cd model-upload/${{ env.MODEL_SLUG }}
 
-          # Start manifest JSON
-          cat > manifest.json <<EOF
-          {
-            "manifestVersion": 1,
-            "modelId": "${{ env.MODEL_REPO }}",
-            "slug": "${{ env.MODEL_SLUG }}",
-            "updatedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-            "files": [
-          EOF
+          # Define required files explicitly (do not include manifest.json)
+          FILES=(
+            "config.json"
+            "tokenizer.json"
+            "tokenizer_config.json"
+            "model.safetensors"
+          )
 
-          # Generate file entries with SHA-256 checksums
-          FIRST=true
-          for FILE in *.json *.safetensors; do
-            [ -f "$FILE" ] || continue
+          # Build files array with checksums
+          FILES_ARRAY="[]"
+          for FILE in "${FILES[@]}"; do
+            if [ ! -f "$FILE" ]; then
+              echo "Error: Required file $FILE not found"
+              exit 1
+            fi
+
             SIZE=$(stat -f%z "$FILE")
             SHA256=$(shasum -a 256 "$FILE" | awk '{print $1}')
 
-            if [ "$FIRST" = true ]; then
-              FIRST=false
-            else
-              echo "," >> manifest.json
-            fi
-
-            jq -n \
+            FILES_ARRAY=$(echo "$FILES_ARRAY" | jq \
               --arg path "$FILE" \
               --arg sha256 "$SHA256" \
               --argjson size "$SIZE" \
-              '{path: $path, sha256: $sha256, sizeBytes: $size}' >> manifest.json
+              '. += [{path: $path, sha256: $sha256, sizeBytes: $size}]')
           done
 
-          # Close files array
-          echo "]," >> manifest.json
-
-          # Compute manifest checksum (SHA-256 of sorted file checksums)
-          SORTED_CHECKSUMS=$(jq -r '.files[].sha256' manifest.json | sort | tr -d '\n')
+          # Compute manifest checksum (SHA-256 of sorted file checksums concatenated)
+          SORTED_CHECKSUMS=$(echo "$FILES_ARRAY" | jq -r '.[].sha256' | sort | awk '{printf "%s", $0}')
           MANIFEST_CHECKSUM=$(echo -n "$SORTED_CHECKSUMS" | shasum -a 256 | awk '{print $1}')
 
-          # Add manifest checksum and close JSON
-          echo "\"manifestChecksum\": \"$MANIFEST_CHECKSUM\"" >> manifest.json
-          echo "}" >> manifest.json
+          # Build complete manifest JSON
+          jq -n \
+            --arg modelId "${{ env.MODEL_REPO }}" \
+            --arg slug "${{ env.MODEL_SLUG }}" \
+            --arg updatedAt "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            --argjson files "$FILES_ARRAY" \
+            --arg manifestChecksum "$MANIFEST_CHECKSUM" \
+            '{
+              manifestVersion: 1,
+              modelId: $modelId,
+              slug: $slug,
+              updatedAt: $updatedAt,
+              files: $files,
+              manifestChecksum: $manifestChecksum
+            }' > manifest.json
 
           # Pretty-print for verification
           echo "Generated manifest:"
@@ -104,17 +109,22 @@ jobs:
 
       - name: Upload LLM to R2
         if: steps.check-llm.outputs.status != '200'
-        uses: jakejarvis/s3-sync-action@v0.5.1
-        with:
-          args: --acl public-read --follow-symlinks
         env:
-          AWS_S3_BUCKET: ${{ env.R2_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          AWS_S3_ENDPOINT: ${{ env.R2_ENDPOINT }}
           AWS_REGION: auto
-          SOURCE_DIR: model-upload/${{ env.MODEL_SLUG }}
-          DEST_DIR: models/${{ env.MODEL_SLUG }}
+        run: |
+          # Upload all files in the model directory to R2
+          SOURCE_DIR="model-upload/${{ env.MODEL_SLUG }}"
+          DEST_DIR="models/${{ env.MODEL_SLUG }}"
+
+          for FILE in "$SOURCE_DIR"/*; do
+            FILENAME=$(basename "$FILE")
+            aws s3 cp "$FILE" "s3://${{ env.R2_BUCKET }}/$DEST_DIR/$FILENAME" \
+              --endpoint-url "${{ env.R2_ENDPOINT }}" \
+              --region "${{ env.AWS_REGION }}"
+            echo "✅ Uploaded $FILENAME to ${{ env.R2_BUCKET }}/$DEST_DIR/"
+          done
 
   verify:
     name: Verify CDN availability
@@ -146,7 +156,7 @@ jobs:
             jq -r '.files[] | "    - \(.path) (\(.sizeBytes) bytes, SHA-256: \(.sha256[:16])...)"' /tmp/manifest.json >> $GITHUB_STEP_SUMMARY
 
             # Verify manifest checksum
-            SORTED_CHECKSUMS=$(jq -r '.files[].sha256' /tmp/manifest.json | sort | tr -d '\n')
+            SORTED_CHECKSUMS=$(jq -r '.files[].sha256' /tmp/manifest.json | sort | awk '{printf "%s", $0}')
             COMPUTED_CHECKSUM=$(echo -n "$SORTED_CHECKSUMS" | shasum -a 256 | awk '{print $1}')
 
             if [ "$MANIFEST_CHECKSUM" = "$COMPUTED_CHECKSUM" ]; then
