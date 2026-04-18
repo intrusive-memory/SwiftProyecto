@@ -7,6 +7,7 @@
 
 import ArgumentParser
 import Foundation
+import SwiftAcervo
 import SwiftBruja
 import SwiftProyecto
 
@@ -47,21 +48,17 @@ struct DownloadCommand: AsyncParsableCommand {
     commandName: "download",
     abstract: "Download an LLM model for use with proyecto",
     discussion: """
-      Downloads a model from HuggingFace for local LLM inference.
+      Downloads a model from Cloudflare R2 CDN for local LLM inference.
       Models are stored in ~/Library/SharedModels/
 
       The default model is optimized for PROJECT.md generation:
-        mlx-community/Llama-3.2-1B-Instruct-4bit (~679 MB)
+        phi3-mini-4k-4bit (Phi-3 Mini 4K Instruct, 4-bit quantized, ~2.3 GB)
 
       Examples:
-        proyecto download                                    # Download default model
-        proyecto download --model "mlx-community/Llama-3-8B" # Download specific model
-        proyecto download --force                            # Re-download even if exists
+        proyecto download                   # Download default model (phi3-mini-4k-4bit)
+        proyecto download --force           # Re-download even if exists
       """
   )
-
-  @Option(name: .long, help: "HuggingFace model ID to download (default: \(Bruja.defaultModel))")
-  var model: String = Bruja.defaultModel
 
   @Flag(name: .long, help: "Force re-download even if model already exists locally")
   var force: Bool = false
@@ -72,21 +69,40 @@ struct DownloadCommand: AsyncParsableCommand {
   mutating func run() async throws {
     let showProgress = !quiet
 
+    // Initialize ModelManager to register components with Acervo
+    _ = ModelManager()
+
+    let componentId = Phi3ModelRepo.mini4bit.componentId
+
     if showProgress {
-      print("Downloading model: \(model)")
-      print("Destination: \(Bruja.defaultModelsDirectory.path)")
+      print("Downloading model: Phi-3 Mini 4K Instruct (4-bit)")
+      print("Component ID: \(componentId)")
+      print("Destination: \(Acervo.sharedModelsDirectory.path)")
     }
 
-    try await Bruja.download(model: model, force: force) { progress in
-      if showProgress {
-        let percent = Int(progress * 100)
-        print("\rProgress: \(percent)%", terminator: "")
-        fflush(stdout)
+    do {
+      try await Acervo.ensureComponentReady(componentId) { progress in
+        if showProgress {
+          let percent = progress.overallProgress
+          let percentInt = Int(percent * 100)
+          print(
+            "\rDownloading \(progress.fileName): \(percentInt)% (\(progress.fileIndex + 1)/\(progress.totalFiles) files)",
+            terminator: ""
+          )
+          fflush(stdout)
+        }
       }
-    }
 
-    if showProgress {
-      print("\nDownload complete!")
+      if showProgress {
+        print("\n✅ Download complete!")
+        print("Model available at: \(Acervo.sharedModelsDirectory.appendingPathComponent(Acervo.slugify(componentId)).path)")
+      }
+    } catch let error as AcervoError {
+      print("\n❌ Download failed: \(error.localizedDescription)")
+      throw ExitCode.failure
+    } catch {
+      print("\n❌ Download failed: \(error.localizedDescription)")
+      throw ExitCode.failure
     }
   }
 }

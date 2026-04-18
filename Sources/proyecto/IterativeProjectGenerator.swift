@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftAcervo
 import SwiftBruja
 import SwiftProyecto
 
@@ -13,16 +14,46 @@ import SwiftProyecto
 /// Each section is queried independently for better accuracy and reliability.
 class IterativeProjectGenerator {
   private let directoryAnalyzer: DirectoryAnalyzer
-  private let model: String
+  private let modelPath: String
   private let authorOverride: String?
 
   // Accumulated results from each section
   private var results: [ProjectSection: Any] = [:]
 
+  /// Initialize the generator with a model identifier or path.
+  /// - Parameters:
+  ///   - model: HuggingFace model ID or local filesystem path
+  ///   - authorOverride: Optional author override to skip LLM detection
   init(model: String, authorOverride: String? = nil) {
     self.directoryAnalyzer = DirectoryAnalyzer()
-    self.model = model
+    // Resolve model path using Acervo's shared models directory
+    self.modelPath = Self.resolveModelPath(model)
     self.authorOverride = authorOverride
+  }
+
+  /// Resolve a model identifier to a local filesystem path.
+  /// If the model is a HuggingFace ID, resolves to ~/Library/SharedModels/{org}_{repo}/
+  /// If the model is already a local path, returns it as-is.
+  private static func resolveModelPath(_ model: String) -> String {
+    // Check if it's a local filesystem path
+    if FileManager.default.fileExists(atPath: model) {
+      return model
+    }
+
+    // Check if it starts with ~ (user home)
+    if model.hasPrefix("~") {
+      let expanded = NSString(string: model).expandingTildeInPath
+      if FileManager.default.fileExists(atPath: expanded) {
+        return expanded
+      }
+    }
+
+    // Otherwise, resolve via Acervo's shared models directory
+    // Convert model ID (e.g., "mlx-community/Phi-3-mini-4k-instruct-4bit")
+    // to directory name (e.g., "mlx-community_Phi-3-mini-4k-instruct-4bit")
+    let modelDirName = model.replacingOccurrences(of: "/", with: "_")
+    let modelURL = Acervo.sharedModelsDirectory.appendingPathComponent(modelDirName)
+    return modelURL.path
   }
 
   /// Generate PROJECT.md frontmatter using iterative LLM queries.
@@ -84,7 +115,7 @@ class IterativeProjectGenerator {
     if section == .config {
       let response = try await Bruja.query(
         userPrompt,
-        model: model,
+        model: modelPath,
         temperature: 0.3,
         maxTokens: 512,
         system: systemPrompt
@@ -103,7 +134,7 @@ class IterativeProjectGenerator {
     // For other sections, expect plain text
     let response = try await Bruja.query(
       userPrompt,
-      model: model,
+      model: modelPath,
       temperature: 0.3,
       maxTokens: 512,
       system: systemPrompt

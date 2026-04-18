@@ -1,0 +1,26 @@
+Title: Test Screenplay
+Author: Integration Test
+Date: 2026-04-18
+
+INT. COFFEE SHOP - MORNING
+
+ALICE, a curious researcher in her 30s, sits at a small table with a laptop.
+
+ALICE
+I need to test PROJECT.md generation.
+
+BOB, a supportive colleague, approaches the table.
+
+BOB
+How can I help you with that?
+
+ALICE
+I need a minimal screenplay to run through the generator.
+
+BOB
+That sounds like a good plan.
+
+ALICE
+Thanks for your support, Bob.
+
+END OF SCENE
