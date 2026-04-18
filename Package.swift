@@ -28,10 +28,12 @@ let package = Package(
     .target(
       name: "SwiftProyecto",
       dependencies: [
-        .product(name: "Universal", package: "universal")
+        .product(name: "Universal", package: "universal"),
+        .product(name: "SwiftAcervo", package: "SwiftAcervo")
       ],
       swiftSettings: [
-        .enableUpcomingFeature("StrictConcurrency")
+        .enableUpcomingFeature("StrictConcurrency"),
+        .enableExperimentalFeature("Lifetimes")
       ]
     ),
     .executableTarget(
@@ -42,14 +44,20 @@ let package = Package(
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       swiftSettings: [
-        .enableUpcomingFeature("StrictConcurrency")
+        .enableUpcomingFeature("StrictConcurrency"),
+        .enableExperimentalFeature("Lifetimes")
       ]
     ),
     .testTarget(
       name: "SwiftProyectoTests",
-      dependencies: ["SwiftProyecto"],
+      dependencies: [
+        "SwiftProyecto",
+        .product(name: "SwiftBruja", package: "SwiftBruja"),
+        .product(name: "SwiftAcervo", package: "SwiftAcervo")
+      ],
       swiftSettings: [
-        .enableUpcomingFeature("StrictConcurrency")
+        .enableUpcomingFeature("StrictConcurrency"),
+        .enableExperimentalFeature("Lifetimes")
       ]
     ),
   ],
