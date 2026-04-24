@@ -383,7 +383,8 @@ struct InitCommand: AsyncParsableCommand {
     }
 
     let parser = ProjectMarkdownParser()
-    let content = parser.generate(frontMatter: frontMatter, body: existingBody)
+    let normalizedFrontMatter = frontMatter.normalizingPaths(relativeTo: directoryURL)
+    let content = parser.generate(frontMatter: normalizedFrontMatter, body: existingBody)
 
     // Write the file
     try content.write(to: projectMdURL, atomically: true, encoding: .utf8)

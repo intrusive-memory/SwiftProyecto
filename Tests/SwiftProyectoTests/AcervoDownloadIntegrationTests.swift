@@ -126,15 +126,29 @@ final class AcervoDownloadIntegrationTests: XCTestCase {
     let isAvailableAfter = await modelManager.isModelAvailable(.mini4bit)
     XCTAssertTrue(isAvailableAfter, "Model should be available after download")
 
-    // Get model directory
-    let modelDir: URL
+    // Get model files via secure ComponentHandle
+    let modelFiles: [String: URL]
     do {
-      modelDir = try await modelManager.modelDirectory(for: .mini4bit)
+      modelFiles = try await modelManager.withModelAccess(.mini4bit) { handle in
+        var files: [String: URL] = [:]
+
+        // Access config.json to verify the handle works
+        let configURL = try handle.url(for: "config.json")
+        files["config.json"] = configURL
+
+        return files
+      }
     } catch {
-      XCTFail("Failed to get model directory: \(error)")
+      XCTFail("Failed to get model files: \(error)")
       return
     }
 
+    guard let configURL = modelFiles["config.json"] else {
+      XCTFail("Failed to resolve config.json from handle")
+      return
+    }
+
+    let modelDir = configURL.deletingLastPathComponent()
     print("Model directory: \(modelDir.path)")
 
     // Verify the directory exists
@@ -196,7 +210,7 @@ final class AcervoDownloadIntegrationTests: XCTestCase {
 
   // MARK: - Test: Model Directory Resolution
 
-  /// Test that ModelManager can resolve the correct model directory after download.
+  /// Test that ModelManager can access model files via secure ComponentHandle.
   func testModelDirectoryResolution() async throws {
     let modelManager = ModelManager()
 
@@ -208,8 +222,11 @@ final class AcervoDownloadIntegrationTests: XCTestCase {
       return
     }
 
-    // Get the directory
-    let modelDir = try await modelManager.modelDirectory(for: .mini4bit)
+    // Get the directory via ComponentHandle (secure access with checksum validation)
+    let modelDir = try await modelManager.withModelAccess(.mini4bit) { handle in
+      let configURL = try handle.url(for: "config.json")
+      return configURL.deletingLastPathComponent()
+    }
 
     // Verify path structure
     // Should be ~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/

@@ -144,14 +144,51 @@ public actor ModelManager {
     Acervo.isModelAvailable(model.componentId)
   }
 
-  /// Gets the local filesystem directory for a model variant.
+  /// Provides scoped, exclusive access to a model's files via ComponentHandle.
   ///
-  /// This directory is only guaranteed to be valid after calling `ensureModelReady()`.
+  /// This is the recommended way to access model files. The handle provides
+  /// path-agnostic access methods and automatically validates SHA-256 checksums
+  /// for all declared files.
   ///
-  /// - Parameter model: The model variant to get the directory for.
-  /// - Returns: The absolute path to the model in the shared cache.
-  /// - Throws: AcervoError if the model directory cannot be resolved.
-  public func modelDirectory(for model: Phi3ModelRepo) throws -> URL {
-    try Acervo.modelDirectory(for: model.componentId)
+  /// - Parameter model: The model variant to access.
+  /// - Parameter perform: A closure that receives a ComponentHandle and returns a value.
+  /// - Returns: The value returned by the closure.
+  /// - Throws: AcervoError if the component is not registered, not downloaded, or integrity checks fail.
+  public func withModelAccess<T: Sendable>(
+    _ model: Phi3ModelRepo,
+    perform: @Sendable (ComponentHandle) throws -> T
+  ) async throws -> T {
+    let manager = AcervoManager.shared
+    return try await manager.withComponentAccess(model.componentId, perform: perform)
+  }
+
+  /// Internal method to load a model as a dictionary of file paths.
+  ///
+  /// This method uses `withComponentAccess()` to securely access the model's files.
+  /// Checksums are validated automatically by SwiftAcervo.
+  ///
+  /// - Parameter model: The model variant to load.
+  /// - Returns: A dictionary mapping relative file paths to their absolute URLs.
+  /// - Throws: AcervoError if access fails or integrity checks fail.
+  internal func _loadModel(
+    _ model: Phi3ModelRepo
+  ) async throws -> [String: URL] {
+    let manager = AcervoManager.shared
+    return try await manager.withComponentAccess(model.componentId) { handle in
+      var filePaths: [String: URL] = [:]
+
+      // Get all required files from the component descriptor
+      guard let descriptor = Acervo.component(model.componentId) else {
+        throw AcervoError.componentNotRegistered(model.componentId)
+      }
+
+      for file in descriptor.files {
+        // The handle provides access to each file with automatic checksum validation
+        let url = try handle.url(for: file.relativePath)
+        filePaths[file.relativePath] = url
+      }
+
+      return filePaths
+    }
   }
 }

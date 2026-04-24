@@ -34,6 +34,9 @@ class IterativeProjectGenerator {
   /// Resolve a model identifier to a local filesystem path.
   /// If the model is a HuggingFace ID, resolves to ~/Library/SharedModels/{org}_{repo}/
   /// If the model is already a local path, returns it as-is.
+  ///
+  /// NOTE: This method is for legacy compatibility with callers that need a path string.
+  /// New code should use SwiftBruja directly with a component ID or a local path.
   private static func resolveModelPath(_ model: String) -> String {
     // Check if it's a local filesystem path
     if FileManager.default.fileExists(atPath: model) {

@@ -20,8 +20,8 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/marcprux/universal.git", from: "5.3.0"),
-    .package(url: "https://github.com/intrusive-memory/SwiftBruja.git", from: "1.4.0"),
-    .package(url: "https://github.com/intrusive-memory/SwiftAcervo.git", from: "0.6.0"),  // Override SwiftBruja's 0.5.x constraint
+    .package(url: "https://github.com/intrusive-memory/SwiftBruja.git", from: "1.5.1"),
+    .package(url: "https://github.com/intrusive-memory/SwiftAcervo.git", from: "0.7.1"),  // Requires v2 access patterns (withComponentAccess)
     .package(url: "https://github.com/apple/swift-argument-parser", from: "1.7.0"),
   ],
   targets: [
