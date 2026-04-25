@@ -5,7 +5,7 @@ This file provides comprehensive documentation for AI agents working with the Sw
 **Current Version**: 3.5.0 (April 2026)
 
 **Latest Changes (v3.5.0)**:
-- **SwiftAcervo 0.8.0 Migration**: Adopted manifest-first contract with bare-descriptor pattern
+- **SwiftAcervo 0.8.2 Migration**: Adopted manifest-first contract with bare-descriptor pattern
 - **Model Change**: Migrated from Phi-3-mini-4k-instruct-4bit to Llama-3.2-1B-Instruct-4bit
 - **Path Elimination**: Removed all direct filesystem path manipulation from consumer code
 - **CDN Integration**: All model access now goes through SwiftAcervo CDN with manifest verification

@@ -21,7 +21,7 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/marcprux/universal.git", from: "5.3.0"),
     .package(url: "https://github.com/intrusive-memory/SwiftBruja.git", from: "1.5.1"),
-    .package(url: "https://github.com/intrusive-memory/SwiftAcervo.git", from: "0.8.1"),
+    .package(url: "https://github.com/intrusive-memory/SwiftAcervo.git", from: "0.8.2"),
     .package(url: "https://github.com/apple/swift-argument-parser", from: "1.7.0"),
   ],
   targets: [
