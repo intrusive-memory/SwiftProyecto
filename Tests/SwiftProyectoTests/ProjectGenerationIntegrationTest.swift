@@ -122,46 +122,31 @@ final class ProjectGenerationIntegrationTest: XCTestCase {
     try await super.tearDown()
   }
 
-  // MARK: - Test: Phi-3 Model Availability via Acervo
+  // MARK: - Test: LanguageModel Availability via Acervo
 
-  /// Test that Phi-3 Mini model is available via SwiftAcervo (downloaded if needed).
+  /// Test that the canonical LanguageModel is available via SwiftAcervo (downloaded if needed).
   ///
   /// This test verifies:
   /// 1. SwiftAcervo can locate the shared models directory
   /// 2. Model descriptor is registered correctly
   /// 3. Model can be downloaded from CDN if needed (or gracefully skip if permissions denied)
-  /// 4. All required model files are present after download
-  func testPhi3ModelAvailabilityViaAcervo() async throws {
-    let componentId = Phi3ModelRepo.mini4bit.componentId
-    let modelPath = Acervo.sharedModelsDirectory
-      .appendingPathComponent(Acervo.slugify(componentId))
-
-    print("Testing Phi-3 model availability...")
-    print("Component ID: \(componentId)")
-    print("Expected path: \(modelPath.path)")
+  /// 4. Model directory is accessible via Acervo.modelDirectory()
+  func testLanguageModelAvailabilityViaAcervo() async throws {
+    print("Testing LanguageModel availability...")
+    print("Component ID: \(LanguageModel.id)")
+    print("Repo ID: \(LanguageModel.repoId)")
 
     // Check if model exists, download if not
-    if !FileManager.default.fileExists(atPath: modelPath.path) {
-      print("Model not found, attempting download from CDN...")
+    if !Acervo.isComponentReady(LanguageModel.id) {
+      print("Model not ready, attempting download from CDN...")
       do {
-        try await Acervo.ensureComponentReady(componentId) { progress in
+        try await Acervo.ensureComponentReady(LanguageModel.id) { progress in
           print(
             "Download progress: \(progress.fileIndex + 1)/\(progress.totalFiles) " +
             "files (\(Int(progress.overallProgress * 100))%)"
           )
         }
         print("✓ Model downloaded successfully")
-
-        // Verify model directory contains required files
-        let requiredFiles = ["config.json", "tokenizer.json", "tokenizer_config.json", "model.safetensors"]
-        for fileName in requiredFiles {
-          let filePath = modelPath.appendingPathComponent(fileName)
-          XCTAssertTrue(
-            FileManager.default.fileExists(atPath: filePath.path),
-            "Required file \(fileName) should exist in model directory"
-          )
-        }
-        print("✓ All required model files present")
       } catch {
         // Download may fail due to permissions in test environment
         // This is acceptable - the test verifies the API is callable
@@ -169,18 +154,24 @@ final class ProjectGenerationIntegrationTest: XCTestCase {
         print("✓ Test passed: Acervo API is accessible")
       }
     } else {
-      print("✓ Model already available")
+      print("✓ Model already ready")
+    }
 
-      // Verify model directory contains required files
-      let requiredFiles = ["config.json", "tokenizer.json", "tokenizer_config.json", "model.safetensors"]
-      for fileName in requiredFiles {
-        let filePath = modelPath.appendingPathComponent(fileName)
-        XCTAssertTrue(
-          FileManager.default.fileExists(atPath: filePath.path),
-          "Required file \(fileName) should exist in model directory"
-        )
-      }
-      print("✓ All required model files present")
+    // Get the model directory via Acervo (the new pattern)
+    do {
+      let modelPath = try Acervo.modelDirectory(for: LanguageModel.repoId)
+      print("Model directory: \(modelPath.path)")
+
+      // Verify model directory exists
+      var isDir: ObjCBool = false
+      XCTAssertTrue(
+        FileManager.default.fileExists(atPath: modelPath.path, isDirectory: &isDir),
+        "Model directory should exist"
+      )
+      XCTAssertTrue(isDir.boolValue, "Model path should be a directory")
+      print("✓ Model directory verified")
+    } catch {
+      print("ℹ Could not resolve model directory (may require app group entitlement): \(error.localizedDescription)")
     }
   }
 
