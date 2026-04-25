@@ -2,9 +2,17 @@
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 3.4.0 (April 2026)
+**Current Version**: 3.5.0 (April 2026)
 
-**Latest Changes (v3.4.0)**:
+**Latest Changes (v3.5.0)**:
+- **SwiftAcervo 0.8.0 Migration**: Adopted manifest-first contract with bare-descriptor pattern
+- **Model Change**: Migrated from Phi-3-mini-4k-instruct-4bit to Llama-3.2-1B-Instruct-4bit
+- **Path Elimination**: Removed all direct filesystem path manipulation from consumer code
+- **CDN Integration**: All model access now goes through SwiftAcervo CDN with manifest verification
+- **Test Isolation**: Integration tests now run in sandboxed temp directories
+- **App Group Requirement**: Documented entitlement requirement for app consumers (group.intrusive-memory.models)
+
+**Previous Changes (v3.4.0)**:
 - Updated SwiftBruja to 1.4.0 (improved LLM inference performance)
 - Updated default model to Llama-3.2-1B-Instruct-4bit (faster, more efficient)
 - Updated SwiftAcervo to 0.6.0 (latest audio processing features)
@@ -92,105 +100,64 @@ SwiftProyecto is a Swift package providing **extensible, agentic discovery of co
 
 ### ComponentDescriptor Registration
 
-The Phi-3 model is registered with SwiftAcervo via `ComponentDescriptor` in `ModelManager.swift`:
+The canonical language model is registered with SwiftAcervo via a `ComponentDescriptor` constant in `ModelManager.swift`:
 
 ```swift
 // Sources/SwiftProyecto/Infrastructure/ModelManager.swift
 import Foundation
 import SwiftAcervo
 
-// Define model variants
-public enum Phi3ModelRepo: String, CaseIterable, Sendable {
-  case mini4bit = "mlx-community/Phi-3-mini-4k-instruct-4bit"
-  
-  public var componentId: String {
-    switch self {
-    case .mini4bit: return "phi3-mini-4k-4bit"
-    }
-  }
-}
-
-// Required files with SHA-256 checksums
-private let phi3RequiredFiles: [ComponentFile] = [
-  ComponentFile(
-    relativePath: "config.json",
-    expectedSizeBytes: 1_030,
-    sha256: "0e2e43bc4358b4cabbcc33c496f34e170fdfe04612a47428f1691d1e9ec5a568"
-  ),
-  ComponentFile(
-    relativePath: "tokenizer.json",
-    expectedSizeBytes: 1_844_436,
-    sha256: "d0f067e1e15cd0a36ebef3668024882cb67a80b86fb4b7b4b128481f0d474db7"
-  ),
-  ComponentFile(
-    relativePath: "tokenizer_config.json",
-    expectedSizeBytes: 3_333,
-    sha256: "d6e13c85fbde9cf71f663da027cf558ab2bb9df80bd60c718be10dbba8d2a2be"
-  ),
-  ComponentFile(
-    relativePath: "model.safetensors",
-    expectedSizeBytes: 2_149_696_167,
-    sha256: "8d75680621a09474f6601e9176f2f61f92a5e4c079d68d583901f51699fda50a"
-  ),
-]
-
-// Register descriptor at module initialization
-private let phi3ComponentDescriptors: [ComponentDescriptor] = [
-  ComponentDescriptor(
-    id: Phi3ModelRepo.mini4bit.componentId,
+/// The canonical model for PROJECT.md generation across SwiftProyecto.
+///
+/// This constant provides a single source of truth for the model used by:
+/// - `proyecto download` command
+/// - `proyecto init` command
+/// - All ModelManager operations
+/// - Integration tests
+///
+/// To change the model used by SwiftProyecto, update this constant.
+public let LanguageModel = ComponentDescriptor(
+    id: "llama-3.2-1b-instruct-4bit",
     type: .languageModel,
-    displayName: "Phi-3 Mini 4K Instruct (4-bit)",
-    repoId: Phi3ModelRepo.mini4bit.rawValue,
-    files: phi3RequiredFiles,
-    estimatedSizeBytes: 2_151_544_966,
-    minimumMemoryBytes: 8_000_000_000,
+    displayName: "Llama 3.2 1B Instruct (4-bit)",
+    repoId: "mlx-community/Llama-3.2-1B-Instruct-4bit",
+    minimumMemoryBytes: 1_500_000_000,
     metadata: [
-      "quantization": "4-bit",
-      "context_length": "4096",
-      "architecture": "Phi",
-      "version": "1.0.0",
-      "cdn_url": "https://pub-8e049ed02be340cbb18f921765fd24f3.r2.dev/models/mlx-community_Phi-3-mini-4k-instruct-4bit/",
-      "manifest_checksum": "ba56c560d8862d4c39bd095b32b776625e2e7ea9acc63f5af6da3eaaa917fdea"
+        "quantization": "4-bit",
+        "context_length": "8192",
+        "architecture": "Llama",
+        "version": "3.2",
     ]
-  ),
-]
+)
 
-private let _registerPhi3Components: Void = {
-  Acervo.register(phi3ComponentDescriptors)
+private let _registerLanguageModel: Void = {
+    Acervo.register([LanguageModel])
 }()
 ```
 
 **Key Points:**
-- **ComponentDescriptor fields**:
-  - `id`: Globally unique component identifier (e.g., `phi3-mini-4k-4bit`)
-  - `type`: Component type enum (`.languageModel` for LLM models)
-  - `displayName`: Human-readable name for UI display
-  - `repoId`: Source repository identifier (HuggingFace model ID)
-  - `files`: Array of `ComponentFile` entries with SHA-256 checksums
-  - `estimatedSizeBytes`: Total download size for progress reporting
-  - `minimumMemoryBytes`: Memory requirement validation
-  - `metadata`: Dictionary with quantization, architecture, CDN URL, manifest checksum
-- **Lazy Registration**: `_registerPhi3Components` is evaluated once on first access, registering all components
-- **File Integrity**: Each file includes `relativePath`, `expectedSizeBytes`, and SHA-256 hash
-- **Shared Storage**: Model stored in `~/Library/SharedModels/` (accessible to all intrusive-memory tools)
+- **Single source of truth**: `LanguageModel` constant provides one canonical model for all SwiftProyecto operations.
+- **Bare descriptor**: `ComponentDescriptor` is registered without a file list. SwiftAcervo hydrates `files` and `estimatedSizeBytes` from the CDN manifest on first call to `ensureComponentReady`.
+- **Model choice**: Llama-3.2-1B-Instruct-4bit chosen for smaller download footprint (~1 GB vs. ~2.3 GB) and sufficient capability for PROJECT.md metadata generation.
 
 ### Download Workflow
 
 When `proyecto download` or `proyecto init` runs, the workflow is:
 
 ```
-1. Initialize ModelManager (triggers lazy registration of Phi-3)
-   └─ Acervo.register(phi3ComponentDescriptors)
+1. Initialize ModelManager (registers `LanguageModel` constant with bare descriptor)
+   └─ Acervo.register([LanguageModel])
 
-2. Call Acervo.ensureComponentReady(componentId)
-   ├─ Check if model already cached in ~/Library/SharedModels/
-   ├─ Fetch CDN manifest (HTTPS, idempotent)
+2. Call Acervo.ensureComponentReady(LanguageModel.id)
+   ├─ Check if model already cached
+   ├─ On first call: SwiftAcervo fetches CDN manifest and hydrates the descriptor
    ├─ Download all required files in parallel
    ├─ Verify SHA-256 checksum for each file
    └─ Return success or AcervoError
 
-3. Get model path via Acervo.modelDirectory(componentId)
-   └─ Returns: ~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/
+3. Get model path via Acervo.modelDirectory(for: LanguageModel.repoId)
+   └─ Returns: <group.intrusive-memory.models container>/SharedModels/mlx-community_Llama-3.2-1B-Instruct-4bit/
+   └─ Fallback (unsigned CLI/unentitled apps): ~/Library/Application Support/SwiftAcervo/SharedModels/...
 
 4. Pass path to SwiftBruja for LLM inference
    └─ Bruja.query(userPrompt, model: modelPath, ...)
@@ -246,18 +213,14 @@ struct DownloadCommand: AsyncParsableCommand {
 **IterativeProjectGenerator** (`Sources/proyecto/IterativeProjectGenerator.swift`):
 ```swift
 class IterativeProjectGenerator {
-  private static func resolveModelPath(_ model: String) -> String {
+  private static func resolveModelPath(_ model: String) throws -> String {
     // If it's a local path, use it directly
     if FileManager.default.fileExists(atPath: model) {
       return model
     }
     
-    // Otherwise, resolve via Acervo's shared models directory
-    // Convert "mlx-community/Phi-3-mini-4k-instruct-4bit" 
-    // to "mlx-community_Phi-3-mini-4k-instruct-4bit"
-    let modelDirName = model.replacingOccurrences(of: "/", with: "_")
-    let modelURL = Acervo.sharedModelsDirectory.appendingPathComponent(modelDirName)
-    return modelURL.path
+    // Otherwise, it must be an org/repo slug — let SwiftAcervo resolve the directory
+    return try Acervo.modelDirectory(for: model).path
   }
   
   func generate(for directory: URL, progressHandler: ...) async throws -> ProjectFrontMatter {
@@ -266,7 +229,7 @@ class IterativeProjectGenerator {
     for section in ProjectSection.allCases {
       let response = try await Bruja.query(
         userPrompt,
-        model: modelPath,  // Path resolved via Acervo
+        model: modelPath,  // Path resolved via Acervo.modelDirectory(for:)
         temperature: 0.3,
         maxTokens: 512,
         system: systemPrompt
@@ -288,83 +251,75 @@ class IterativeProjectGenerator {
   - LLM inference via `Bruja.query()`
 - **ModelManager.swift**: `/Sources/SwiftProyecto/Infrastructure/ModelManager.swift`
   - Actor managing model lifecycle
-  - Methods: `ensureModelReady()`, `isModelAvailable()`, `modelDirectory(for:)`
+  - Methods: `isModelReady()` (no parameter - checks LanguageModel), `ensureModelReady()` (no parameter - ensures LanguageModel)
+  - All operations use the `LanguageModel` constant
 
-### Agent Guidance: Adding New Models
+### App Group Entitlement (REQUIRED for app consumers of this library)
 
-**When adding a new model to SwiftProyecto:**
+SwiftAcervo stores downloaded models in the App Group container `group.intrusive-memory.models` so a model downloaded by any intrusive-memory tool is immediately visible to all others. Apps that link SwiftProyecto **must** enable this capability on every target that reaches into SwiftProyecto/SwiftAcervo (the app, extensions, helpers). Without it, SwiftAcervo silently falls back to `~/Library/Application Support/SwiftAcervo/SharedModels/` — not shared, so each app re-downloads every model.
 
-1. **Create new ComponentDescriptor in ModelManager.swift**:
-   - Define new enum variant (e.g., `case large32bit = "mlx-community/Phi-3-large-instruct-32bit"`)
-   - Add `componentId` property for registry identifier
-   - Obtain SHA-256 checksums for all model files from CDN manifest
-   - Create `ComponentFile` entries with exact sizes and checksums
-   - Add to `phi3ComponentDescriptors` array
+**Xcode setup** (per target):
+1. Select the target → **Signing & Capabilities**.
+2. Click **+ Capability** → **App Groups**.
+3. Check (or add) `group.intrusive-memory.models`.
+4. Rebuild.
 
-2. **Update Phi3ModelRepo enum**:
-   - Add new variant with HuggingFace model ID
-   - Implement `componentId` and `displayName` computed properties
-   - Update `minimumMemoryBytes` based on model size
-
-3. **Register in lazy initialization**:
-   - Add descriptor to `phi3ComponentDescriptors` array
-   - No code changes needed—lazy registration handles it automatically
-
-4. **Update CLI commands**:
-   - If default model should change, update `DownloadCommand.swift`
-   - Update usage examples in `ProyectoCLI.swift` discussion string
-   - Update AGENTS.md documentation
-
-5. **Test integration**:
-   - Run `proyecto download` to verify CDN connectivity
-   - Run `proyecto init --model <model-id>` with new model
-   - Verify model path is correctly resolved via `Acervo.sharedModelsDirectory`
-
-**Example: Adding Phi-3 Large 32-bit**
-
-```swift
-// In ModelManager.swift
-public enum Phi3ModelRepo: String, CaseIterable, Sendable {
-  case mini4bit = "mlx-community/Phi-3-mini-4k-instruct-4bit"
-  case large32bit = "mlx-community/Phi-3-large-instruct-32bit"  // NEW
-  
-  public var componentId: String {
-    switch self {
-    case .mini4bit: return "phi3-mini-4k-4bit"
-    case .large32bit: return "phi3-large-32bit"  // NEW
-    }
-  }
-  
-  public var displayName: String {
-    switch self {
-    case .mini4bit: return "Phi-3 Mini 4K Instruct (4-bit)"
-    case .large32bit: return "Phi-3 Large Instruct (32-bit)"  // NEW
-    }
-  }
-}
-
-// Add files for new model
-private let phi3LargeFiles: [ComponentFile] = [
-  // Obtain these from CDN manifest
-  ComponentFile(relativePath: "config.json", expectedSizeBytes: ..., sha256: "..."),
-  // ... other files
-]
-
-// Register in array
-private let phi3ComponentDescriptors: [ComponentDescriptor] = [
-  // ... existing mini4bit descriptor
-  ComponentDescriptor(
-    id: Phi3ModelRepo.large32bit.componentId,
-    type: .languageModel,
-    displayName: Phi3ModelRepo.large32bit.displayName,
-    repoId: Phi3ModelRepo.large32bit.rawValue,
-    files: phi3LargeFiles,
-    estimatedSizeBytes: 26_000_000_000,  // Larger model
-    minimumMemoryBytes: 32_000_000_000,  // Higher requirement
-    metadata: [...]
-  ),
-]
+**Manual `.entitlements` file** (non-Xcode builds):
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.intrusive-memory.models</string>
+    </array>
+</dict>
+</plist>
 ```
+
+**Provisioning profile**: must include the App Group. Automatic signing handles this; for manual profiles, regenerate after adding the group in the Apple Developer portal.
+
+**Verify at runtime**: print `Acervo.sharedModelsDirectory` on first launch. A correctly entitled app shows a path under `~/Library/Group Containers/group.intrusive-memory.models/…` on macOS, or inside the sandbox's Group Containers on iOS. A path ending in `Application Support/SwiftAcervo/SharedModels` means the capability is missing — go back and add it.
+
+**Unsigned macOS CLI tools** (including the `proyecto` binary itself) cannot join App Groups and legitimately use the fallback path by design. The entitlement is mandatory only for signed consumer apps. See [SwiftAcervo USAGE.md](https://github.com/intrusive-memory/SwiftAcervo/blob/main/USAGE.md) §2 and [SHARED_MODELS_DIRECTORY.md](https://github.com/intrusive-memory/SwiftAcervo/blob/main/SHARED_MODELS_DIRECTORY.md) for the full directory layout and troubleshooting.
+
+### Agent Guidance: Changing the Canonical Model
+
+**To change the model used by SwiftProyecto**, update the `LanguageModel` constant in `Sources/SwiftProyecto/Infrastructure/ModelManager.swift`.
+
+SwiftProyecto uses one canonical model for consistency across all operations (proyecto download, proyecto init, all ModelManager operations, and integration tests). There is no multi-model support.
+
+**Steps to change the model:**
+
+1. **Update LanguageModel constant** in `ModelManager.swift`:
+   - Change `repoId` to the new `org/repo` slug (e.g., `"mlx-community/Llama-3.2-3B-Instruct-4bit"`)
+   - Update metadata fields to match the new model:
+     - `quantization` (e.g., `"4-bit"`)
+     - `context_length` (e.g., `"8192"`)
+     - `architecture` (e.g., `"Llama"`)
+     - `version` (e.g., `"3.2"`)
+   - Update `minimumMemoryBytes` based on model requirements
+
+2. **Publish the new model to CDN**:
+   ```bash
+   acervo ship <org/repo>
+   ```
+   This downloads the model from HuggingFace, generates the manifest with checksums, uploads to R2, and verifies.
+
+3. **Update CI workflow** (`.github/workflows/ensure-model-cdn.yml`):
+   - Change `MODEL_REPO` to the new `org/repo` slug
+   - Change `MODEL_SLUG` to the new slugified form (e.g., `mlx-community_Llama-3.2-3B-Instruct-4bit`)
+
+4. **Verify integration**:
+   ```bash
+   xcodebuild test -scheme SwiftProyecto -destination 'platform=macOS'
+   ```
+   Integration tests should pass against the new CDN manifest.
+
+5. **Update documentation**:
+   - Update AGENTS.md references to the new model
+   - Update README.md if the model change affects usage guidance
 
 ---
 

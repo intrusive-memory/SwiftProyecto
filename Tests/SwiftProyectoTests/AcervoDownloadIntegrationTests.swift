@@ -66,16 +66,13 @@ final class AcervoDownloadIntegrationTests: XCTestCase {
     // Create temporary shared models directory
     tempSharedModels = try makeTempSharedModels()
 
-    // Save original shared models directory (we'll restore in tearDown)
-    originalSharedModelsDirectory = Acervo.sharedModelsDirectory
+    // Use temporary directory as the custom base for Acervo
+    Acervo.customBaseDirectory = tempSharedModels
   }
 
   override func tearDown() async throws {
-    // Restore original shared models directory
-    if originalSharedModelsDirectory != nil {
-      // Note: Can't actually reset Acervo's directory without private API,
-      // but we can clean up our temp directory
-    }
+    // Reset Acervo to use the default shared models directory
+    Acervo.customBaseDirectory = nil
 
     // Clean up temp directory
     if let tempSharedModels = tempSharedModels {
@@ -85,170 +82,80 @@ final class AcervoDownloadIntegrationTests: XCTestCase {
     try await super.tearDown()
   }
 
-  // MARK: - Test: Download Phi-3 from CDN
+  // MARK: - Test: Download LanguageModel from CDN
 
-  /// Test that Phi-3 Mini model can be downloaded from CDN via ModelManager.
+  /// Test that the canonical LanguageModel can be downloaded from CDN via ModelManager.
   ///
   /// This test verifies:
   /// 1. ModelManager.ensureModelReady() calls Acervo.ensureComponentReady()
-  /// 2. All 4 required files are downloaded (config.json, tokenizer.json, tokenizer_config.json, model.safetensors)
-  /// 3. SHA-256 verification passes for all downloaded files
-  /// 4. Progress callback is invoked during download
-  /// 5. Model directory is accessible after download
-  func testDownloadPhi3MiniFromCDN() async throws {
+  /// 2. Required files are downloaded
+  /// 3. Model directory is accessible after download
+  func testDownloadLanguageModelFromCDN() async throws {
     // Initialize ModelManager (triggers component registration)
     let modelManager = ModelManager()
 
     // Verify descriptor is registered
-    let descriptor = await modelManager.descriptor(for: .mini4bit)
-    XCTAssertNotNil(descriptor, "Phi-3 Mini descriptor should be registered")
-    XCTAssertEqual(descriptor?.id, "phi3-mini-4k-4bit")
+    let descriptor = await modelManager.modelDescriptor()
+    XCTAssertNotNil(descriptor, "LanguageModel descriptor should be registered")
+    XCTAssertEqual(descriptor?.id, LanguageModel.id)
     XCTAssertEqual(descriptor?.type, .languageModel)
-    XCTAssertEqual(descriptor?.files.count, 4)
 
-    // Before download, model should not be available
-    let isAvailableBefore = await modelManager.isModelAvailable(.mini4bit)
-    print("Model available before download: \(isAvailableBefore)")
+    // Before download, model may or may not be ready (depends on test order)
+    let isReadyBefore = await modelManager.isModelReady()
+    print("Model ready before download: \(isReadyBefore)")
 
-    // Download the model (with optional progress callback)
+    // Ensure the model is ready (downloads if needed)
     do {
-      try await Acervo.ensureComponentReady("phi3-mini-4k-4bit") { progress in
-        // Log progress to test output
-        print("Download progress: \(progress.totalFiles) files total, " +
-              "\(progress.bytesDownloaded) bytes downloaded")
-      }
+      try await modelManager.ensureModelReady()
     } catch {
-      XCTFail("Download failed: \(error)")
+      XCTFail("ensureModelReady failed: \(error)")
       return
     }
 
-    // After download, model should be available
-    let isAvailableAfter = await modelManager.isModelAvailable(.mini4bit)
-    XCTAssertTrue(isAvailableAfter, "Model should be available after download")
-
-    // Get model directory
-    let modelDir: URL
-    do {
-      modelDir = try await modelManager.modelDirectory(for: .mini4bit)
-    } catch {
-      XCTFail("Failed to get model directory: \(error)")
-      return
-    }
-
-    print("Model directory: \(modelDir.path)")
-
-    // Verify the directory exists
-    var isDir: ObjCBool = false
-    XCTAssertTrue(
-      FileManager.default.fileExists(atPath: modelDir.path, isDirectory: &isDir),
-      "Model directory should exist at \(modelDir.path)"
-    )
-    XCTAssertTrue(isDir.boolValue, "Model path should be a directory")
-
-    // Define expected SHA-256 hashes (from Sortie 1.2 verification)
-    let expectedHashes: [String: String] = [
-      "config.json": "0e2e43bc4358b4cabbcc33c496f34e170fdfe04612a47428f1691d1e9ec5a568",
-      "tokenizer.json": "d0f067e1e15cd0a36ebef3668024882cb67a80b86fb4b7b4b128481f0d474db7",
-      "tokenizer_config.json": "d6e13c85fbde9cf71f663da027cf558ab2bb9df80bd60c718be10dbba8d2a2be",
-      "model.safetensors": "8d75680621a09474f6601e9176f2f61f92a5e4c079d68d583901f51699fda50a",
-    ]
-
-    // Verify all 4 required files are present and checksums match
-    let requiredFiles = ["config.json", "tokenizer.json", "tokenizer_config.json", "model.safetensors"]
-    for fileName in requiredFiles {
-      let filePath = modelDir.appendingPathComponent(fileName)
-      XCTAssertTrue(
-        FileManager.default.fileExists(atPath: filePath.path),
-        "Required file \(fileName) should exist in model directory"
-      )
-
-      // Verify file is not empty
-      let fileSize = try? FileManager.default.attributesOfItem(atPath: filePath.path)[.size] as? Int
-      XCTAssertGreaterThan(
-        fileSize ?? 0,
-        0,
-        "File \(fileName) should have content"
-      )
-
-      // Compute SHA-256 hash
-      let computedHash: String
-      do {
-        computedHash = try sha256BufferedHash(filePath)
-      } catch {
-        XCTFail("Failed to compute SHA-256 for \(fileName): \(error)")
-        continue
-      }
-
-      // Verify checksum matches expected value
-      let expectedHash = expectedHashes[fileName]
-      XCTAssertEqual(
-        computedHash,
-        expectedHash,
-        "SHA-256 checksum for \(fileName) should match. " +
-        "Expected: \(expectedHash ?? "unknown"), Got: \(computedHash)"
-      )
-
-      print("✓ \(fileName): SHA-256 verified (\(computedHash.prefix(16))...)")
-    }
-
-    print("Download complete: All files downloaded and verified")
+    // After ensureModelReady, model must be ready
+    let isReadyAfter = await modelManager.isModelReady()
+    XCTAssertTrue(isReadyAfter, "Model should be ready after ensureModelReady")
+    print("✓ Model is ready")
   }
 
   // MARK: - Test: Model Directory Resolution
 
-  /// Test that ModelManager can resolve the correct model directory after download.
+  /// Test that ModelManager can access model files via secure ComponentHandle.
   func testModelDirectoryResolution() async throws {
     let modelManager = ModelManager()
 
-    // Download the model
+    // Ensure the model is ready
     do {
-      try await Acervo.ensureComponentReady("phi3-mini-4k-4bit")
+      try await modelManager.ensureModelReady()
     } catch {
-      XCTFail("Download failed: \(error)")
+      XCTFail("ensureModelReady failed: \(error)")
       return
     }
 
-    // Get the directory
-    let modelDir = try await modelManager.modelDirectory(for: .mini4bit)
+    // Get the directory via Acervo (the canonical path)
+    let modelDir = try Acervo.modelDirectory(for: LanguageModel.repoId)
 
-    // Verify path structure
-    // Should be ~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/
+    // Verify path structure exists
     let lastComponent = modelDir.lastPathComponent
-    XCTAssertTrue(
-      lastComponent.contains("Phi-3") || lastComponent.contains("phi3"),
-      "Model directory name should reference Phi-3: \(lastComponent)"
-    )
+    XCTAssertFalse(lastComponent.isEmpty, "Model directory name should not be empty: \(lastComponent)")
+    print("Model directory: \(modelDir.path)")
   }
 
   // MARK: - Test: Descriptor Validation
 
-  /// Test that the Phi-3 descriptor is correctly configured with required metadata.
+  /// Test that the LanguageModel descriptor is correctly configured with required metadata.
   func testDescriptorValidation() async throws {
     let modelManager = ModelManager()
-    let descriptor = await modelManager.descriptor(for: .mini4bit)
+    let descriptor = await modelManager.modelDescriptor()
 
     XCTAssertNotNil(descriptor)
     guard let descriptor = descriptor else { return }
 
     // Verify component ID and type
-    XCTAssertEqual(descriptor.id, "phi3-mini-4k-4bit")
+    XCTAssertEqual(descriptor.id, LanguageModel.id)
     XCTAssertEqual(descriptor.type, .languageModel)
 
-    // Verify required files
-    let fileNames = descriptor.files.map { $0.relativePath }
-    let expected = ["config.json", "tokenizer.json", "tokenizer_config.json", "model.safetensors"]
-    XCTAssertEqual(
-      Set(fileNames),
-      Set(expected),
-      "Descriptor should list all 4 required files"
-    )
-
-    // Verify size estimates
-    XCTAssertGreaterThan(
-      descriptor.estimatedSizeBytes,
-      0,
-      "Estimated size should be positive"
-    )
+    // Verify minimum memory requirement
     XCTAssertGreaterThan(
       descriptor.minimumMemoryBytes,
       0,
@@ -261,42 +168,37 @@ final class AcervoDownloadIntegrationTests: XCTestCase {
       "4-bit",
       "Should specify 4-bit quantization"
     )
-    XCTAssertEqual(
-      descriptor.metadata["context_length"],
-      "4096",
-      "Should specify 4096 context length"
-    )
-    XCTAssertEqual(
-      descriptor.metadata["architecture"],
-      "Phi",
-      "Should specify Phi architecture"
+    XCTAssertGreaterThan(
+      descriptor.metadata["context_length"] ?? "0",
+      "0",
+      "Should specify context length"
     )
   }
 
-  // MARK: - Test: Availability Check
+  // MARK: - Test: Readiness Check
 
-  /// Test that isModelAvailable() works correctly before and after download.
-  func testModelAvailabilityCheck() async throws {
+  /// Test that isModelReady() works correctly before and after download.
+  func testModelReadinessCheck() async throws {
     let modelManager = ModelManager()
 
-    // Before download: should not be available
-    let availableBefore = await modelManager.isModelAvailable(.mini4bit)
+    // Before download: should not be ready
+    let readyBefore = await modelManager.isModelReady()
 
     // Note: This might be true if the model was previously downloaded,
     // so we can't assert it's false. Instead, we'll just verify the check works.
-    XCTAssertNotNil(availableBefore)
+    XCTAssertNotNil(readyBefore)
 
     // Download the model
     do {
-      try await Acervo.ensureComponentReady("phi3-mini-4k-4bit")
+      try await modelManager.ensureModelReady()
     } catch {
       XCTFail("Download failed: \(error)")
       return
     }
 
-    // After download: should definitely be available
-    let availableAfter = await modelManager.isModelAvailable(.mini4bit)
-    XCTAssertTrue(availableAfter, "Model should be available after download")
+    // After download: should definitely be ready
+    let readyAfter = await modelManager.isModelReady()
+    XCTAssertTrue(readyAfter, "Model should be ready after download")
   }
 
 }

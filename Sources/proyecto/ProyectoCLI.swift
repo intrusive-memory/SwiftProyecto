@@ -72,10 +72,10 @@ struct DownloadCommand: AsyncParsableCommand {
     // Initialize ModelManager to register components with Acervo
     _ = ModelManager()
 
-    let componentId = Phi3ModelRepo.mini4bit.componentId
+    let componentId = LanguageModel.id
 
     if showProgress {
-      print("Downloading model: Phi-3 Mini 4K Instruct (4-bit)")
+      print("Downloading model: \(LanguageModel.displayName)")
       print("Component ID: \(componentId)")
       print("Destination: \(Acervo.sharedModelsDirectory.path)")
     }
@@ -280,7 +280,7 @@ struct InitCommand: AsyncParsableCommand {
   var directory: String?
 
   @Option(name: .long, help: "Model path or HuggingFace ID for LLM inference")
-  var model: String = Bruja.defaultModel
+  var model: String = LanguageModel.repoId
 
   @Option(name: .long, help: "Override the author field (skip LLM detection)")
   var author: String?
@@ -383,7 +383,8 @@ struct InitCommand: AsyncParsableCommand {
     }
 
     let parser = ProjectMarkdownParser()
-    let content = parser.generate(frontMatter: frontMatter, body: existingBody)
+    let normalizedFrontMatter = frontMatter.normalizingPaths(relativeTo: directoryURL)
+    let content = parser.generate(frontMatter: normalizedFrontMatter, body: existingBody)
 
     // Write the file
     try content.write(to: projectMdURL, atomically: true, encoding: .utf8)

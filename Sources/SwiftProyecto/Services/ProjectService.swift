@@ -246,7 +246,8 @@ public final class ProjectService {
 
         // Generate PROJECT.md content
         let parser = ProjectMarkdownParser()
-        let markdownContent = parser.generate(frontMatter: frontMatter, body: "")
+        let normalizedFrontMatter = frontMatter.normalizingPaths(relativeTo: url)
+        let markdownContent = parser.generate(frontMatter: normalizedFrontMatter, body: "")
 
         // Write PROJECT.md to disk
         let manifestURL = url.appendingPathComponent("PROJECT.md")
@@ -345,7 +346,8 @@ public final class ProjectService {
 
       // Generate PROJECT.md content
       let parser = ProjectMarkdownParser()
-      let markdownContent = parser.generate(frontMatter: frontMatter, body: "")
+      let normalizedFrontMatter = frontMatter.normalizingPaths(relativeTo: folderURL)
+      let markdownContent = parser.generate(frontMatter: normalizedFrontMatter, body: "")
 
       // Write PROJECT.md to disk
       do {
