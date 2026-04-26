@@ -52,10 +52,10 @@ struct DownloadCommand: AsyncParsableCommand {
       Models are stored in ~/Library/SharedModels/
 
       The default model is optimized for PROJECT.md generation:
-        kimi-k2-instruct-4bit (Kimi K2 Instruct, 4-bit quantized, ~2.3 GB)
+        qwen2.5-7b-instruct-4bit (Qwen2.5 7B Instruct, 4-bit quantized, ~4 GB)
 
       Examples:
-        proyecto download                   # Download default model (kimi-k2-instruct-4bit)
+        proyecto download                   # Download default model (qwen2.5-7b-instruct-4bit)
         proyecto download --force           # Re-download even if exists
       """
   )

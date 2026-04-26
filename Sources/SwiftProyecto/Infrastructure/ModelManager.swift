@@ -21,24 +21,24 @@ import SwiftAcervo
 ///
 /// To change the model used by SwiftProyecto, update this constant.
 ///
-/// **Current model**: Kimi K2 Instruct (4-bit) - Moonshot AI
-/// - Superior instruction following compared to Phi-3
-/// - Designed for agentic tasks and structured output
-/// - Reduced hallucination and repetition issues
+/// **Current model**: Qwen2.5 7B Instruct (4-bit) - Alibaba Qwen Team
+/// - Excellent instruction following for structured YAML generation
+/// - Strong reasoning and minimal hallucination
+/// - 128K context window
+/// - Practical size (~4GB) for CDN distribution
 /// - Native MLX support with INT4 quantization
 public let LanguageModel = ComponentDescriptor(
-    id: "kimi-k2-instruct-4bit",
+    id: "qwen2.5-7b-instruct-4bit",
     type: .languageModel,
-    displayName: "Kimi K2 Instruct (4-bit)",
-    repoId: "mlx-community/Kimi-K2-Instruct-4bit",
-    minimumMemoryBytes: 2_500_000_000,
+    displayName: "Qwen2.5 7B Instruct (4-bit)",
+    repoId: "mlx-community/Qwen2.5-7B-Instruct-4bit",
+    minimumMemoryBytes: 4_000_000_000,
     metadata: [
         "quantization": "4-bit",
-        "context_length": "256000",
-        "architecture": "Kimi-K2",
-        "version": "2",
-        "parameters": "32B-active-1T-total",
-        "type": "MoE"
+        "context_length": "131072",
+        "architecture": "Qwen2.5",
+        "version": "2.5",
+        "parameters": "7B"
     ]
 )
 

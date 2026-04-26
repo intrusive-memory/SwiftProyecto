@@ -11,12 +11,12 @@ env:
   R2_BUCKET: intrusive-memory-audio
   R2_ENDPOINT: https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
   CDN_BASE: https://pub-8e049ed02be340cbb18f921765fd24f3.r2.dev
-  MODEL_REPO: mlx-community/Kimi-K2-Instruct-4bit
-  MODEL_SLUG: mlx-community_Kimi-K2-Instruct-4bit
+  MODEL_REPO: mlx-community/Qwen2.5-7B-Instruct-4bit
+  MODEL_SLUG: mlx-community_Qwen2.5-7B-Instruct-4bit
 
 jobs:
   ensure-llm:
-    name: Ensure Kimi K2 Instruct (4-bit) on CDN
+    name: Ensure Qwen2.5 7B Instruct (4-bit) on CDN
     runs-on: macos-26
 
     steps:
