@@ -13,50 +13,35 @@ import SwiftProyecto
 /// Generates PROJECT.md metadata using iterative LLM queries.
 /// Each section is queried independently for better accuracy and reliability.
 class IterativeProjectGenerator {
+  static let defaultMaxTokens = 65_536
+
   private let directoryAnalyzer: DirectoryAnalyzer
-  private let modelPath: String
+  private let modelId: String
   private let authorOverride: String?
+  private let maxTokensPerSection: Int
 
   // Accumulated results from each section
   private var results: [ProjectSection: Any] = [:]
 
-  /// Initialize the generator with a model identifier or path.
+  /// Initialize the generator with a model identifier.
   /// - Parameters:
-  ///   - model: HuggingFace model ID or local filesystem path
+  ///   - model: HuggingFace model ID (e.g., "mlx-community/Phi-3-mini-4k-instruct-4bit")
   ///   - authorOverride: Optional author override to skip LLM detection
-  init(model: String, authorOverride: String? = nil) {
+  ///   - maxTokens: Max tokens to generate per section (default: 64k)
+  init(
+    model: String,
+    authorOverride: String? = nil,
+    maxTokens: Int = defaultMaxTokens
+  ) {
     self.directoryAnalyzer = DirectoryAnalyzer()
-    // Resolve model path using Acervo's shared models directory
-    self.modelPath = Self.resolveModelPath(model)
+    self.modelId = model
     self.authorOverride = authorOverride
+    self.maxTokensPerSection = maxTokens
   }
 
-  /// Resolve a model identifier to a local filesystem path.
-  /// If the model is a HuggingFace ID, resolves to ~/Library/SharedModels/{org}_{repo}/
-  /// If the model is already a local path, returns it as-is.
-  ///
-  /// NOTE: This method is for legacy compatibility with callers that need a path string.
-  /// New code should use SwiftBruja directly with a component ID or a local path.
-  private static func resolveModelPath(_ model: String) -> String {
-    // Check if it's a local filesystem path
-    if FileManager.default.fileExists(atPath: model) {
-      return model
-    }
-
-    // Check if it starts with ~ (user home)
-    if model.hasPrefix("~") {
-      let expanded = NSString(string: model).expandingTildeInPath
-      if FileManager.default.fileExists(atPath: expanded) {
-        return expanded
-      }
-    }
-
-    // Otherwise, resolve via Acervo's shared models directory
-    // Convert model ID (e.g., "mlx-community/Phi-3-mini-4k-instruct-4bit")
-    // to directory name (e.g., "mlx-community_Phi-3-mini-4k-instruct-4bit")
-    let modelDirName = model.replacingOccurrences(of: "/", with: "_")
-    let modelURL = Acervo.sharedModelsDirectory.appendingPathComponent(modelDirName)
-    return modelURL.path
+  /// Returns the max token limit for LLM queries
+  private func maxTokens(for section: ProjectSection) -> Int {
+    return maxTokensPerSection
   }
 
   /// Generate PROJECT.md frontmatter using iterative LLM queries.
@@ -118,9 +103,9 @@ class IterativeProjectGenerator {
     if section == .config {
       let response = try await Bruja.query(
         userPrompt,
-        model: modelPath,
+        model: modelId,
         temperature: 0.3,
-        maxTokens: 512,
+        maxTokens: maxTokens(for: section),
         system: systemPrompt
       )
 
@@ -137,9 +122,9 @@ class IterativeProjectGenerator {
     // For other sections, expect plain text
     let response = try await Bruja.query(
       userPrompt,
-      model: modelPath,
+      model: modelId,
       temperature: 0.3,
-      maxTokens: 512,
+      maxTokens: maxTokens(for: section),
       system: systemPrompt
     )
 

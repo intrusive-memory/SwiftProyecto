@@ -52,10 +52,10 @@ struct DownloadCommand: AsyncParsableCommand {
       Models are stored in ~/Library/SharedModels/
 
       The default model is optimized for PROJECT.md generation:
-        phi3-mini-4k-4bit (Phi-3 Mini 4K Instruct, 4-bit quantized, ~2.3 GB)
+        kimi-k2-instruct-4bit (Kimi K2 Instruct, 4-bit quantized, ~2.3 GB)
 
       Examples:
-        proyecto download                   # Download default model (phi3-mini-4k-4bit)
+        proyecto download                   # Download default model (kimi-k2-instruct-4bit)
         proyecto download --force           # Re-download even if exists
       """
   )
@@ -285,6 +285,9 @@ struct InitCommand: AsyncParsableCommand {
   @Option(name: .long, help: "Override the author field (skip LLM detection)")
   var author: String?
 
+  @Option(name: .long, help: "Max tokens to generate per section (default: 65536)")
+  var maxTokens: Int = IterativeProjectGenerator.defaultMaxTokens
+
   @Flag(name: .long, help: "Update existing PROJECT.md, preserving created date, body, and hooks")
   var update: Bool = false
 
@@ -348,7 +351,8 @@ struct InitCommand: AsyncParsableCommand {
     // Use iterative generator
     let generator = IterativeProjectGenerator(
       model: model,
-      authorOverride: author
+      authorOverride: author,
+      maxTokens: maxTokens
     )
 
     let showProgress = !quiet

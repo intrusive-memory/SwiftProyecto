@@ -20,17 +20,25 @@ import SwiftAcervo
 /// - Integration tests
 ///
 /// To change the model used by SwiftProyecto, update this constant.
+///
+/// **Current model**: Kimi K2 Instruct (4-bit) - Moonshot AI
+/// - Superior instruction following compared to Phi-3
+/// - Designed for agentic tasks and structured output
+/// - Reduced hallucination and repetition issues
+/// - Native MLX support with INT4 quantization
 public let LanguageModel = ComponentDescriptor(
-    id: "llama-3.2-1b-instruct-4bit",
+    id: "kimi-k2-instruct-4bit",
     type: .languageModel,
-    displayName: "Llama 3.2 1B Instruct (4-bit)",
-    repoId: "mlx-community/Llama-3.2-1B-Instruct-4bit",
-    minimumMemoryBytes: 1_500_000_000,
+    displayName: "Kimi K2 Instruct (4-bit)",
+    repoId: "mlx-community/Kimi-K2-Instruct-4bit",
+    minimumMemoryBytes: 2_500_000_000,
     metadata: [
         "quantization": "4-bit",
-        "context_length": "8192",
-        "architecture": "Llama",
-        "version": "3.2",
+        "context_length": "256000",
+        "architecture": "Kimi-K2",
+        "version": "2",
+        "parameters": "32B-active-1T-total",
+        "type": "MoE"
     ]
 )
 
