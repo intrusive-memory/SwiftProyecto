@@ -9,6 +9,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.4.0] - 2026-04-17
+
+### Added
+
+- **SwiftAcervo CDN Integration**: Phi-3 LLM model now managed via SwiftAcervo for validated, CDN-based distribution
+  - `ComponentDescriptor` registration for Phi-3 Mini 4K (4-bit) with SHA-256 validation
+  - Shared model storage at `~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/`
+  - Accessible to all intrusive-memory tools (SwiftBruja, Produciesta, etc.)
+  - ModelManager infrastructure for descriptor management
+
+- **Enhanced Download Command**: `proyecto download` now uses SwiftAcervo instead of direct HuggingFace download
+  - Automatic SHA-256 verification for all 4 model files
+  - Checksum manifest validation
+  - Progress reporting during download
+  - Force re-download with `--force` flag
+
+- **Improved Model Path Resolution**: `IterativeProjectGenerator` uses `Acervo.sharedModelsDirectory` for model paths
+  - Automatic model discovery across intrusive-memory ecosystem
+  - Seamless SwiftBruja integration
+
+### Changed
+
+- **Model Download Source**: Migrated from direct HuggingFace URLs to SwiftAcervo CDN (Cloudflare R2)
+  - Benefits: Validated integrity, improved reliability, shared storage across tools
+  - Transparent to end users (automatic on first run)
+  - Improves performance for repeat tool usage
+
+- **Dependencies**: Updated SwiftAcervo to main branch for latest component descriptor features
+
+### Migration Notes for Users
+
+**If you're upgrading from v3.3.0:**
+
+1. No action required - model download is automatic on first run of `proyecto init` or `proyecto download`
+2. Models previously downloaded to `~/Library/Caches/` are NOT automatically moved
+3. If you have an old model cached elsewhere, `proyecto download` will re-download to new shared location
+4. Once downloaded, the model is cached and reused across all intrusive-memory tools
+
+**Benefits of the new architecture:**
+
+- Faster repeated tool usage (model shared across SwiftProyecto, SwiftBruja, Produciesta, etc.)
+- Offline operation after first download
+- Better reliability with SHA-256 validation
+- Seamless model updates via CDN manifest
+
+---
+
+## [3.3.0] - 2026-04-15
+
+### Added
+
+- **proyecto validate**: New CLI command to validate PROJECT.md files
+  - Validates frontmatter syntax and structure
+  - Supports directory or direct file path arguments
+  - `--verbose` flag to show parsed metadata
+  - Returns exit code 0 for valid files, 1 for errors
+- **9 comprehensive integration tests** for validation command
+- **Synchronized CLI version** with library version (both 3.3.0)
+- **Better error messages** for invalid PROJECT.md files
+
+---
+
 ## [3.1.0] - 2026-02-15
 
 ### Added
@@ -506,7 +568,9 @@ This release completes a major refactoring that transforms SwiftProyecto into a 
 - Basic tests pass (version check, placeholder test)
 - Repository published to GitHub
 
-[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/intrusive-memory/SwiftProyecto/compare/v3.4.0...HEAD
+[3.4.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v3.3.0...v3.4.0
+[3.3.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v3.1.0...v3.3.0
 [3.1.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.6.0...v3.0.0
 [2.6.0]: https://github.com/intrusive-memory/SwiftProyecto/compare/v2.5.0...v2.6.0

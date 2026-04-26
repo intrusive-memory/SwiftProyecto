@@ -6,23 +6,42 @@
 //
 
 import Foundation
+import SwiftAcervo
 import SwiftBruja
 import SwiftProyecto
 
 /// Generates PROJECT.md metadata using iterative LLM queries.
 /// Each section is queried independently for better accuracy and reliability.
 class IterativeProjectGenerator {
+  static let defaultMaxTokens = 65_536
+
   private let directoryAnalyzer: DirectoryAnalyzer
-  private let model: String
+  private let modelId: String
   private let authorOverride: String?
+  private let maxTokensPerSection: Int
 
   // Accumulated results from each section
   private var results: [ProjectSection: Any] = [:]
 
-  init(model: String, authorOverride: String? = nil) {
+  /// Initialize the generator with a model identifier.
+  /// - Parameters:
+  ///   - model: HuggingFace model ID (e.g., "mlx-community/Phi-3-mini-4k-instruct-4bit")
+  ///   - authorOverride: Optional author override to skip LLM detection
+  ///   - maxTokens: Max tokens to generate per section (default: 64k)
+  init(
+    model: String,
+    authorOverride: String? = nil,
+    maxTokens: Int = defaultMaxTokens
+  ) {
     self.directoryAnalyzer = DirectoryAnalyzer()
-    self.model = model
+    self.modelId = model
     self.authorOverride = authorOverride
+    self.maxTokensPerSection = maxTokens
+  }
+
+  /// Returns the max token limit for LLM queries
+  private func maxTokens(for section: ProjectSection) -> Int {
+    return maxTokensPerSection
   }
 
   /// Generate PROJECT.md frontmatter using iterative LLM queries.
@@ -84,9 +103,9 @@ class IterativeProjectGenerator {
     if section == .config {
       let response = try await Bruja.query(
         userPrompt,
-        model: model,
+        model: modelId,
         temperature: 0.3,
-        maxTokens: 512,
+        maxTokens: maxTokens(for: section),
         system: systemPrompt
       )
 
@@ -103,9 +122,9 @@ class IterativeProjectGenerator {
     // For other sections, expect plain text
     let response = try await Bruja.query(
       userPrompt,
-      model: model,
+      model: modelId,
       temperature: 0.3,
-      maxTokens: 512,
+      maxTokens: maxTokens(for: section),
       system: systemPrompt
     )
 

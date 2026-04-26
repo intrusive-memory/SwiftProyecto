@@ -315,6 +315,94 @@ extension ProjectFrontMatter {
   }
 }
 
+// MARK: - Path Normalization
+
+extension ProjectFrontMatter {
+
+  /// Returns a copy with path-valued fields (`episodesDir`, `audioDir`) made
+  /// relative to `baseDirectory` — the directory that contains (or will contain)
+  /// PROJECT.md.
+  ///
+  /// PROJECT.md is intended to be portable: all paths it references must be
+  /// interpreted relative to the file itself. This helper enforces that at the
+  /// write boundary. It:
+  /// - Leaves already-relative paths (no leading `/` or `~`) unchanged.
+  /// - Expands leading `~` to the user's home directory, then makes it relative.
+  /// - Strips the `baseDirectory` prefix from absolute paths that live inside it.
+  /// - Falls back to a `../`-style traversal for absolute paths outside the base.
+  ///
+  /// `filePattern` (glob), `preGenerateHook`, and `postGenerateHook` (shell
+  /// commands) are intentionally not touched — they are not file paths.
+  ///
+  /// - Parameter baseDirectory: The directory containing PROJECT.md.
+  /// - Returns: A new `ProjectFrontMatter` with path fields normalized.
+  public func normalizingPaths(relativeTo baseDirectory: URL) -> ProjectFrontMatter {
+    ProjectFrontMatter(
+      type: type,
+      title: title,
+      author: author,
+      created: created,
+      description: description,
+      season: season,
+      episodes: episodes,
+      genre: genre,
+      tags: tags,
+      episodesDir: episodesDir.map { Self.makeRelative($0, to: baseDirectory) },
+      audioDir: audioDir.map { Self.makeRelative($0, to: baseDirectory) },
+      filePattern: filePattern,
+      exportFormat: exportFormat,
+      cast: cast,
+      preGenerateHook: preGenerateHook,
+      postGenerateHook: postGenerateHook,
+      tts: tts,
+      appSections: appSections
+    )
+  }
+
+  /// Convert a single path string to a path relative to `baseDirectory`.
+  /// Relative inputs pass through unchanged.
+  static func makeRelative(_ path: String, to baseDirectory: URL) -> String {
+    if path.isEmpty { return path }
+
+    // Expand leading ~ to absolute before deciding how to relativize.
+    let expanded: String
+    if path.hasPrefix("~") {
+      expanded = NSString(string: path).expandingTildeInPath
+    } else {
+      expanded = path
+    }
+
+    // Non-absolute paths are already relative to PROJECT.md — leave alone.
+    guard expanded.hasPrefix("/") else { return path }
+
+    let baseStandardized = baseDirectory.standardizedFileURL.path
+    let targetStandardized = URL(fileURLWithPath: expanded).standardizedFileURL.path
+
+    if targetStandardized == baseStandardized {
+      return "."
+    }
+    let prefix = baseStandardized.hasSuffix("/") ? baseStandardized : baseStandardized + "/"
+    if targetStandardized.hasPrefix(prefix) {
+      return String(targetStandardized.dropFirst(prefix.count))
+    }
+
+    // Path lies outside baseDirectory — build a ../-style traversal.
+    let baseComponents = baseStandardized.split(separator: "/").map(String.init)
+    let targetComponents = targetStandardized.split(separator: "/").map(String.init)
+    var commonCount = 0
+    while commonCount < baseComponents.count,
+      commonCount < targetComponents.count,
+      baseComponents[commonCount] == targetComponents[commonCount]
+    {
+      commonCount += 1
+    }
+    let ups = Array(repeating: "..", count: baseComponents.count - commonCount)
+    let downs = Array(targetComponents[commonCount...])
+    let joined = (ups + downs).joined(separator: "/")
+    return joined.isEmpty ? "." : joined
+  }
+}
+
 // MARK: - Cast Mutation Helpers
 
 extension ProjectFrontMatter {

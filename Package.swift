@@ -19,20 +19,23 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(url: "https://github.com/marcprux/universal.git", from: "5.3.0"),
-    .package(url: "https://github.com/intrusive-memory/SwiftBruja.git", from: "1.4.0"),
-    .package(url: "https://github.com/intrusive-memory/SwiftAcervo.git", from: "0.6.0"),  // Override SwiftBruja's 0.5.x constraint
-    .package(url: "https://github.com/apple/swift-argument-parser", from: "1.7.0"),
+    .package(url: "https://github.com/marcprux/universal.git", .upToNextMajor(from: "5.3.0")),
+    .package(
+      url: "https://github.com/intrusive-memory/SwiftBruja.git", .upToNextMajor(from: "1.6.0")),
+    .package(
+      url: "https://github.com/intrusive-memory/SwiftAcervo.git", .upToNextMajor(from: "0.8.2")),
+    .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMajor(from: "1.7.1")),
   ],
   targets: [
     .target(
       name: "SwiftProyecto",
       dependencies: [
         .product(name: "Universal", package: "universal"),
-        .product(name: "SwiftAcervo", package: "SwiftAcervo")
+        .product(name: "SwiftAcervo", package: "SwiftAcervo"),
       ],
       swiftSettings: [
-        .enableUpcomingFeature("StrictConcurrency")
+        .enableUpcomingFeature("StrictConcurrency"),
+        .enableExperimentalFeature("Lifetimes"),
       ]
     ),
     .executableTarget(
@@ -43,14 +46,20 @@ let package = Package(
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       swiftSettings: [
-        .enableUpcomingFeature("StrictConcurrency")
+        .enableUpcomingFeature("StrictConcurrency"),
+        .enableExperimentalFeature("Lifetimes"),
       ]
     ),
     .testTarget(
       name: "SwiftProyectoTests",
-      dependencies: ["SwiftProyecto"],
+      dependencies: [
+        "SwiftProyecto",
+        .product(name: "SwiftBruja", package: "SwiftBruja"),
+        .product(name: "SwiftAcervo", package: "SwiftAcervo"),
+      ],
       swiftSettings: [
-        .enableUpcomingFeature("StrictConcurrency")
+        .enableUpcomingFeature("StrictConcurrency"),
+        .enableExperimentalFeature("Lifetimes"),
       ]
     ),
   ],

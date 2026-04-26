@@ -9,3 +9,5 @@ DerivedData/
 /Package.resolved
 /test_output_macos.txt
 /bin/
+*.profraw
+/default.profraw

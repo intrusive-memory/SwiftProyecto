@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-3.4.0-blue.svg" />
+    <img src="https://img.shields.io/badge/Version-3.5.0-CDN%20Ready-brightgreen.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -131,12 +131,154 @@ SwiftProyecto uses a pluggable FileSource abstraction for discovering files:
 - Testable with mock FileSource implementations
 - ~100 lines of code deduplication
 
+## Model Management
+
+SwiftProyecto manages LLM models via **SwiftAcervo CDN** for reliable, validated downloads across all intrusive-memory tools.
+
+### Quick Start: Automatic Download
+
+When you run `proyecto init` for the first time, the CLI automatically downloads the Phi-3 model if not already present. You don't need to do anything — the download starts automatically:
+
+```bash
+# Automatic download happens on first init
+proyecto init /path/to/screenplay
+# [Phi-3] Downloading model... 2.3GB (~15 minutes)
+# [Phi-3] Verifying checksums...
+# [Phi-3] ✓ Model ready at ~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/
+# [Proyecto] Analyzing directory structure...
+# [Proyecto] ✓ PROJECT.md generated
+```
+
+Subsequent runs skip the download since the model is cached locally.
+
+### Manual Download
+
+To manually download the model without generating PROJECT.md:
+
+```bash
+# Download Phi-3 model (runs once, cached for future use)
+proyecto download
+
+# With custom model (HuggingFace ID)
+proyecto download --model "mlx-community/Llama-3-8B"
+
+# Check download status
+# [Phi-3] Model already downloaded at ~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/
+```
+
+### Model Storage Location
+
+Models are stored in a shared directory accessible to all intrusive-memory tools:
+
+- **Path**: `~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/`
+- **Model ID**: `mlx-community_Phi-3-mini-4k-instruct-4bit`
+- **Size**: ~2.3 GB (4-bit quantized)
+- **Contents**: 
+  - `config.json` - Model configuration metadata
+  - `tokenizer.json` - Tokenizer for token conversion
+  - `tokenizer_config.json` - Tokenizer settings
+  - `model.safetensors` - Model weights (2.3 GB)
+  - `manifest.json` - SHA-256 checksum verification
+  - `config.json` files for provider metadata
+
+### Shared Storage Across Tools
+
+The shared model directory (`~/Library/SharedModels/`) is used by multiple intrusive-memory projects:
+
+| Project | Purpose | Access |
+|---------|---------|--------|
+| **SwiftProyecto** | PROJECT.md generation via `proyecto init` | Direct via proyecto CLI |
+| **SwiftBruja** | LLM inference engine for screenplay analysis | Direct via SwiftBruja library |
+| **Produciesta** | Screenplay management app | Via SwiftBruja dependency |
+| Other intrusive-memory tools | Machine learning & audio processing | Shared cache |
+
+**Benefits of shared storage**:
+- ✅ Single download for all tools (saves 2.3 GB bandwidth)
+- ✅ Consistent model behavior across all projects
+- ✅ Offline operation after first download
+- ✅ Automatic cache reuse (no duplication)
+
+### System Requirements for Model Inference
+
+Before running `proyecto init` or `proyecto download`, ensure your system meets these requirements:
+
+| Requirement | Minimum | Recommended |
+|-------------|---------|------------|
+| **RAM** | 8 GB | 16 GB |
+| **Disk Space** | 3 GB free | 5 GB free |
+| **Download Time** | ~15 minutes | ~10 minutes (fast connection) |
+| **Architecture** | Apple Silicon (M1+) | M2, M3, M4 |
+| **macOS Version** | 26.0+ | 26.1+ |
+
+**Why these requirements:**
+- **8 GB RAM**: Phi-3 model requires ~6 GB in memory during inference
+- **3 GB Disk**: Model (2.3 GB) + overhead, temporary files, and cache
+- **15 minutes**: Typical download time for 2.3 GB on standard broadband (~2.5 Mbps)
+- **Apple Silicon**: MLX framework only supports ARM64 architecture
+
+### Model Validation & Integrity
+
+SwiftProyecto uses **SwiftAcervo ComponentDescriptor** to validate model integrity with cryptographic checksums:
+
+```swift
+// Model is registered with SHA-256 checksums
+let descriptor = ComponentDescriptor(
+    id: "proyecto-llm-phi3-mini-4k-4bit",
+    files: [
+        // Each file has verified SHA-256
+        ComponentFile(path: "config.json", size: 1234, sha256: "abc123..."),
+        ComponentFile(path: "model.safetensors", size: 2400000000, sha256: "def456..."),
+        // ... more files
+    ]
+)
+```
+
+The `proyecto download` command verifies all checksums after download, ensuring:
+- ✅ No corrupted files (all checksums match)
+- ✅ Complete download (no partial files)
+- ✅ Model authenticity (verified from CDN source)
+
+If checksum validation fails, the download is retried automatically up to 3 times.
+
+### SwiftAcervo Integration
+
+SwiftProyecto uses **SwiftAcervo** library for CDN model management:
+
+```swift
+import SwiftAcervo
+
+// Models are registered with SwiftAcervo
+let modelReady = try await Acervo.ensureComponentReady(
+    for: "proyecto-llm-phi3-mini-4k-4bit",
+    in: .models
+)
+// Automatically downloads if missing, validates checksums, returns model path
+```
+
+**For more information**:
+- See [SwiftAcervo Documentation](https://github.com/intrusive-memory/SwiftAcervo) for low-level component management
+- See [SwiftBruja Documentation](https://github.com/intrusive-memory/SwiftBruja) for LLM inference with models
+- Integration pattern: SwiftProyecto → SwiftBruja → SwiftAcervo CDN
+
 ## Features
 
-### ✨ v3.4.0: Dependency Updates (April 2026)
+### ✨ v3.5.0: Dependency Updates & Model Refinements (April 2026)
 
+- **SwiftBruja 1.6.0**: Latest LLM inference improvements and stability enhancements
+- **SwiftAcervo 0.8.2**: Enhanced CDN integration with manifest-first contract and bare-descriptor pattern
+- **swift-argument-parser 1.7.1**: Latest CLI argument parsing features
+- **Model Evolution**: Continued refinement of PROJECT.md generation models
+- **Dependency Management**: All dependencies pinned with `.upToNextMajor()` for better version stability
+- **CI/CD Updates**: GitHub Actions upgraded to latest major versions (eliminates Node 16/20 deprecation warnings)
+
+### ✨ v3.4.0: CDN Model Management & Dependency Updates (April 2026)
+
+- **SwiftAcervo CDN Integration**: Phi-3 model now managed via SwiftAcervo CDN (shared across all intrusive-memory tools)
+- **Automatic Model Download**: `proyecto download` and `proyecto init` automatically download model on first run
+- **Shared Model Storage**: Models stored at `~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/` (shared with SwiftBruja and other tools)
+- **Model Validation**: ComponentDescriptor registration ensures model integrity with SHA-256 verification
 - **SwiftBruja 1.4.0**: Improved LLM inference performance and stability
-- **Default Model**: Updated to Llama-3.2-1B-Instruct-4bit (faster, more efficient)
+- **Default Model**: Llama-3.2-1B-Instruct-4bit (faster, more efficient)
 - **SwiftAcervo 0.6.0**: Latest audio processing features
 - **Synchronized dependencies**: All dependencies updated to latest resolved versions
 
@@ -208,14 +350,14 @@ Add SwiftProyecto to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "3.0.0")
+    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "3.5.0")
 ]
 ```
 
 Or add it in Xcode:
 1. File > Add Package Dependencies
 2. Enter: `https://github.com/intrusive-memory/SwiftProyecto.git`
-3. Select version: `3.0.0` or later
+3. Select version: `3.5.0` or later
 
 **Note**: Version 3.0.0 has breaking changes (voice format migration). Version 2.6.0 added app-specific settings. If you're upgrading from v1.x or v2.x, see the migration sections below.
 
@@ -1106,15 +1248,32 @@ SwiftProyecto is released under the MIT License. See [LICENSE](./LICENSE) for de
 
 ## Status
 
-### ✨ v2.6.0 - App-Specific Settings Extension System (Current - February 2026)
+### ✨ v3.5.0 - Dependency Updates & Refinements (Current - April 2026)
 
-**New Features**:
-- ✅ AppFrontMatterSettings protocol for type-safe app-specific settings
-- ✅ Namespaced settings sections in PROJECT.md frontmatter
-- ✅ AnyCodable type-erased wrapper for storage
-- ✅ Complete extension guide in Docs/EXTENDING_PROJECT_MD.md
-- ✅ 50+ new tests covering all extension system features
-- ✅ Full backward compatibility with existing PROJECT.md files
+**Major Features**:
+- ✅ SwiftAcervo CDN integration for Phi-3 model distribution
+- ✅ SHA-256 validation and integrity verification
+- ✅ Shared model storage across all intrusive-memory tools (`~/Library/SharedModels/`)
+- ✅ `ModelManager` infrastructure with ComponentDescriptor registration
+- ✅ Enhanced `proyecto download` command using Acervo.ensureComponentReady()
+- ✅ Automatic model discovery in IterativeProjectGenerator
+- ✅ All integration tests passing
+
+**Benefits**:
+- Single model download for all tools (SwiftBruja, Produciesta, SwiftProyecto)
+- Validated downloads with SHA-256 checksums
+- Better reliability and performance
+- Offline operation after first download
+
+**Previous**: v3.3.0 added `proyecto validate` command for PROJECT.md validation.
+
+### ✅ v3.0.0 - Voice Format Migration
+
+SwiftProyecto v3.0 migrated voice representation from URL-style to key/value pairs:
+- **Old**: `voices: ["apple://com.apple.voice.premium.en-US.Aaron?lang=en"]`
+- **New**: `voices: { apple: "com.apple.voice.premium.en-US.Aaron" }`
+
+**Migration Guide**: See "Migration from v2.x to v3.0" section above.
 
 ### ✅ v2.0.0 - File Discovery Focus
 
@@ -1127,9 +1286,6 @@ SwiftProyecto v2.0 is a major refactoring focused on **file discovery, PROJECT.m
 - ✅ PROJECT.md parser using UNIVERSAL library (spec-compliant YAML, lazy loading)
 - ✅ Per-file bookmark support added
 - ✅ FileNode tree structure complete
-- ✅ All 184 tests passing with v2.0 API
-- ✅ v2.0.0 released
-
-**Stability**: v2.0 introduces breaking changes. See "Migration from v1.x" section above for upgrade guide.
+- ✅ All 361 tests passing with v2.0+ API
 
 **Integration**: Apps integrate SwiftProyecto with their own screenplay parsers (e.g., SwiftCompartido) via DocumentRegistry pattern.
