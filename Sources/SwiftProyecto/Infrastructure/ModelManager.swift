@@ -28,18 +28,18 @@ import SwiftAcervo
 /// - Practical size (~4GB) for CDN distribution
 /// - Native MLX support with INT4 quantization
 public let LanguageModel = ComponentDescriptor(
-    id: "qwen2.5-7b-instruct-4bit",
-    type: .languageModel,
-    displayName: "Qwen2.5 7B Instruct (4-bit)",
-    repoId: "mlx-community/Qwen2.5-7B-Instruct-4bit",
-    minimumMemoryBytes: 4_000_000_000,
-    metadata: [
-        "quantization": "4-bit",
-        "context_length": "131072",
-        "architecture": "Qwen2.5",
-        "version": "2.5",
-        "parameters": "7B"
-    ]
+  id: "qwen2.5-7b-instruct-4bit",
+  type: .languageModel,
+  displayName: "Qwen2.5 7B Instruct (4-bit)",
+  repoId: "mlx-community/Qwen2.5-7B-Instruct-4bit",
+  minimumMemoryBytes: 4_000_000_000,
+  metadata: [
+    "quantization": "4-bit",
+    "context_length": "131072",
+    "architecture": "Qwen2.5",
+    "version": "2.5",
+    "parameters": "7B",
+  ]
 )
 
 // MARK: - ModelManager
