@@ -13,8 +13,9 @@
 //   xcodebuild test -scheme SwiftProyecto -destination 'platform=macOS'
 
 import Foundation
-import XCTest
 import SwiftAcervo
+import XCTest
+
 @testable import SwiftProyecto
 
 // MARK: - Test Helpers
@@ -90,7 +91,8 @@ private func createTestProjectMd(in directory: URL) throws -> ProjectFrontMatter
   )
 
   let parser = ProjectMarkdownParser()
-  let content = parser.generate(frontMatter: testFrontMatter, body: "# Test Project\n\nThis is a test.")
+  let content = parser.generate(
+    frontMatter: testFrontMatter, body: "# Test Project\n\nThis is a test.")
   let projectMdURL = directory.appendingPathComponent("PROJECT.md")
   try content.write(to: projectMdURL, atomically: true, encoding: .utf8)
 
@@ -142,15 +144,17 @@ final class ProjectGenerationIntegrationTest: XCTestCase {
       do {
         try await Acervo.ensureComponentReady(LanguageModel.id) { progress in
           print(
-            "Download progress: \(progress.fileIndex + 1)/\(progress.totalFiles) " +
-            "files (\(Int(progress.overallProgress * 100))%)"
+            "Download progress: \(progress.fileIndex + 1)/\(progress.totalFiles) "
+              + "files (\(Int(progress.overallProgress * 100))%)"
           )
         }
         print("✓ Model downloaded successfully")
       } catch {
         // Download may fail due to permissions in test environment
         // This is acceptable - the test verifies the API is callable
-        print("ℹ Download skipped (may require group container permissions): \(error.localizedDescription)")
+        print(
+          "ℹ Download skipped (may require group container permissions): \(error.localizedDescription)"
+        )
         print("✓ Test passed: Acervo API is accessible")
       }
     } else {
@@ -171,7 +175,9 @@ final class ProjectGenerationIntegrationTest: XCTestCase {
       XCTAssertTrue(isDir.boolValue, "Model path should be a directory")
       print("✓ Model directory verified")
     } catch {
-      print("ℹ Could not resolve model directory (may require app group entitlement): \(error.localizedDescription)")
+      print(
+        "ℹ Could not resolve model directory (may require app group entitlement): \(error.localizedDescription)"
+      )
     }
   }
 
@@ -238,7 +244,7 @@ final class ProjectGenerationIntegrationTest: XCTestCase {
     print("Testing PROJECT.md update with metadata preservation...")
 
     // Create initial PROJECT.md
-    let originalDate = Date(timeIntervalSince1970: 1609459200)  // 2021-01-01
+    let originalDate = Date(timeIntervalSince1970: 1_609_459_200)  // 2021-01-01
     let originalFrontMatter = ProjectFrontMatter(
       type: "project",
       title: "Original Title",
