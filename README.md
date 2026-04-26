@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-3.4.0-CDN%20Ready-brightgreen.svg" />
+    <img src="https://img.shields.io/badge/Version-3.5.0-CDN%20Ready-brightgreen.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -262,6 +262,15 @@ let modelReady = try await Acervo.ensureComponentReady(
 
 ## Features
 
+### ✨ v3.5.0: Dependency Updates & Model Refinements (April 2026)
+
+- **SwiftBruja 1.6.0**: Latest LLM inference improvements and stability enhancements
+- **SwiftAcervo 0.8.2**: Enhanced CDN integration with manifest-first contract and bare-descriptor pattern
+- **swift-argument-parser 1.7.1**: Latest CLI argument parsing features
+- **Model Evolution**: Continued refinement of PROJECT.md generation models
+- **Dependency Management**: All dependencies pinned with `.upToNextMajor()` for better version stability
+- **CI/CD Updates**: GitHub Actions upgraded to latest major versions (eliminates Node 16/20 deprecation warnings)
+
 ### ✨ v3.4.0: CDN Model Management & Dependency Updates (April 2026)
 
 - **SwiftAcervo CDN Integration**: Phi-3 model now managed via SwiftAcervo CDN (shared across all intrusive-memory tools)
@@ -341,14 +350,14 @@ Add SwiftProyecto to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "3.0.0")
+    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "3.5.0")
 ]
 ```
 
 Or add it in Xcode:
 1. File > Add Package Dependencies
 2. Enter: `https://github.com/intrusive-memory/SwiftProyecto.git`
-3. Select version: `3.0.0` or later
+3. Select version: `3.5.0` or later
 
 **Note**: Version 3.0.0 has breaking changes (voice format migration). Version 2.6.0 added app-specific settings. If you're upgrading from v1.x or v2.x, see the migration sections below.
 
@@ -1239,7 +1248,7 @@ SwiftProyecto is released under the MIT License. See [LICENSE](./LICENSE) for de
 
 ## Status
 
-### ✨ v3.4.0 - CDN Model Management (Current - April 2026)
+### ✨ v3.5.0 - Dependency Updates & Refinements (Current - April 2026)
 
 **Major Features**:
 - ✅ SwiftAcervo CDN integration for Phi-3 model distribution

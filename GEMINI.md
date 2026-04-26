@@ -11,7 +11,7 @@ This file contains instructions specific to Google Gemini agents working on Swif
 **Project**: SwiftProyecto - Swift package for extensible, agentic discovery of content projects
 **Purpose**: Enables AI agents to understand content projects in a single pass via PROJECT.md metadata
 **Platforms**: iOS 26.0+, macOS 26.0+
-**Current Version**: 3.4.0
+**Current Version**: 3.5.0
 
 **Universal Documentation**: See [AGENTS.md](AGENTS.md) for:
 - Product overview and architecture
@@ -204,4 +204,4 @@ git commit -m "docs: update documentation"
 
 ---
 
-**Last Updated**: 2026-04-16 (v3.4.0)
+**Last Updated**: 2026-04-26 (v3.5.0)
