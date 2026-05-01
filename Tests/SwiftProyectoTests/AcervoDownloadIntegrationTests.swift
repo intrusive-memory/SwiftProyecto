@@ -8,10 +8,11 @@
 //   make test
 //   xcodebuild test -scheme SwiftProyecto -destination 'platform=macOS'
 
-import Foundation
-import XCTest
 import CryptoKit
+import Foundation
 import SwiftAcervo
+import XCTest
+
 @testable import SwiftProyecto
 
 // MARK: - Test Helpers
@@ -137,7 +138,8 @@ final class AcervoDownloadIntegrationTests: XCTestCase {
 
     // Verify path structure exists
     let lastComponent = modelDir.lastPathComponent
-    XCTAssertFalse(lastComponent.isEmpty, "Model directory name should not be empty: \(lastComponent)")
+    XCTAssertFalse(
+      lastComponent.isEmpty, "Model directory name should not be empty: \(lastComponent)")
     print("Model directory: \(modelDir.path)")
   }
 
