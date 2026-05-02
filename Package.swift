@@ -17,6 +17,18 @@ func sibling(_ name: String, remote: String, from version: Version) -> Package.D
   return .package(url: remote, .upToNextMajor(from: version))
 }
 
+/// Same sibling-priority pattern as ``sibling(_:remote:from:)`` but pins to a
+/// remote branch when no local sibling exists. Use only when a temporary
+/// pre-release dependency on a feature branch is required; switch back to the
+/// version-pinned ``sibling(_:remote:from:)`` once the upstream tags a release.
+func sibling(_ name: String, remote: String, branch: String) -> Package.Dependency {
+  let localPath = "../\(name)"
+  if useLocalSiblings && FileManager.default.fileExists(atPath: localPath) {
+    return .package(path: localPath)
+  }
+  return .package(url: remote, branch: branch)
+}
+
 let package = Package(
   name: "SwiftProyecto",
   platforms: [
@@ -39,10 +51,17 @@ let package = Package(
       "SwiftBruja",
       remote: "https://github.com/intrusive-memory/SwiftBruja.git",
       from: "1.6.0"),
+    // TEMPORARY: pin to the fix/app-group-env-resolution branch until
+    // SwiftAcervo PR #34 (https://github.com/intrusive-memory/SwiftAcervo/pull/34)
+    // merges and tags a release. PR #34 removes Acervo.customBaseDirectory in
+    // favor of the ACERVO_APP_GROUP_ID env var; the test suite migration to
+    // that pattern requires the new public Acervo.appGroupEnvironmentVariable
+    // constant. Switch back to the version-pinned sibling helper in a
+    // follow-up PR once a tagged release ships.
     sibling(
       "SwiftAcervo",
       remote: "https://github.com/intrusive-memory/SwiftAcervo.git",
-      from: "0.8.4"),
+      branch: "fix/app-group-env-resolution"),
     .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMajor(from: "1.7.1")),
   ],
   targets: [
