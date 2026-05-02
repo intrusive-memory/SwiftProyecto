@@ -2,7 +2,7 @@
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 3.5.0 (April 2026)
+**Current Version**: 3.5.1 (May 2026)
 
 **Latest Changes (v3.5.0)**:
 - **SwiftAcervo 0.8.2 Migration**: Adopted manifest-first contract with bare-descriptor pattern
