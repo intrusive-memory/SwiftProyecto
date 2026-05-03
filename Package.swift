@@ -50,18 +50,11 @@ let package = Package(
     sibling(
       "SwiftBruja",
       remote: "https://github.com/intrusive-memory/SwiftBruja.git",
-      from: "1.6.0"),
-    // TEMPORARY: pin to the fix/app-group-env-resolution branch until
-    // SwiftAcervo PR #34 (https://github.com/intrusive-memory/SwiftAcervo/pull/34)
-    // merges and tags a release. PR #34 removes Acervo.customBaseDirectory in
-    // favor of the ACERVO_APP_GROUP_ID env var; the test suite migration to
-    // that pattern requires the new public Acervo.appGroupEnvironmentVariable
-    // constant. Switch back to the version-pinned sibling helper in a
-    // follow-up PR once a tagged release ships.
+      from: "1.6.1"),
     sibling(
       "SwiftAcervo",
       remote: "https://github.com/intrusive-memory/SwiftAcervo.git",
-      branch: "fix/app-group-env-resolution"),
+      from: "0.9.0"),
     .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMajor(from: "1.7.1")),
   ],
   targets: [
