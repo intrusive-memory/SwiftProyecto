@@ -8,76 +8,54 @@
 //   make test
 //   xcodebuild test -scheme SwiftProyecto -destination 'platform=macOS'
 
-import CryptoKit
 import Foundation
 import SwiftAcervo
 import XCTest
 
 @testable import SwiftProyecto
 
-// MARK: - Test Helpers
-
-/// Creates a unique temporary directory for use as a SharedModels root.
-/// The caller is responsible for cleaning up.
-private func makeTempSharedModels() throws -> URL {
-  let tempBase = FileManager.default.temporaryDirectory
-    .appendingPathComponent("SwiftProyecto-Integration-\(UUID().uuidString)")
-  try FileManager.default.createDirectory(
-    at: tempBase,
-    withIntermediateDirectories: true
-  )
-  return tempBase
-}
-
-/// Removes a temporary directory created by `makeTempSharedModels()`.
-private func cleanupTempDirectory(_ url: URL) {
-  try? FileManager.default.removeItem(at: url)
-}
-
-/// Computes the SHA-256 checksum of a file with buffering for large files.
-/// - Parameter filePath: Path to the file to hash.
-/// - Parameter bufferSize: Size of read buffer (default 1MB).
-/// - Returns: Hex-encoded SHA-256 hash string.
-private func sha256BufferedHash(_ filePath: URL, bufferSize: Int = 1024 * 1024) throws -> String {
-  let fileHandle = try FileHandle(forReadingFrom: filePath)
-  defer { try? fileHandle.close() }
-
-  var hasher = SHA256()
-
-  while true {
-    let data = fileHandle.readData(ofLength: bufferSize)
-    if data.isEmpty { break }
-    hasher.update(data: data)
-  }
-
-  let digest = hasher.finalize()
-  return digest.map { String(format: "%02x", $0) }.joined()
-}
-
 // MARK: - Integration Tests
 
 final class AcervoDownloadIntegrationTests: XCTestCase {
 
-  var tempSharedModels: URL!
-  var originalSharedModelsDirectory: URL!
+  /// Per-test App Group identifier so each test resolves to its own
+  /// `~/Library/Group Containers/<id>/SharedModels/` and never collides
+  /// with another test or with the developer's real models directory.
+  private var testGroupID: String!
+
+  /// The value of `ACERVO_APP_GROUP_ID` before this test ran, restored on
+  /// teardown so leaking environment state can't poison other test cases.
+  private var previousAppGroupEnv: String?
 
   override func setUp() async throws {
     try await super.setUp()
 
-    // Create temporary shared models directory
-    tempSharedModels = try makeTempSharedModels()
-
-    // Use temporary directory as the custom base for Acervo
-    Acervo.customBaseDirectory = tempSharedModels
+    // Each test gets a fresh App Group identifier. The sharedModelsDirectory
+    // resolver in SwiftAcervo derives a deterministic per-process path from
+    // this value, so per-test isolation falls out without any explicit
+    // override of the resolved path.
+    testGroupID = "group.acervo.test.\(UUID().uuidString.lowercased())"
+    previousAppGroupEnv = ProcessInfo.processInfo.environment[Acervo.appGroupEnvironmentVariable]
+    setenv(Acervo.appGroupEnvironmentVariable, testGroupID, 1)
   }
 
   override func tearDown() async throws {
-    // Reset Acervo to use the default shared models directory
-    Acervo.customBaseDirectory = nil
+    // Restore the previous environment value (or clear it if there wasn't
+    // one) so test ordering can't carry state between cases.
+    if let previousAppGroupEnv {
+      setenv(Acervo.appGroupEnvironmentVariable, previousAppGroupEnv, 1)
+    } else {
+      unsetenv(Acervo.appGroupEnvironmentVariable)
+    }
 
-    // Clean up temp directory
-    if let tempSharedModels = tempSharedModels {
-      cleanupTempDirectory(tempSharedModels)
+    // Clean up the per-test Group Container directory. The resolver drops
+    // SharedModels under ~/Library/Group Containers/<group-id>/ on macOS,
+    // and downloads from this test land there.
+    if let testGroupID {
+      let groupRoot = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent("Library/Group Containers")
+        .appendingPathComponent(testGroupID)
+      try? FileManager.default.removeItem(at: groupRoot)
     }
 
     try await super.tearDown()

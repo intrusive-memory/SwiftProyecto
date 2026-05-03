@@ -17,6 +17,18 @@ func sibling(_ name: String, remote: String, from version: Version) -> Package.D
   return .package(url: remote, .upToNextMajor(from: version))
 }
 
+/// Same sibling-priority pattern as ``sibling(_:remote:from:)`` but pins to a
+/// remote branch when no local sibling exists. Use only when a temporary
+/// pre-release dependency on a feature branch is required; switch back to the
+/// version-pinned ``sibling(_:remote:from:)`` once the upstream tags a release.
+func sibling(_ name: String, remote: String, branch: String) -> Package.Dependency {
+  let localPath = "../\(name)"
+  if useLocalSiblings && FileManager.default.fileExists(atPath: localPath) {
+    return .package(path: localPath)
+  }
+  return .package(url: remote, branch: branch)
+}
+
 let package = Package(
   name: "SwiftProyecto",
   platforms: [
@@ -38,11 +50,11 @@ let package = Package(
     sibling(
       "SwiftBruja",
       remote: "https://github.com/intrusive-memory/SwiftBruja.git",
-      from: "1.6.0"),
+      from: "1.6.1"),
     sibling(
       "SwiftAcervo",
       remote: "https://github.com/intrusive-memory/SwiftAcervo.git",
-      from: "0.8.4"),
+      from: "0.9.0"),
     .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMajor(from: "1.7.1")),
   ],
   targets: [
