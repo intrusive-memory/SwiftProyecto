@@ -168,9 +168,9 @@ proyecto download --model "mlx-community/Llama-3-8B"
 
 ### Model Storage Location
 
-Models are stored in a shared directory accessible to all intrusive-memory tools:
+Models are stored in the App Group container `group.intrusive-memory.models`, making them accessible to all intrusive-memory tools. SwiftAcervo v0.10.0 resolves the group via the `ACERVO_APP_GROUP_ID` env var or the `com.apple.security.application-groups` entitlement — there is **no silent fallback**. CLI tools and CI jobs must export `ACERVO_APP_GROUP_ID=group.intrusive-memory.models`; signed apps must declare the entitlement. See [AGENTS.md § App Group configuration](AGENTS.md#app-group-configuration-required) for full setup instructions.
 
-- **Path**: `~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/`
+- **Path**: `~/Library/Group Containers/group.intrusive-memory.models/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/`
 - **Model ID**: `mlx-community_Phi-3-mini-4k-instruct-4bit`
 - **Size**: ~2.3 GB (4-bit quantized)
 - **Contents**: 
