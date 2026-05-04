@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-3.5.2--dev-orange.svg" />
+    <img src="https://img.shields.io/badge/Version-3.5.3-orange.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -350,14 +350,14 @@ Add SwiftProyecto to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "3.5.1")
+    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "3.5.3")
 ]
 ```
 
 Or add it in Xcode:
 1. File > Add Package Dependencies
 2. Enter: `https://github.com/intrusive-memory/SwiftProyecto.git`
-3. Select version: `3.5.1` or later
+3. Select version: `3.5.3` or later
 
 **Note**: Version 3.0.0 has breaking changes (voice format migration). Version 2.6.0 added app-specific settings. If you're upgrading from v1.x or v2.x, see the migration sections below.
 
