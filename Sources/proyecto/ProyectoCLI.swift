@@ -95,9 +95,10 @@ struct DownloadCommand: AsyncParsableCommand {
 
       if showProgress {
         print("\n✅ Download complete!")
-        print(
-          "Model available at: \(Acervo.sharedModelsDirectory.appendingPathComponent(Acervo.slugify(componentId)).path)"
-        )
+        let resolvedPath =
+          (try? Acervo.modelDirectory(for: LanguageModel.repoId).path)
+          ?? Acervo.sharedModelsDirectory.path
+        print("Model available at: \(resolvedPath)")
       }
     } catch let error as AcervoError {
       print("\n❌ Download failed: \(error.localizedDescription)")

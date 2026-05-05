@@ -2,7 +2,7 @@
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 3.5.2 (May 2026)
+**Current Version**: 3.5.3 (May 2026)
 
 **Latest Changes (v3.5.0)**:
 - **SwiftAcervo 0.8.2 Migration**: Adopted manifest-first contract with bare-descriptor pattern
@@ -157,7 +157,7 @@ When `proyecto download` or `proyecto init` runs, the workflow is:
 
 3. Get model path via Acervo.modelDirectory(for: LanguageModel.repoId)
    └─ Returns: <group.intrusive-memory.models container>/SharedModels/mlx-community_Llama-3.2-1B-Instruct-4bit/
-   └─ Fallback (unsigned CLI/unentitled apps): ~/Library/Application Support/SwiftAcervo/SharedModels/...
+   └─ Requires ACERVO_APP_GROUP_ID env var or com.apple.security.application-groups entitlement (no silent fallback)
 
 4. Pass path to SwiftBruja for LLM inference
    └─ Bruja.query(userPrompt, model: modelPath, ...)
@@ -254,11 +254,20 @@ class IterativeProjectGenerator {
   - Methods: `isModelReady()` (no parameter - checks LanguageModel), `ensureModelReady()` (no parameter - ensures LanguageModel)
   - All operations use the `LanguageModel` constant
 
-### App Group Entitlement (REQUIRED for app consumers of this library)
+## App Group configuration (required)
 
-SwiftAcervo stores downloaded models in the App Group container `group.intrusive-memory.models` so a model downloaded by any intrusive-memory tool is immediately visible to all others. Apps that link SwiftProyecto **must** enable this capability on every target that reaches into SwiftProyecto/SwiftAcervo (the app, extensions, helpers). Without it, SwiftAcervo silently falls back to `~/Library/Application Support/SwiftAcervo/SharedModels/` — not shared, so each app re-downloads every model.
+This package depends on [SwiftAcervo](https://github.com/intrusive-memory/SwiftAcervo) for shared model storage. SwiftAcervo v0.10.0 resolves its App Group ID in this order: `ACERVO_APP_GROUP_ID` env var → `com.apple.security.application-groups` entitlement (macOS only) → `fatalError`. There is **no silent fallback**.
 
-**Xcode setup** (per target):
+- **Signed UI apps (macOS / iOS)**: declare `com.apple.security.application-groups` with `group.intrusive-memory.models` in your `.entitlements` file. iOS apps additionally need `ACERVO_APP_GROUP_ID=group.intrusive-memory.models` in the launch environment.
+- **CLI tools, scripts, CI jobs, test runners**: export `ACERVO_APP_GROUP_ID=group.intrusive-memory.models` in the shell or job environment. The standard place is `~/.zprofile`:
+
+    ```sh
+    export ACERVO_APP_GROUP_ID=group.intrusive-memory.models
+    ```
+
+Without this, `Acervo.sharedModelsDirectory` traps with `fatalError`. See [SwiftAcervo's USAGE.md](https://github.com/intrusive-memory/SwiftAcervo/blob/main/USAGE.md) for full details.
+
+**Xcode setup** (per target, for signed UI apps):
 1. Select the target → **Signing & Capabilities**.
 2. Click **+ Capability** → **App Groups**.
 3. Check (or add) `group.intrusive-memory.models`.
@@ -280,9 +289,7 @@ SwiftAcervo stores downloaded models in the App Group container `group.intrusive
 
 **Provisioning profile**: must include the App Group. Automatic signing handles this; for manual profiles, regenerate after adding the group in the Apple Developer portal.
 
-**Verify at runtime**: print `Acervo.sharedModelsDirectory` on first launch. A correctly entitled app shows a path under `~/Library/Group Containers/group.intrusive-memory.models/…` on macOS, or inside the sandbox's Group Containers on iOS. A path ending in `Application Support/SwiftAcervo/SharedModels` means the capability is missing — go back and add it.
-
-**Unsigned macOS CLI tools** (including the `proyecto` binary itself) cannot join App Groups and legitimately use the fallback path by design. The entitlement is mandatory only for signed consumer apps. See [SwiftAcervo USAGE.md](https://github.com/intrusive-memory/SwiftAcervo/blob/main/USAGE.md) §2 and [SHARED_MODELS_DIRECTORY.md](https://github.com/intrusive-memory/SwiftAcervo/blob/main/SHARED_MODELS_DIRECTORY.md) for the full directory layout and troubleshooting.
+**Verify at runtime**: print `Acervo.sharedModelsDirectory` on first launch. A correctly entitled app shows a path under `~/Library/Group Containers/group.intrusive-memory.models/…` on macOS, or inside the sandbox's Group Containers on iOS. If `Acervo.sharedModelsDirectory` traps, confirm `ACERVO_APP_GROUP_ID` is set or the entitlement is present. See [SwiftAcervo USAGE.md](https://github.com/intrusive-memory/SwiftAcervo/blob/main/USAGE.md) and [SHARED_MODELS_DIRECTORY.md](https://github.com/intrusive-memory/SwiftAcervo/blob/main/SHARED_MODELS_DIRECTORY.md) for the full directory layout and troubleshooting.
 
 ### Agent Guidance: Changing the Canonical Model
 

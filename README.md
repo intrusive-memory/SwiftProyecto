@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-3.5.2-orange.svg" />
+    <img src="https://img.shields.io/badge/Version-3.5.3-orange.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -168,9 +168,9 @@ proyecto download --model "mlx-community/Llama-3-8B"
 
 ### Model Storage Location
 
-Models are stored in a shared directory accessible to all intrusive-memory tools:
+Models are stored in the App Group container `group.intrusive-memory.models`, making them accessible to all intrusive-memory tools. SwiftAcervo v0.10.0 resolves the group via the `ACERVO_APP_GROUP_ID` env var or the `com.apple.security.application-groups` entitlement — there is **no silent fallback**. CLI tools and CI jobs must export `ACERVO_APP_GROUP_ID=group.intrusive-memory.models`; signed apps must declare the entitlement. See [AGENTS.md § App Group configuration](AGENTS.md#app-group-configuration-required) for full setup instructions.
 
-- **Path**: `~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/`
+- **Path**: `~/Library/Group Containers/group.intrusive-memory.models/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/`
 - **Model ID**: `mlx-community_Phi-3-mini-4k-instruct-4bit`
 - **Size**: ~2.3 GB (4-bit quantized)
 - **Contents**: 
@@ -350,14 +350,14 @@ Add SwiftProyecto to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "3.5.1")
+    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "3.5.3")
 ]
 ```
 
 Or add it in Xcode:
 1. File > Add Package Dependencies
 2. Enter: `https://github.com/intrusive-memory/SwiftProyecto.git`
-3. Select version: `3.5.1` or later
+3. Select version: `3.5.3` or later
 
 **Note**: Version 3.0.0 has breaking changes (voice format migration). Version 2.6.0 added app-specific settings. If you're upgrading from v1.x or v2.x, see the migration sections below.
 
