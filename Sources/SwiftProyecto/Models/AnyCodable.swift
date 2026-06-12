@@ -51,6 +51,7 @@ public struct AnyCodable: Codable, Sendable, Equatable {
   public init<T: Codable>(_ value: T) throws {
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
+    encoder.outputFormatting = .sortedKeys
     self.encodedData = try encoder.encode(value)
   }
 
@@ -81,26 +82,32 @@ public struct AnyCodable: Codable, Sendable, Equatable {
     if let bool = try? container.decode(Bool.self) {
       let encoder = JSONEncoder()
       encoder.dateEncodingStrategy = .iso8601
+      encoder.outputFormatting = .sortedKeys
       self.encodedData = try encoder.encode(bool)
     } else if let int = try? container.decode(Int.self) {
       let encoder = JSONEncoder()
       encoder.dateEncodingStrategy = .iso8601
+      encoder.outputFormatting = .sortedKeys
       self.encodedData = try encoder.encode(int)
     } else if let double = try? container.decode(Double.self) {
       let encoder = JSONEncoder()
       encoder.dateEncodingStrategy = .iso8601
+      encoder.outputFormatting = .sortedKeys
       self.encodedData = try encoder.encode(double)
     } else if let string = try? container.decode(String.self) {
       let encoder = JSONEncoder()
       encoder.dateEncodingStrategy = .iso8601
+      encoder.outputFormatting = .sortedKeys
       self.encodedData = try encoder.encode(string)
     } else if let array = try? container.decode([AnyCodable].self) {
       let encoder = JSONEncoder()
       encoder.dateEncodingStrategy = .iso8601
+      encoder.outputFormatting = .sortedKeys
       self.encodedData = try encoder.encode(array)
     } else if let dict = try? container.decode([String: AnyCodable].self) {
       let encoder = JSONEncoder()
       encoder.dateEncodingStrategy = .iso8601
+      encoder.outputFormatting = .sortedKeys
       self.encodedData = try encoder.encode(dict)
     } else {
       // Try to decode as raw JSON data
