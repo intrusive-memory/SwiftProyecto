@@ -178,6 +178,12 @@ public struct ProjectMarkdownParser {
             yaml += "      \(provider): \(escapeYAMLString(voiceId))\n"
           }
         }
+        if let voicePrompts = member.voicePrompts, !voicePrompts.isEmpty {
+          yaml += "    voicePrompts:\n"
+          for (lang, prompt) in voicePrompts.sorted(by: { $0.key < $1.key }) {
+            yaml += "      \(lang): \(escapeYAMLString(prompt))\n"
+          }
+        }
       }
     }
 

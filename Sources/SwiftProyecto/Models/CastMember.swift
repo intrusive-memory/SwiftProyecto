@@ -121,6 +121,17 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
   /// Invalid voice identifiers are permitted and will be handled at generation time.
   public var voices: [String: String]
 
+  /// Optional per-language voice prompt overrides.
+  /// Keys are BCP-47 language tags (lowercased), values are voice prompt strings.
+  ///
+  /// Examples:
+  /// - "en": "man with a deep baritone"
+  /// - "es": "hombre con voz grave"
+  /// - "fr": "homme avec une voix grave"
+  ///
+  /// Use `voicePrompt(forLanguage:)` to resolve with fallback logic.
+  public var voicePrompts: [String: String]?
+
   /// Unique identifier based on character name
   public var id: String { character }
 
@@ -130,13 +141,15 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     actor: String? = nil,
     gender: Gender? = nil,
     voiceDescription: String? = nil,
-    voices: [String: String] = [:]
+    voices: [String: String] = [:],
+    voicePrompts: [String: String]? = nil
   ) {
     self.character = character
     self.actor = actor
     self.gender = gender
     self.voiceDescription = voiceDescription
     self.voices = voices
+    self.voicePrompts = voicePrompts
   }
 
   // MARK: - Convenience
@@ -196,6 +209,55 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     Array(voices.keys).sorted()
   }
 
+  /// Returns the appropriate voice prompt string for a given BCP-47 language tag.
+  ///
+  /// Resolution order (first non-nil result wins):
+  /// 1. Exact normalized key lookup in `voicePrompts` (trimmed, lowercased)
+  /// 2. Base-language key lookup (e.g., "es" from "es-MX")
+  /// 3. `voiceDescription` fallback
+  /// 4. `nil` if nothing is available
+  ///
+  /// An empty or whitespace-only `language` string is treated as a miss and
+  /// falls through to `voiceDescription`.
+  ///
+  /// - Parameter language: BCP-47 language tag (case-insensitive, e.g., "es-MX", "EN", "fr")
+  /// - Returns: The resolved voice prompt string, or nil if none is available
+  ///
+  /// ## Example
+  ///
+  /// ```swift
+  /// let member = CastMember(
+  ///     character: "NARRATOR",
+  ///     voiceDescription: "warm narrator",
+  ///     voicePrompts: ["es": "hombre", "en": "man"]
+  /// )
+  /// member.voicePrompt(forLanguage: "es")    // "hombre"
+  /// member.voicePrompt(forLanguage: "es-MX") // "hombre" (base fallback)
+  /// member.voicePrompt(forLanguage: "ES")    // "hombre" (case-insensitive)
+  /// member.voicePrompt(forLanguage: "fr")    // "warm narrator" (voiceDescription fallback)
+  /// member.voicePrompt(forLanguage: "")      // "warm narrator" (empty → voiceDescription)
+  /// ```
+  public func voicePrompt(forLanguage language: String) -> String? {
+    let normalized = language.trimmingCharacters(in: .whitespaces).lowercased()
+
+    if !normalized.isEmpty, let prompts = voicePrompts {
+      // 1. Exact normalized key
+      if let exact = prompts[normalized] {
+        return exact
+      }
+
+      // 2. Base-language key (e.g., "es" from "es-mx")
+      let base = String(
+        normalized.split(separator: "-", maxSplits: 1).first ?? Substring(normalized))
+      if base != normalized, let baseMatch = prompts[base] {
+        return baseMatch
+      }
+    }
+
+    // 3. voiceDescription fallback
+    return voiceDescription
+  }
+
   // MARK: - Equatable & Hashable
 
   /// Two cast members are equal if they have the same character name
@@ -217,6 +279,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     case voicePrompt
     case voiceDescription
     case voices
+    case voicePrompts
   }
 
   public init(from decoder: Decoder) throws {
@@ -229,6 +292,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
       try container.decodeIfPresent(String.self, forKey: .voicePrompt)
       ?? container.decodeIfPresent(String.self, forKey: .voiceDescription)
     voices = try container.decodeIfPresent([String: String].self, forKey: .voices) ?? [:]
+    voicePrompts = try container.decodeIfPresent([String: String].self, forKey: .voicePrompts)
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -238,5 +302,6 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     try container.encodeIfPresent(gender, forKey: .gender)
     try container.encodeIfPresent(voiceDescription, forKey: .voicePrompt)
     try container.encode(voices, forKey: .voices)
+    try container.encodeIfPresent(voicePrompts, forKey: .voicePrompts)
   }
 }
