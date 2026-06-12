@@ -6,8 +6,8 @@
 //
 
 import Foundation
+import FoundationModels
 import SwiftAcervo
-import SwiftBruja
 import SwiftProyecto
 
 /// Generates PROJECT.md metadata using iterative LLM queries.
@@ -16,25 +16,21 @@ class IterativeProjectGenerator {
   static let defaultMaxTokens = 65_536
 
   private let directoryAnalyzer: DirectoryAnalyzer
-  private let modelId: String
   private let authorOverride: String?
   private let maxTokensPerSection: Int
 
   // Accumulated results from each section
   private var results: [ProjectSection: Any] = [:]
 
-  /// Initialize the generator with a model identifier.
+  /// Initialize the generator.
   /// - Parameters:
-  ///   - model: HuggingFace model ID (e.g., "mlx-community/Phi-3-mini-4k-instruct-4bit")
   ///   - authorOverride: Optional author override to skip LLM detection
   ///   - maxTokens: Max tokens to generate per section (default: 64k)
   init(
-    model: String,
     authorOverride: String? = nil,
     maxTokens: Int = defaultMaxTokens
   ) {
     self.directoryAnalyzer = DirectoryAnalyzer()
-    self.modelId = model
     self.authorOverride = authorOverride
     self.maxTokensPerSection = maxTokens
   }
@@ -99,36 +95,65 @@ class IterativeProjectGenerator {
     let systemPrompt = section.systemPrompt(for: context, previousResults: results)
     let userPrompt = section.userPrompt(for: context)
 
+    // Query using Foundation Models
+    let response = try await queryFoundationModel(
+      userPrompt: userPrompt,
+      systemPrompt: systemPrompt,
+      maxTokens: maxTokens(for: section)
+    )
+
     // For config section, we expect JSON
     if section == .config {
-      let response = try await Bruja.query(
-        userPrompt,
-        model: modelId,
-        temperature: 0.3,
-        maxTokens: maxTokens(for: section),
-        system: systemPrompt
-      )
-
-      // Parse JSON response
-      guard let data = response.data(using: .utf8),
+      let jsonString = extractJSON(from: response)
+      guard let data = jsonString.data(using: .utf8),
         let json = try? JSONSerialization.jsonObject(with: data) as? [String: String]
       else {
         throw GeneratorError.invalidConfigResponse(response)
       }
-
       return json
     }
 
     // For other sections, expect plain text
-    let response = try await Bruja.query(
-      userPrompt,
-      model: modelId,
-      temperature: 0.3,
-      maxTokens: maxTokens(for: section),
-      system: systemPrompt
+    return try parseResponse(response, for: section)
+  }
+
+  /// Query Foundation Models on-device LLM
+  private func queryFoundationModel(
+    userPrompt: String,
+    systemPrompt: String,
+    maxTokens: Int
+  ) async throws -> String {
+    let instructions = Instructions(systemPrompt)
+    let session = LanguageModelSession(
+      model: .default,
+      tools: [],
+      instructions: instructions
     )
 
-    return try parseResponse(response, for: section)
+    var options = GenerationOptions()
+    options.temperature = 0.3
+    options.maximumResponseTokens = maxTokens
+
+    let response = try await session.respond(options: options) {
+      Prompt(userPrompt)
+    }
+
+    return response.content
+  }
+
+  /// Extract JSON from a response that may be wrapped in markdown code blocks
+  private func extractJSON(from response: String) -> String {
+    let trimmed = response.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    // Check for markdown code block wrapper
+    if trimmed.hasPrefix("```") {
+      let lines = trimmed.components(separatedBy: .newlines)
+      // Skip first line (```json or similar) and last line (```)
+      let jsonLines = lines.dropFirst().dropLast()
+      return jsonLines.joined(separator: "\n")
+    }
+
+    return trimmed
   }
 
   /// Parse the LLM response for a specific section

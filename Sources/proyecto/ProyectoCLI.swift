@@ -8,7 +8,6 @@
 import ArgumentParser
 import Foundation
 import SwiftAcervo
-import SwiftBruja
 import SwiftProyecto
 
 /// PROJECT.md generator CLI using local LLM inference.
@@ -18,8 +17,8 @@ struct ProyectoCLI: AsyncParsableCommand {
     commandName: "proyecto",
     abstract: "Generate and manage PROJECT.md files using local LLM inference",
     discussion: """
-      Proyecto analyzes a directory structure and uses a local LLM to generate
-      PROJECT.md metadata files for podcast and screenplay projects.
+      Proyecto analyzes a directory structure and uses Apple's on-device Foundation Models
+      to generate PROJECT.md metadata files for podcast and screenplay projects.
 
       The generated PROJECT.md contains YAML frontmatter with:
         - title, author, description, genre, tags
@@ -31,83 +30,13 @@ struct ProyectoCLI: AsyncParsableCommand {
         proyecto init /path/to/project    # Analyze specific directory
         proyecto init --author "Jane Doe" # Override author field
         proyecto init --update            # Update existing PROJECT.md
-        proyecto download                 # Download default LLM model
         proyecto validate                 # Validate PROJECT.md in current directory
         proyecto validate /path/to/dir    # Validate PROJECT.md in specific directory
       """,
     version: SwiftProyecto.version,
-    subcommands: [InitCommand.self, DownloadCommand.self, ValidateCommand.self],
+    subcommands: [InitCommand.self, ValidateCommand.self],
     defaultSubcommand: InitCommand.self
   )
-}
-
-// MARK: - Download Command
-
-struct DownloadCommand: AsyncParsableCommand {
-  static let configuration = CommandConfiguration(
-    commandName: "download",
-    abstract: "Download an LLM model for use with proyecto",
-    discussion: """
-      Downloads a model from Cloudflare R2 CDN for local LLM inference.
-      Models are stored in ~/Library/SharedModels/
-
-      The default model is optimized for PROJECT.md generation:
-        qwen2.5-7b-instruct-4bit (Qwen2.5 7B Instruct, 4-bit quantized, ~4 GB)
-
-      Examples:
-        proyecto download                   # Download default model (qwen2.5-7b-instruct-4bit)
-        proyecto download --force           # Re-download even if exists
-      """
-  )
-
-  @Flag(name: .long, help: "Force re-download even if model already exists locally")
-  var force: Bool = false
-
-  @Flag(name: .shortAndLong, help: "Suppress progress output")
-  var quiet: Bool = false
-
-  mutating func run() async throws {
-    let showProgress = !quiet
-
-    // Initialize ModelManager to register components with Acervo
-    _ = ModelManager()
-
-    let componentId = LanguageModel.id
-
-    if showProgress {
-      print("Downloading model: \(LanguageModel.displayName)")
-      print("Component ID: \(componentId)")
-      print("Destination: \(Acervo.sharedModelsDirectory.path)")
-    }
-
-    do {
-      try await Acervo.ensureComponentReady(componentId) { progress in
-        if showProgress {
-          let percent = progress.overallProgress
-          let percentInt = Int(percent * 100)
-          print(
-            "\rDownloading \(progress.fileName): \(percentInt)% (\(progress.fileIndex + 1)/\(progress.totalFiles) files)",
-            terminator: ""
-          )
-          fflush(stdout)
-        }
-      }
-
-      if showProgress {
-        print("\n✅ Download complete!")
-        let resolvedPath =
-          (try? Acervo.modelDirectory(for: LanguageModel.repoId).path)
-          ?? Acervo.sharedModelsDirectory.path
-        print("Model available at: \(resolvedPath)")
-      }
-    } catch let error as AcervoError {
-      print("\n❌ Download failed: \(error.localizedDescription)")
-      throw ExitCode.failure
-    } catch {
-      print("\n❌ Download failed: \(error.localizedDescription)")
-      throw ExitCode.failure
-    }
-  }
 }
 
 // MARK: - Validate Command
@@ -282,9 +211,6 @@ struct InitCommand: AsyncParsableCommand {
   @Argument(help: "Directory to analyze (default: current directory)")
   var directory: String?
 
-  @Option(name: .long, help: "Model path or HuggingFace ID for LLM inference")
-  var model: String = LanguageModel.repoId
-
   @Option(name: .long, help: "Override the author field (skip LLM detection)")
   var author: String?
 
@@ -353,7 +279,6 @@ struct InitCommand: AsyncParsableCommand {
 
     // Use iterative generator
     let generator = IterativeProjectGenerator(
-      model: model,
       authorOverride: author,
       maxTokens: maxTokens
     )
