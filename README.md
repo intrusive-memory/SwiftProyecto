@@ -60,8 +60,15 @@ SwiftProyecto provides AI agents and applications with comprehensive project und
 **Integration Pattern:**
 AI agents and apps consume PROJECT.md metadata to understand project structure and intent, then use `getSecureURL(for:in:)` to access content files for parsing/rendering. See "Integration with Document Parsers" section for details.
 
-**📖 PROJECT.md Syntax Reference:**
-For agents and developers working with PROJECT.md files, see **[Docs/PROJECT_MD_REFERENCE.md](Docs/PROJECT_MD_REFERENCE.md)** for a quick-reference guide to the front matter schema, including field tables, examples, validation rules, and voice provider keys.
+## Documentation
+
+- **[Docs/INTEGRATION_GUIDE.md](Docs/INTEGRATION_GUIDE.md)** — **Start here.** Complete guide for developers integrating SwiftProyecto, including how to generate PROJECT.md from a directory, read/write files, and access project metadata programmatically.
+
+- **[Docs/PROJECT_MD_REFERENCE.md](Docs/PROJECT_MD_REFERENCE.md)** — Quick-reference guide to PROJECT.md front matter schema with field tables, examples, validation rules, and voice provider keys.
+
+- **[AGENTS.md](AGENTS.md)** — Comprehensive API documentation for AI coding agents and developers.
+
+- **[EXAMPLE_PROJECT.md](EXAMPLE_PROJECT.md)** — Working example of a complete PROJECT.md file.
 
 ## Architecture
 

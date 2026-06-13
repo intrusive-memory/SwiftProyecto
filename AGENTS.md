@@ -94,7 +94,20 @@ SwiftProyecto is a Swift package providing **extensible, agentic discovery of co
 
 ---
 
-## 📖 PROJECT.md Syntax Quick Reference
+## 📚 Developer Documentation
+
+### 📖 Integration Guide for Developers
+
+**🔗 Main Reference**: See [**Docs/INTEGRATION_GUIDE.md**](Docs/INTEGRATION_GUIDE.md) for a complete guide to integrating SwiftProyecto into your app.
+
+Covers:
+- **Core Components**: ProjectService, ProjectMarkdownParser, ProjectDiscovery
+- **Common Workflows**: Reading/writing PROJECT.md, discovering files, accessing projects
+- **Generating PROJECT.md**: Both CLI (`proyecto generate`) and programmatic approaches
+- **Best Practices**: Security-scoped bookmarks, batch processing, error handling
+- **Integration Patterns**: SwiftUI views, batch processing, SwiftData models
+
+### 📖 PROJECT.md Syntax Quick Reference
 
 **🔗 Quick Reference**: See [**Docs/PROJECT_MD_REFERENCE.md**](Docs/PROJECT_MD_REFERENCE.md) for a concise schema guide.
 
