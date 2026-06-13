@@ -20,10 +20,7 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/marcprux/universal.git", .upToNextMajor(from: "5.3.0")),
-    sibling(
-      "SwiftAcervo",
-      remote: "https://github.com/intrusive-memory/SwiftAcervo.git",
-      from: "0.16.0"),
+    .package(url: "https://github.com/intrusive-memory/SwiftAcervo.git", .upToNextMajor(from: "0.16.0")),
     .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMajor(from: "1.7.1")),
   ],
   targets: [
