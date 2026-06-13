@@ -333,6 +333,66 @@ final class CastMemberTests: XCTestCase {
     XCTAssertEqual(decoded.gender, .nonBinary)
   }
 
+  // MARK: - Language Tests
+
+  func testInitialization_LanguageDefaultsToNil() {
+    let member = CastMember(character: "NARRATOR")
+    XCTAssertNil(member.language)
+  }
+
+  func testInitialization_WithLanguage() {
+    let member = CastMember(
+      character: "MAESTRA",
+      voices: ["voxalta": "MAESTRA.vox"],
+      language: "es-MX"
+    )
+    XCTAssertEqual(member.language, "es-MX")
+  }
+
+  func testLanguage_Mutable() {
+    var member = CastMember(character: "NARRATOR")
+    XCTAssertNil(member.language)
+
+    member.language = "en"
+    XCTAssertEqual(member.language, "en")
+
+    member.language = nil
+    XCTAssertNil(member.language)
+  }
+
+  func testCodable_Language_RoundTrips() throws {
+    let original = CastMember(
+      character: "MAESTRA",
+      actor: "Ana",
+      gender: .female,
+      voices: ["voxalta": "MAESTRA.vox"],
+      language: "es-MX"
+    )
+
+    let data = try JSONEncoder().encode(original)
+    let decoded = try JSONDecoder().decode(CastMember.self, from: data)
+
+    XCTAssertEqual(decoded.language, "es-MX")
+  }
+
+  func testCodable_Language_AbsentDecodesToNil() throws {
+    // A document written before this field existed has no `language` key.
+    let json = """
+      { "character": "NARRATOR", "voices": { "voxalta": "narrative-1" } }
+      """.data(using: .utf8)!
+
+    let decoded = try JSONDecoder().decode(CastMember.self, from: json)
+    XCTAssertNil(decoded.language)
+  }
+
+  func testCodable_Language_OmittedFromEncodingWhenNil() throws {
+    let member = CastMember(character: "NARRATOR")
+    let data = try JSONEncoder().encode(member)
+    let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    XCTAssertNotNil(object)
+    XCTAssertNil(object?["language"])
+  }
+
   // MARK: - Sendable Tests
 
   func testSendable() {
