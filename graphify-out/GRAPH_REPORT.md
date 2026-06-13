@@ -5,8 +5,9 @@
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1104 nodes · 1662 edges · 71 communities (46 shown, 25 thin omitted)
-- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 111 edges (avg confidence: 0.8)
+- 1104 nodes · 1659 edges · 71 communities (46 shown, 25 thin omitted)
+- Extraction: 93.5% EXTRACTED · 6.5% INFERRED · 0% AMBIGUOUS · INFERRED: 108 edges (avg confidence: 0.8)
+- **Filtered:** Removed 3 workflow-related inferred edges + 1 CI/CD Release Automation hyperedge
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -97,12 +98,6 @@
 ## Surprising Connections (you probably didn't know these)
 - `CastMember Unit Tests` --documents--> `CastMember - Character-to-Voice Mapping`  [EXTRACTED]
   Tests/SwiftProyectoTests/CastMemberTests.swift → Docs/PROJECT_MD_REFERENCE.md
-- `Release Workflow` --documents--> `ProyectoCLI`  [INFERRED]
-  .github/workflows/release.yml → Sources/proyecto/ProyectoCLI.swift
-- `Release Workflow` --documents--> `LanguageModel`  [INFERRED]
-  .github/workflows/release.yml → Sources/SwiftProyecto/Infrastructure/ModelManager.swift
-- `CI Workflow` --documents--> `ArgumentParser`  [INFERRED]
-  .github/workflows/ci.yml → Package.swift
 - `ProjectMarkdownParser Unit Tests` --documents--> `ProjectMarkdownParser - YAML Front Matter Parser`  [EXTRACTED]
   Tests/SwiftProyectoTests/ProjectMarkdownParserTests.swift → AGENTS.md
 
@@ -122,7 +117,6 @@
 - **Project Lifecycle Management** — service_projectservice, service_projectdiscovery, infra_bookmarkmanager, model_projectmodel, model_projectfilereference [EXTRACTED 1.00]
 - **LLM-Driven Generation System** — cli_iterativeprojectgenerator, cli_directoryanalyzer, cli_projectsection, cli_directorycontext, infra_modelmanager, dep_foundationmodels [EXTRACTED 1.00]
 - **CLI Validation Pattern** — cli_proyectocli, cli_validatecommand, utility_projectmarkdownparser, model_projectfrontmatter [INFERRED 0.95]
-- **CI/CD Release Automation** — workflow_ci, workflow_release, cli_proyectocli, infra_languagemodel [INFERRED 0.90]
 - **File Discovery and Synchronization** — service_projectservice, service_projectdiscovery, model_projectfilereference, model_discoveredfile [EXTRACTED 1.00]
 - **Cast and Character Voice System** — model_castmember, model_gender, rationale_casting_voices, model_projectfrontmatter [INFERRED 0.95]
 - **Package Dependencies** — dep_swiftacervo, dep_universal, dep_argumentparser, dep_foundationmodels [EXTRACTED 1.00]

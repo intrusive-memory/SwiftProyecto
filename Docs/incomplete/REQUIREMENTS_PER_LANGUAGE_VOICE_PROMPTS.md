@@ -1,11 +1,37 @@
 # REQUIREMENTS — Per-language voice prompts on CastMember
 
-**Repo:** SwiftProyecto · **Status:** Draft · **Target version:** v3.6.0 (additive, from v3.5.4)
+**Repo:** SwiftProyecto · **Status:** ITERATION 2 (re-attempt) · **Target version:** v3.8.0 (additive, from current `3.8.0-dev`)
 
 Self-contained, single-repo requirement. Everything here is buildable and
 **fully testable inside SwiftProyecto** with no dependency on SwiftEchada or any
 voice/TTS runtime. Downstream consumption (echada's Phase A selection + `--accent`)
 is a separate REQUIREMENTS.md in SwiftEchada and is **out of scope here**.
+
+## Iteration 2 status (2026-06-12)
+
+Iteration 1 (mission BABEL BROADCAST 01) completed the feature code — `voicePrompts`
+field, `voicePrompt(forLanguage:)` selection, Codable, parser write/read, and 10 tests
+(commit `e1a0af8`) — but was **rolled back** (verdict in `bda46d27`) solely because CI
+could not pass: a pre-existing Swift 6 incompatibility in the transitive
+`swift-tokenizers-mlx` dependency (`TokenizerBridge.swift: call can throw, but it is not
+marked with 'try'`) blocked `make test`. The feature itself was orthogonal and never the
+cause.
+
+**That blocker is now gone.** The Foundation Models migration that shipped in v3.7.0
+removed the SwiftBruja/MLX-tokenizer chain — current `Package.swift`/`Package.resolved`
+have no `swift-tokenizers-mlx`. On a clean tree (post `/dependency-purge`, SwiftAcervo
+floor bumped 0.16.0 → 0.19.2) `make test` builds and runs the suite (33 tests, 6 suites);
+the only red is a stale `testVersion()` assertion (`== "3.6.0"` vs the `3.8.0-dev`
+constant) — pre-existing bookkeeping the release bump fixes, unrelated to this feature.
+
+**Targets corrected:** v3.6.0 and v3.7.0 are already cut and do NOT contain this feature
+(the v3.7.0 tag has no `voicePrompts`); the misleading release titles refer to the FM
+migration. The live line is `3.8.0-dev`, so this ships in **v3.8.0**.
+
+**Iteration 2 plan:** recover the feature code from commit `e1a0af8` / the mission branch,
+rebase onto current `development`, re-run the 10 acceptance tests (now executable), fix the
+`testVersion()` assertion as part of the version bump, ship v3.8.0. When work begins, move
+this file out of `docs/incomplete/` back to root `REQUIREMENTS.md`.
 
 ## Precondition (gate) — ✅ PASSED (2026-06-12)
 
@@ -142,9 +168,11 @@ Each is an independent unit test (XCTest, mirroring `Tests/SwiftProyectoTests/Ca
 
 ## Release
 
-- Additive, non-breaking → **minor bump v3.5.4 → v3.6.0**.
+- Additive, non-breaking → **minor bump to v3.8.0** (from current `3.8.0-dev`).
+- Update the `testVersion()` assertion to the released version as part of the bump.
 - Ship via the `ship-swift-library` flow. SwiftEchada bumps its dependency floor to
-  v3.6.0 in its own REQUIREMENTS once this is tagged.
+  v3.8.0 in its own REQUIREMENTS once this is tagged (also reconciling its stale
+  `from: "0.13.0"` SwiftProyecto pin).
 
 ## Sequencing (informational — not a cross-repo requirement)
 
