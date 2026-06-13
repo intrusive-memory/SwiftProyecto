@@ -27,14 +27,7 @@ release: resolve
 	@PRODUCT_DIR=$$(find $(DERIVED_DATA)/SwiftProyecto-*/Build/Products/Release -name $(BINARY) -type f 2>/dev/null | head -1 | xargs dirname); \
 	if [ -n "$$PRODUCT_DIR" ]; then \
 		cp "$$PRODUCT_DIR/$(BINARY)" $(BIN_DIR)/; \
-		if [ -d "$$PRODUCT_DIR/mlx-swift_Cmlx.bundle" ]; then \
-			rm -rf $(BIN_DIR)/mlx-swift_Cmlx.bundle; \
-			cp -R "$$PRODUCT_DIR/mlx-swift_Cmlx.bundle" $(BIN_DIR)/; \
-			echo "Installed $(BINARY) + Metal bundle to $(BIN_DIR)/ (Release)"; \
-		else \
-			echo "Warning: Metal bundle not found, binary may not work"; \
-			echo "Installed $(BINARY) to $(BIN_DIR)/ (Release, no Metal bundle)"; \
-		fi; \
+		echo "Installed $(BINARY) to $(BIN_DIR)/ (Release)"; \
 	else \
 		echo "Error: Could not find $(BINARY) in DerivedData"; \
 		exit 1; \
@@ -47,14 +40,7 @@ install: resolve
 	@PRODUCT_DIR=$$(find $(DERIVED_DATA)/SwiftProyecto-*/Build/Products/Debug -name $(BINARY) -type f 2>/dev/null | head -1 | xargs dirname); \
 	if [ -n "$$PRODUCT_DIR" ]; then \
 		cp "$$PRODUCT_DIR/$(BINARY)" $(BIN_DIR)/; \
-		if [ -d "$$PRODUCT_DIR/mlx-swift_Cmlx.bundle" ]; then \
-			rm -rf $(BIN_DIR)/mlx-swift_Cmlx.bundle; \
-			cp -R "$$PRODUCT_DIR/mlx-swift_Cmlx.bundle" $(BIN_DIR)/; \
-			echo "Installed $(BINARY) + Metal bundle to $(BIN_DIR)/ (Debug)"; \
-		else \
-			echo "Warning: Metal bundle not found, binary may not work"; \
-			echo "Installed $(BINARY) to $(BIN_DIR)/ (Debug, no Metal bundle)"; \
-		fi; \
+		echo "Installed $(BINARY) to $(BIN_DIR)/ (Debug)"; \
 	else \
 		echo "Error: Could not find $(BINARY) in DerivedData"; \
 		exit 1; \

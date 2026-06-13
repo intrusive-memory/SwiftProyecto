@@ -41,24 +41,20 @@ jobs:
       - name: Build Release Binary
         run: make release
 
-      - name: Verify Binary and Metal Bundle
+      - name: Verify Binary
         run: |
           ./bin/proyecto --version
           file ./bin/proyecto
-          # Verify Metal bundle exists
-          test -d ./bin/mlx-swift_Cmlx.bundle || { echo "ERROR: Metal bundle not found"; exit 1; }
-          test -f ./bin/mlx-swift_Cmlx.bundle/Contents/Resources/default.metallib || { echo "ERROR: metallib not found"; exit 1; }
-          echo "Metal bundle verified: ./bin/mlx-swift_Cmlx.bundle"
+          echo "Binary verified: ./bin/proyecto"
 
-      - name: Package Binary with Metal Bundle
+      - name: Package Binary
         id: package
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           TARBALL="proyecto-${VERSION}-arm64-macos.tar.gz"
 
           cd bin
-          # Include both the binary and the Metal bundle
-          tar -czvf "${TARBALL}" proyecto mlx-swift_Cmlx.bundle
+          tar -czvf "${TARBALL}" proyecto
           SHA256=$(shasum -a 256 "${TARBALL}" | cut -d' ' -f1)
 
           echo "tarball=${TARBALL}" >> $GITHUB_OUTPUT
