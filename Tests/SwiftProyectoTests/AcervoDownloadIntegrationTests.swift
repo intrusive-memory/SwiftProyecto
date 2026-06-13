@@ -20,11 +20,11 @@ final class AcervoDownloadIntegrationTests: XCTestCase {
     // This test verifies that Foundation Models API is available.
 
     #if os(macOS)
-    // Foundation Models are natively available on macOS 27+
-    // No download required - models are built into the OS
-    XCTAssertTrue(true, "Foundation Models available on macOS 27")
+      // Foundation Models are natively available on macOS 27+
+      // No download required - models are built into the OS
+      XCTAssertTrue(true, "Foundation Models available on macOS 27")
     #else
-    XCTSkip("Foundation Models only available on macOS")
+      XCTSkip("Foundation Models only available on macOS")
     #endif
   }
 
@@ -33,11 +33,11 @@ final class AcervoDownloadIntegrationTests: XCTestCase {
   /// Test that model inference uses native Foundation Models.
   func testModelDirectoryResolution() async throws {
     #if os(macOS)
-    // Foundation Models use native macOS APIs
-    // No external model directory required
-    XCTAssertTrue(true, "Foundation Models use native APIs")
+      // Foundation Models use native macOS APIs
+      // No external model directory required
+      XCTAssertTrue(true, "Foundation Models use native APIs")
     #else
-    XCTSkip("Foundation Models only available on macOS")
+      XCTSkip("Foundation Models only available on macOS")
     #endif
   }
 
@@ -46,11 +46,11 @@ final class AcervoDownloadIntegrationTests: XCTestCase {
   /// Test that Foundation Models are always ready (no download required).
   func testModelReadinessCheck() async throws {
     #if os(macOS)
-    // Foundation Models are always ready since they're built into macOS
-    // Unlike external models, no readiness check or download is needed
-    XCTAssertTrue(true, "Foundation Models always ready")
+      // Foundation Models are always ready since they're built into macOS
+      // Unlike external models, no readiness check or download is needed
+      XCTAssertTrue(true, "Foundation Models always ready")
     #else
-    XCTSkip("Foundation Models only available on macOS")
+      XCTSkip("Foundation Models only available on macOS")
     #endif
   }
 

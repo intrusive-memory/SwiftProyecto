@@ -924,7 +924,9 @@ context.insert(registry)
 
 ## Building
 
-The `proyecto` CLI can be built with standard Swift tools:
+**⚠️ IMPORTANT: Always use `make` targets for building and testing.** Do not use `swift build`, `swift test`, or raw `xcodebuild` commands directly.
+
+The `proyecto` CLI can be built with standard Swift tools via the Makefile:
 
 ### Build Commands
 
