@@ -94,6 +94,48 @@ SwiftProyecto is a Swift package providing **extensible, agentic discovery of co
 
 ---
 
+## 📚 Developer Documentation
+
+### 🕸️ Knowledge Graph
+
+**Interactive Graph**: Open [`graphify-out/graph.html`](graphify-out/graph.html) in your browser for an interactive visual map of the codebase with 1104 nodes, 1662 edges, and 71 semantic communities.
+
+**Graph Report**: See [`graphify-out/GRAPH_REPORT.md`](graphify-out/GRAPH_REPORT.md) for:
+- God nodes (most connected abstractions)
+- Surprising cross-community connections
+- Hyperedges (group relationships)
+- Community structure and cohesion scores
+
+**Raw Data**: [`graphify-out/graph.json`](graphify-out/graph.json) is GraphRAG-ready for downstream LLM applications.
+
+### 📖 Integration Guide for Developers
+
+**🔗 Main Reference**: See [**Docs/INTEGRATION_GUIDE.md**](Docs/INTEGRATION_GUIDE.md) for a complete guide to integrating SwiftProyecto into your app.
+
+Covers:
+- **Core Components**: ProjectService, ProjectMarkdownParser, ProjectDiscovery
+- **Common Workflows**: Reading/writing PROJECT.md, discovering files, accessing projects
+- **Generating PROJECT.md**: Both CLI (`proyecto generate`) and programmatic approaches
+- **Best Practices**: Security-scoped bookmarks, batch processing, error handling
+- **Integration Patterns**: SwiftUI views, batch processing, SwiftData models
+
+### 📖 PROJECT.md Syntax Quick Reference
+
+**🔗 Quick Reference**: See [**Docs/PROJECT_MD_REFERENCE.md**](Docs/PROJECT_MD_REFERENCE.md) for a concise schema guide.
+
+For agents needing to parse or generate PROJECT.md files:
+- **Field Reference**: Table of all front matter fields (required, optional, types, defaults)
+- **CastMember Structure**: Character-to-voice mapping syntax and voice provider keys
+- **Examples**: YAML examples from minimal to fully-featured projects
+- **App Settings**: How to extend PROJECT.md with custom app-specific sections
+- **Voice Providers**: Supported TTS providers (Apple, ElevenLabs, VoxAlta) with example voice IDs
+- **Validation Rules**: Required fields, enum values, format requirements
+- **Tips for Agents**: Best practices for parsing, validation, and safe field access
+
+**📄 Complete Example**: See [EXAMPLE_PROJECT.md](EXAMPLE_PROJECT.md) for a working PROJECT.md file.
+
+---
+
 ## 🔐 Foundation Models Integration
 
 **SwiftProyecto 3.6.0+ uses Apple Foundation Models for on-device LLM inference.**
