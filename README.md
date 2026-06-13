@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-3.5.4-green.svg" />
+    <img src="https://img.shields.io/badge/Version-3.6.0-green.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -133,18 +133,18 @@ SwiftProyecto uses a pluggable FileSource abstraction for discovering files:
 
 ## Model Management
 
-SwiftProyecto manages LLM models via **SwiftAcervo CDN** for reliable, validated downloads across all intrusive-memory tools.
+SwiftProyecto uses **Apple Foundation Models** for on-device LLM inference, with model downloads via **SwiftAcervo CDN**.
 
 ### Quick Start: Automatic Download
 
-When you run `proyecto init` for the first time, the CLI automatically downloads the Phi-3 model if not already present. You don't need to do anything — the download starts automatically:
+When you run `proyecto init` for the first time, the CLI automatically downloads the Qwen2.5 7B model if not already present:
 
 ```bash
 # Automatic download happens on first init
 proyecto init /path/to/screenplay
-# [Phi-3] Downloading model... 2.3GB (~15 minutes)
-# [Phi-3] Verifying checksums...
-# [Phi-3] ✓ Model ready at ~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/
+# [Model] Downloading Qwen2.5 7B... 4GB (~20 minutes)
+# [Model] Verifying checksums...
+# [Model] ✓ Model ready for inference
 # [Proyecto] Analyzing directory structure...
 # [Proyecto] ✓ PROJECT.md generated
 ```
@@ -156,47 +156,30 @@ Subsequent runs skip the download since the model is cached locally.
 To manually download the model without generating PROJECT.md:
 
 ```bash
-# Download Phi-3 model (runs once, cached for future use)
+# Download Qwen2.5 7B model (runs once, cached for future use)
 proyecto download
 
-# With custom model (HuggingFace ID)
-proyecto download --model "mlx-community/Llama-3-8B"
+# Force re-download and verify checksums
+proyecto download --force
 
 # Check download status
-# [Phi-3] Model already downloaded at ~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/
+# [Model] Qwen2.5 7B already downloaded and ready
 ```
 
-### Model Storage Location
+### Model Storage & Caching
 
-Models are stored in the App Group container `group.intrusive-memory.models`, making them accessible to all intrusive-memory tools. SwiftAcervo v0.10.0 resolves the group via the `ACERVO_APP_GROUP_ID` env var or the `com.apple.security.application-groups` entitlement — there is **no silent fallback**. CLI tools and CI jobs must export `ACERVO_APP_GROUP_ID=group.intrusive-memory.models`; signed apps must declare the entitlement. See [AGENTS.md § App Group configuration](AGENTS.md#app-group-configuration-required) for full setup instructions.
+Models are managed by SwiftAcervo and cached locally:
 
-- **Path**: `~/Library/Group Containers/group.intrusive-memory.models/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/`
-- **Model ID**: `mlx-community_Phi-3-mini-4k-instruct-4bit`
-- **Size**: ~2.3 GB (4-bit quantized)
-- **Contents**: 
-  - `config.json` - Model configuration metadata
-  - `tokenizer.json` - Tokenizer for token conversion
-  - `tokenizer_config.json` - Tokenizer settings
-  - `model.safetensors` - Model weights (2.3 GB)
-  - `manifest.json` - SHA-256 checksum verification
-  - `config.json` files for provider metadata
+- **Size**: Qwen2.5 7B is ~4 GB (4-bit quantized)
+- **Storage**: Managed by SwiftAcervo (typically `~/Library/Group Containers/group.intrusive-memory.models/SharedModels/`)
+- **Inference**: Foundation Models (zero network after download)
+- **Cache**: Reused by all intrusive-memory tools
 
-### Shared Storage Across Tools
-
-The shared model directory (`~/Library/SharedModels/`) is used by multiple intrusive-memory projects:
-
-| Project | Purpose | Access |
-|---------|---------|--------|
-| **SwiftProyecto** | PROJECT.md generation via `proyecto init` | Direct via proyecto CLI |
-| **SwiftBruja** | LLM inference engine for screenplay analysis | Direct via SwiftBruja library |
-| **Produciesta** | Screenplay management app | Via SwiftBruja dependency |
-| Other intrusive-memory tools | Machine learning & audio processing | Shared cache |
-
-**Benefits of shared storage**:
-- ✅ Single download for all tools (saves 2.3 GB bandwidth)
-- ✅ Consistent model behavior across all projects
+**Benefits**:
+- ✅ Single download for all Foundation Models tools
 - ✅ Offline operation after first download
 - ✅ Automatic cache reuse (no duplication)
+- ✅ SHA-256 verification for integrity
 
 ### System Requirements for Model Inference
 
@@ -205,82 +188,87 @@ Before running `proyecto init` or `proyecto download`, ensure your system meets 
 | Requirement | Minimum | Recommended |
 |-------------|---------|------------|
 | **RAM** | 8 GB | 16 GB |
-| **Disk Space** | 3 GB free | 5 GB free |
-| **Download Time** | ~15 minutes | ~10 minutes (fast connection) |
+| **Disk Space** | 5 GB free | 6 GB free |
+| **Download Time** | ~20 minutes | ~15 minutes (fast connection) |
 | **Architecture** | Apple Silicon (M1+) | M2, M3, M4 |
-| **macOS Version** | 26.0+ | 26.1+ |
+| **macOS/iOS Version** | 26.0+ | 26.1+ |
 
 **Why these requirements:**
-- **8 GB RAM**: Phi-3 model requires ~6 GB in memory during inference
-- **3 GB Disk**: Model (2.3 GB) + overhead, temporary files, and cache
-- **15 minutes**: Typical download time for 2.3 GB on standard broadband (~2.5 Mbps)
-- **Apple Silicon**: MLX framework only supports ARM64 architecture
+- **8 GB RAM**: Qwen2.5 7B requires ~5-6 GB in memory during inference
+- **5 GB Disk**: Model (4 GB) + overhead and cache
+- **20 minutes**: Typical download time for 4 GB on standard broadband (~3-4 Mbps)
+- **Apple Silicon**: Foundation Models framework supports ARM64 only
 
 ### Model Validation & Integrity
 
-SwiftProyecto uses **SwiftAcervo ComponentDescriptor** to validate model integrity with cryptographic checksums:
+SwiftAcervo validates model integrity with SHA-256 checksums:
 
 ```swift
-// Model is registered with SHA-256 checksums
+// Model descriptor with integrity metadata
 let descriptor = ComponentDescriptor(
-    id: "proyecto-llm-phi3-mini-4k-4bit",
-    files: [
-        // Each file has verified SHA-256
-        ComponentFile(path: "config.json", size: 1234, sha256: "abc123..."),
-        ComponentFile(path: "model.safetensors", size: 2400000000, sha256: "def456..."),
-        // ... more files
+    id: "qwen2.5-7b-instruct-4bit",
+    displayName: "Qwen2.5 7B Instruct (4-bit)",
+    repoId: "mlx-community/Qwen2.5-7B-Instruct-4bit",
+    minimumMemoryBytes: 4_000_000_000,
+    metadata: [
+        "quantization": "4-bit",
+        "context_length": "131072",
+        "architecture": "Qwen2.5",
     ]
 )
 ```
 
-The `proyecto download` command verifies all checksums after download, ensuring:
-- ✅ No corrupted files (all checksums match)
-- ✅ Complete download (no partial files)
-- ✅ Model authenticity (verified from CDN source)
+The `proyecto download` command verifies all file checksums after download:
+- ✅ No corrupted files (SHA-256 match)
+- ✅ Complete download (all files present)
+- ✅ Model authenticity (verified from CDN)
 
-If checksum validation fails, the download is retried automatically up to 3 times.
+If validation fails, the download is retried automatically.
 
-### SwiftAcervo Integration
+### Foundation Models Integration
 
-SwiftProyecto uses **SwiftAcervo** library for CDN model management:
+SwiftProyecto uses **Apple's Foundation Models framework** for inference:
 
 ```swift
-import SwiftAcervo
+import FoundationModels
 
-// Models are registered with SwiftAcervo
-let modelReady = try await Acervo.ensureComponentReady(
-    for: "proyecto-llm-phi3-mini-4k-4bit",
-    in: .models
+// After model is downloaded via SwiftAcervo
+let session = try await LanguageModelSession(model: LanguageModel)
+
+// Zero-network inference
+let response = try await session.complete(
+    prompt: "Generate PROJECT.md metadata...",
+    with: requestParameters
 )
-// Automatically downloads if missing, validates checksums, returns model path
 ```
 
 **For more information**:
-- See [SwiftAcervo Documentation](https://github.com/intrusive-memory/SwiftAcervo) for low-level component management
-- See [SwiftBruja Documentation](https://github.com/intrusive-memory/SwiftBruja) for LLM inference with models
-- Integration pattern: SwiftProyecto → SwiftBruja → SwiftAcervo CDN
+- [Apple Foundation Models documentation](https://developer.apple.com/documentation/FoundationModels)
+- [SwiftAcervo](https://github.com/intrusive-memory/SwiftAcervo) for model CDN management
+- Integration pattern: SwiftProyecto → FoundationModels → SwiftAcervo CDN
 
 ## Features
 
-### ✨ v3.5.0: Dependency Updates & Model Refinements (April 2026)
+### ✨ v3.6.0: Foundation Models Integration (June 2026)
 
-- **SwiftBruja 1.6.0**: Latest LLM inference improvements and stability enhancements
-- **SwiftAcervo 0.8.2**: Enhanced CDN integration with manifest-first contract and bare-descriptor pattern
-- **swift-argument-parser 1.7.1**: Latest CLI argument parsing features
-- **Model Evolution**: Continued refinement of PROJECT.md generation models
-- **Dependency Management**: All dependencies pinned with `.upToNextMajor()` for better version stability
-- **CI/CD Updates**: GitHub Actions upgraded to latest major versions (eliminates Node 16/20 deprecation warnings)
+- **Foundation Models Framework**: Replaced SwiftBruja with Apple's native LLM framework
+- **Zero-Network Inference**: All LLM operations happen locally after model download
+- **Qwen2.5 7B Model**: Better instruction following, 128K context, ~4GB download
+- **Simplified Build**: No Metal shader compilation needed, standard Swift build process
+- **SwiftAcervo 0.16.0**: Updated for component management and model distribution
+- **Reduced Dependencies**: Removed MLX and SwiftBruja dependencies
+- **Per-Language Voice Prompts**: Enhanced voice selection with language-specific guidance
 
-### ✨ v3.4.0: CDN Model Management & Dependency Updates (April 2026)
+### ✨ v3.3.0: proyecto validate Command (April 2026)
 
-- **SwiftAcervo CDN Integration**: Phi-3 model now managed via SwiftAcervo CDN (shared across all intrusive-memory tools)
-- **Automatic Model Download**: `proyecto download` and `proyecto init` automatically download model on first run
-- **Shared Model Storage**: Models stored at `~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/` (shared with SwiftBruja and other tools)
-- **Model Validation**: ComponentDescriptor registration ensures model integrity with SHA-256 verification
-- **SwiftBruja 1.4.0**: Improved LLM inference performance and stability
-- **Default Model**: Llama-3.2-1B-Instruct-4bit (faster, more efficient)
-- **SwiftAcervo 0.6.0**: Latest audio processing features
-- **Synchronized dependencies**: All dependencies updated to latest resolved versions
+- **proyecto validate**: New CLI command to validate PROJECT.md files
+  - Validates frontmatter syntax and structure
+  - Supports directory or direct file path arguments
+  - `--verbose` flag to show parsed metadata
+  - Returns exit code 0 for valid files, 1 for errors
+- **9 comprehensive integration tests** for validation command
+- **Synchronized CLI version** with library version (both 3.3.0)
+- **Better error messages** for invalid PROJECT.md files
 
 ### ✨ v3.3.0: proyecto validate Command (April 2026)
 
@@ -974,11 +962,12 @@ proyecto init --force
 
 **Options:**
 - `directory` (argument): Directory to analyze (default: current directory)
-- `--model`: Model path or HuggingFace ID (default: mlx-community/Phi-3-mini-4k-instruct-4bit)
 - `--author`: Override the author field
 - `--update`: Update existing PROJECT.md, preserving created date, body content, and hooks
 - `--force`: Completely overwrite existing PROJECT.md
 - `--quiet, -q`: Suppress progress output
+
+**Model**: Uses Qwen2.5 7B Instruct (canonical model defined in `ModelManager.swift`). To use a different model, update the `LanguageModel` constant and rebuild.
 
 **Behavior with existing PROJECT.md:**
 - Default: Error if PROJECT.md exists (prevents accidental overwrites)
@@ -987,14 +976,17 @@ proyecto init --force
 
 #### `proyecto download`
 
-Downloads an LLM model from HuggingFace.
+Downloads the canonical Qwen2.5 7B model from SwiftAcervo CDN.
 
 ```bash
-# Download default model
+# Download the model (runs once, cached locally)
 proyecto download
 
-# Download specific model
-proyecto download --model "mlx-community/Llama-3-8B"
+# Force re-download and verify checksums
+proyecto download --force
+
+# Quiet mode (suppress progress)
+proyecto download --quiet
 ```
 
 ### LLM Analysis
@@ -1020,11 +1012,12 @@ And generates PROJECT.md frontmatter with:
 ### Building
 
 ```bash
-# Library only (swift build)
+# Build library and CLI
 swift build
 
-# CLI with Metal shaders (xcodebuild)
-make install
+# Or using Makefile (recommended)
+make install        # Debug build
+make release        # Release build
 ```
 
 ### Testing
@@ -1033,12 +1026,13 @@ make install
 swift test
 ```
 
-**Status**: All 361 tests passing. Test suite includes:
+**Status**: All tests passing. Test suite includes:
 - FileSource abstraction tests (DirectoryFileSource, GitRepositoryFileSource)
 - ProjectMarkdownParser tests with UNIVERSAL library
 - ProjectService tests for async file discovery
 - BookmarkManager tests for security-scoped access
 - ProjectModel and ProjectFileReference tests
+- IterativeProjectGenerator tests with Foundation Models
 
 ## Migration from v2.x to v3.0
 
@@ -1248,22 +1242,24 @@ SwiftProyecto is released under the MIT License. See [LICENSE](./LICENSE) for de
 
 ## Status
 
-### ✨ v3.5.0 - Dependency Updates & Refinements (Current - April 2026)
+### ✨ v3.6.0 - Foundation Models Integration (Current - June 2026)
 
 **Major Features**:
-- ✅ SwiftAcervo CDN integration for Phi-3 model distribution
-- ✅ SHA-256 validation and integrity verification
-- ✅ Shared model storage across all intrusive-memory tools (`~/Library/SharedModels/`)
-- ✅ `ModelManager` infrastructure with ComponentDescriptor registration
-- ✅ Enhanced `proyecto download` command using Acervo.ensureComponentReady()
-- ✅ Automatic model discovery in IterativeProjectGenerator
-- ✅ All integration tests passing
+- ✅ Foundation Models framework for on-device LLM inference (zero network)
+- ✅ Qwen2.5 7B Instruct (4-bit) model with 128K context
+- ✅ Simplified build process (no Metal shaders, standard Swift tools)
+- ✅ SwiftAcervo 0.16.0 for model CDN distribution and caching
+- ✅ Per-language voice prompt tuning for character selection
+- ✅ Iterative PROJECT.md generation with Foundation Models
+- ✅ All tests passing with Foundation Models integration
 
 **Benefits**:
-- Single model download for all tools (SwiftBruja, Produciesta, SwiftProyecto)
-- Validated downloads with SHA-256 checksums
-- Better reliability and performance
+- Zero-network inference after model download
+- Single model download for all Foundation Models tools
+- Simplified dependency management (no MLX, removed SwiftBruja)
+- Better performance and accuracy with Qwen2.5 7B
 - Offline operation after first download
+- Standard Swift build process
 
 **Previous**: v3.3.0 added `proyecto validate` command for PROJECT.md validation.
 

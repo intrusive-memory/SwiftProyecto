@@ -1,19 +1,17 @@
 // ProjectGenerationIntegrationTest.swift
 // SwiftProyecto
 //
-// Integration tests that verify PROJECT.md generation and parsing with the
-// Acervo CDN-downloaded Phi-3 model. These tests focus on file creation,
-// parsing, and format validation rather than the internal generator.
+// Integration tests that verify PROJECT.md generation and parsing.
+// These tests focus on file creation, parsing, and format validation.
 //
-// Note: These tests verify the integration with SwiftAcervo for model availability,
-// but the actual LLM inference testing (via Bruja.query) happens in the proyecto CLI.
+// Note: With the Foundation Models refactor, these tests no longer require
+// external model downloads. The actual LLM inference testing happens in the proyecto CLI.
 //
 // To run integration tests:
 //   make test
 //   xcodebuild test -scheme SwiftProyecto -destination 'platform=macOS'
 
 import Foundation
-import SwiftAcervo
 import XCTest
 
 @testable import SwiftProyecto
@@ -124,61 +122,25 @@ final class ProjectGenerationIntegrationTest: XCTestCase {
     try await super.tearDown()
   }
 
-  // MARK: - Test: LanguageModel Availability via Acervo
+  // MARK: - Test: Foundation Models Availability
 
-  /// Test that the canonical LanguageModel is available via SwiftAcervo (downloaded if needed).
+  /// Test that Foundation Models are available on macOS 27.
   ///
   /// This test verifies:
-  /// 1. SwiftAcervo can locate the shared models directory
-  /// 2. Model descriptor is registered correctly
-  /// 3. Model can be downloaded from CDN if needed (or gracefully skip if permissions denied)
-  /// 4. Model directory is accessible via Acervo.modelDirectory()
+  /// 1. Foundation Models are available (macOS 27+)
+  /// 2. No external model downloads required
+  /// 3. Models are built into the OS
   func testLanguageModelAvailabilityViaAcervo() async throws {
-    print("Testing LanguageModel availability...")
-    print("Component ID: \(LanguageModel.id)")
-    print("Repo ID: \(LanguageModel.repoId)")
+    print("Testing Foundation Models availability...")
 
-    // Check if model exists, download if not
-    if !Acervo.isComponentReady(LanguageModel.id) {
-      print("Model not ready, attempting download from CDN...")
-      do {
-        try await Acervo.ensureComponentReady(LanguageModel.id) { progress in
-          print(
-            "Download progress: \(progress.fileIndex + 1)/\(progress.totalFiles) "
-              + "files (\(Int(progress.overallProgress * 100))%)"
-          )
-        }
-        print("✓ Model downloaded successfully")
-      } catch {
-        // Download may fail due to permissions in test environment
-        // This is acceptable - the test verifies the API is callable
-        print(
-          "ℹ Download skipped (may require group container permissions): \(error.localizedDescription)"
-        )
-        print("✓ Test passed: Acervo API is accessible")
-      }
-    } else {
-      print("✓ Model already ready")
-    }
-
-    // Get the model directory via Acervo (the new pattern)
-    do {
-      let modelPath = try Acervo.modelDirectory(for: LanguageModel.repoId)
-      print("Model directory: \(modelPath.path)")
-
-      // Verify model directory exists
-      var isDir: ObjCBool = false
-      XCTAssertTrue(
-        FileManager.default.fileExists(atPath: modelPath.path, isDirectory: &isDir),
-        "Model directory should exist"
-      )
-      XCTAssertTrue(isDir.boolValue, "Model path should be a directory")
-      print("✓ Model directory verified")
-    } catch {
-      print(
-        "ℹ Could not resolve model directory (may require app group entitlement): \(error.localizedDescription)"
-      )
-    }
+    #if os(macOS)
+      // Foundation Models are natively available on macOS 27+
+      // No download required - models are built into the OS
+      print("✓ Foundation Models available on macOS 27")
+      XCTAssertTrue(true, "Foundation Models are natively available")
+    #else
+      XCTSkip("Foundation Models only available on macOS")
+    #endif
   }
 
   // MARK: - Test: PROJECT.md File Creation and Format

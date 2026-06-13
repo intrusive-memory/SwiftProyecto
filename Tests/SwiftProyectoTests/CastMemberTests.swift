@@ -422,4 +422,123 @@ final class CastMemberTests: XCTestCase {
     member.gender = nil
     XCTAssertNil(member.gender)
   }
+
+  // MARK: - Voice Prompts Tests
+
+  func testVoicePrompt_Init_Default() {
+    let member = CastMember(character: "NARRATOR")
+
+    XCTAssertNil(member.voicePrompts)
+
+    let memberWithMap = CastMember(
+      character: "NARRATOR",
+      voicePrompts: ["es": "hombre", "en": "man"]
+    )
+    XCTAssertEqual(memberWithMap.voicePrompts?["es"], "hombre")
+    XCTAssertEqual(memberWithMap.voicePrompts?["en"], "man")
+  }
+
+  func testVoicePrompt_Selection_ExactKey() {
+    let member = CastMember(
+      character: "NARRATOR",
+      voicePrompts: ["es": "hombre", "en": "man"]
+    )
+
+    XCTAssertEqual(member.voicePrompt(forLanguage: "es"), "hombre")
+    XCTAssertEqual(member.voicePrompt(forLanguage: "en"), "man")
+  }
+
+  func testVoicePrompt_Selection_BaseLanguageFallback() {
+    let member = CastMember(
+      character: "NARRATOR",
+      voicePrompts: ["es": "hombre"]
+    )
+
+    // es-MX should resolve to the "es" base language entry
+    XCTAssertEqual(member.voicePrompt(forLanguage: "es-MX"), "hombre")
+    // es-419 should also resolve to "es"
+    XCTAssertEqual(member.voicePrompt(forLanguage: "es-419"), "hombre")
+  }
+
+  func testVoicePrompt_Selection_CaseInsensitive() {
+    let member = CastMember(
+      character: "NARRATOR",
+      voicePrompts: ["es": "hombre", "en": "man"]
+    )
+
+    XCTAssertEqual(member.voicePrompt(forLanguage: "ES"), "hombre")
+    XCTAssertEqual(member.voicePrompt(forLanguage: "En"), "man")
+    XCTAssertEqual(member.voicePrompt(forLanguage: "EN-us"), "man")
+  }
+
+  func testVoicePrompt_Selection_FallbackToVoiceDescription() {
+    let member = CastMember(
+      character: "NARRATOR",
+      voiceDescription: "warm narrator",
+      voicePrompts: ["es": "hombre"]
+    )
+
+    // Language present in map
+    XCTAssertEqual(member.voicePrompt(forLanguage: "es"), "hombre")
+
+    // Language absent from map → fallback to voiceDescription
+    XCTAssertEqual(member.voicePrompt(forLanguage: "fr"), "warm narrator")
+
+    // Empty language string → fallback to voiceDescription
+    XCTAssertEqual(member.voicePrompt(forLanguage: ""), "warm narrator")
+  }
+
+  func testVoicePrompt_Selection_ReturnsNil() {
+    let member = CastMember(character: "NARRATOR")
+
+    // No voicePrompts map and no voiceDescription
+    XCTAssertNil(member.voicePrompt(forLanguage: "es"))
+    XCTAssertNil(member.voicePrompt(forLanguage: "en"))
+    XCTAssertNil(member.voicePrompt(forLanguage: ""))
+  }
+
+  func testVoicePrompt_Codable_RoundTrip() throws {
+    let original = CastMember(
+      character: "NARRATOR",
+      actor: "Tom Stovall",
+      voicePrompts: ["es": "hombre", "en": "man", "fr": "homme"]
+    )
+
+    let encoder = JSONEncoder()
+    let data = try encoder.encode(original)
+
+    let decoder = JSONDecoder()
+    let decoded = try decoder.decode(CastMember.self, from: data)
+
+    XCTAssertEqual(decoded.character, "NARRATOR")
+    XCTAssertEqual(decoded.actor, "Tom Stovall")
+    // Compare voicePrompts directly (not via Equatable, which is character-only)
+    XCTAssertEqual(decoded.voicePrompts, original.voicePrompts)
+    XCTAssertEqual(decoded.voicePrompts?["es"], "hombre")
+    XCTAssertEqual(decoded.voicePrompts?["en"], "man")
+    XCTAssertEqual(decoded.voicePrompts?["fr"], "homme")
+  }
+
+  func testVoicePrompt_Codable_BackwardCompat() throws {
+    // JSON payload without voicePrompts key (simulating legacy PROJECT.md)
+    let json = """
+      {
+        "character": "ALICE",
+        "actor": "Jane Doe",
+        "voicePrompt": "curious and warm",
+        "voices": {
+          "apple": "com.apple.voice.compact.en-US.Samantha"
+        }
+      }
+      """.data(using: .utf8)!
+
+    let decoder = JSONDecoder()
+    let decoded = try decoder.decode(CastMember.self, from: json)
+
+    XCTAssertEqual(decoded.character, "ALICE")
+    XCTAssertEqual(decoded.actor, "Jane Doe")
+    XCTAssertNil(decoded.voicePrompts)
+    XCTAssertEqual(decoded.voiceDescription, "curious and warm")
+    XCTAssertEqual(decoded.voices["apple"], "com.apple.voice.compact.en-US.Samantha")
+  }
 }

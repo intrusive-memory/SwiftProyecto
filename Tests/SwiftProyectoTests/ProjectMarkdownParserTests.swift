@@ -1189,6 +1189,195 @@ final class ProjectMarkdownParserTests: XCTestCase {
     XCTAssertEqual(frontMatter5.title, "My Project")
     XCTAssertEqual(frontMatter5.author, "Author")
   }
+
+  // MARK: - Voice Prompts Tests
+
+  func testGenerate_CastWithVoicePrompts() {
+    let member = CastMember(
+      character: "NARRATOR",
+      voiceDescription: "warm narrator",
+      voicePrompts: ["es": "hombre", "en": "man"]
+    )
+    let frontMatter = ProjectFrontMatter(
+      title: "Voice Prompt Test",
+      author: "Author",
+      cast: [member]
+    )
+
+    let generated = parser.generate(frontMatter: frontMatter)
+
+    XCTAssertTrue(generated.contains("voicePrompts:"), "Should contain voicePrompts block")
+    // Keys must be sorted alphabetically
+    let lines = generated.components(separatedBy: "\n")
+    let enIdx = lines.firstIndex(where: { $0.contains("en:") && $0.contains("man") })
+    let esIdx = lines.firstIndex(where: { $0.contains("es:") && $0.contains("hombre") })
+    XCTAssertNotNil(enIdx, "Should contain 'en: man'")
+    XCTAssertNotNil(esIdx, "Should contain 'es: hombre'")
+    if let en = enIdx, let es = esIdx {
+      XCTAssertLessThan(en, es, "'en' key should appear before 'es' (alphabetical sort)")
+    }
+    // Verify indentation matches voices block pattern (6 spaces)
+    XCTAssertTrue(
+      generated.contains("      en: man"),
+      "voicePrompts entries should be indented 6 spaces like voices entries"
+    )
+    XCTAssertTrue(
+      generated.contains("      es: hombre"),
+      "voicePrompts entries should be indented 6 spaces like voices entries"
+    )
+  }
+
+  func testGenerate_CastWithoutVoicePrompts_NoBlock() {
+    let member = CastMember(
+      character: "NARRATOR",
+      voiceDescription: "warm narrator",
+      voicePrompts: nil
+    )
+    let frontMatter = ProjectFrontMatter(
+      title: "No Voice Prompt Test",
+      author: "Author",
+      cast: [member]
+    )
+
+    let generated = parser.generate(frontMatter: frontMatter)
+
+    XCTAssertFalse(
+      generated.contains("voicePrompts:"),
+      "Should NOT emit voicePrompts block when voicePrompts is nil"
+    )
+  }
+
+  func testGenerate_CastWithEmptyVoicePrompts_NoBlock() {
+    let member = CastMember(
+      character: "NARRATOR",
+      voiceDescription: "warm narrator",
+      voicePrompts: [:]
+    )
+    let frontMatter = ProjectFrontMatter(
+      title: "Empty Voice Prompt Test",
+      author: "Author",
+      cast: [member]
+    )
+
+    let generated = parser.generate(frontMatter: frontMatter)
+
+    XCTAssertFalse(
+      generated.contains("voicePrompts:"),
+      "Should NOT emit voicePrompts block when voicePrompts is empty"
+    )
+  }
+
+  func testRoundTrip_CastWithVoicePrompts() throws {
+    let member = CastMember(
+      character: "NARRATOR",
+      voiceDescription: "warm narrator",
+      voicePrompts: ["es": "hombre", "en": "man", "fr": "homme"]
+    )
+    let original = ProjectFrontMatter(
+      title: "Round Trip Voice Prompts",
+      author: "Author",
+      cast: [member]
+    )
+
+    let generated = parser.generate(frontMatter: original, body: "# Notes")
+    let (parsed, body) = try parser.parse(content: generated)
+
+    XCTAssertEqual(body, "# Notes")
+    XCTAssertEqual(parsed.cast?.count, 1)
+    let parsedMember = try XCTUnwrap(parsed.cast?.first)
+    XCTAssertEqual(parsedMember.character, "NARRATOR")
+    XCTAssertEqual(parsedMember.voiceDescription, "warm narrator")
+    XCTAssertEqual(parsedMember.voicePrompts?["es"], "hombre")
+    XCTAssertEqual(parsedMember.voicePrompts?["en"], "man")
+    XCTAssertEqual(parsedMember.voicePrompts?["fr"], "homme")
+    XCTAssertEqual(parsedMember.voicePrompts?.count, 3)
+  }
+
+  func testRoundTrip_CastWithVoicePromptsDoubleRoundTrip() throws {
+    // Parse → generate → re-parse and confirm voicePrompts map is identical both times
+    let member = CastMember(
+      character: "HOST",
+      voicePrompts: ["en": "confident host", "es": "presentador seguro"]
+    )
+    let original = ProjectFrontMatter(
+      title: "Double Round Trip",
+      author: "Author",
+      cast: [member]
+    )
+
+    // First round-trip
+    let generated1 = parser.generate(frontMatter: original)
+    let (parsed1, _) = try parser.parse(content: generated1)
+
+    // Second round-trip
+    let generated2 = parser.generate(frontMatter: parsed1)
+    let (parsed2, _) = try parser.parse(content: generated2)
+
+    XCTAssertEqual(
+      parsed1.cast?.first?.voicePrompts,
+      parsed2.cast?.first?.voicePrompts,
+      "voicePrompts map should be identical after two round-trips"
+    )
+    XCTAssertEqual(parsed2.cast?.first?.voicePrompts?["en"], "confident host")
+    XCTAssertEqual(parsed2.cast?.first?.voicePrompts?["es"], "presentador seguro")
+  }
+
+  func testParse_ProjectMdWithVoicePrompts() throws {
+    // Verify read path: parse a PROJECT.md that contains voicePrompts YAML
+    let content = """
+      ---
+      type: project
+      title: Voice Prompts Parse Test
+      author: Test Author
+      created: 2026-01-01T00:00:00Z
+      cast:
+        - character: NARRATOR
+          voicePrompts:
+            es: hombre
+            en: man
+      ---
+      """
+
+    let (frontMatter, _) = try parser.parse(content: content)
+
+    XCTAssertEqual(frontMatter.cast?.count, 1)
+    let narrator = try XCTUnwrap(frontMatter.cast?.first)
+    XCTAssertEqual(narrator.character, "NARRATOR")
+    XCTAssertEqual(narrator.voicePrompts?["es"], "hombre")
+    XCTAssertEqual(narrator.voicePrompts?["en"], "man")
+  }
+
+  func testBackwardCompat_ExistingProjectMdUnchanged() throws {
+    // An existing PROJECT.md without voicePrompts must round-trip without adding voicePrompts
+    let content = """
+      ---
+      type: project
+      title: Legacy Project
+      author: Old Author
+      created: 2025-11-17T10:30:00Z
+      cast:
+        - character: ALICE
+          actor: Jane Doe
+          gender: F
+          voicePrompt: warm and curious
+          voices:
+            apple: com.apple.voice.compact.en-US.Samantha
+      ---
+      """
+
+    let (frontMatter, _) = try parser.parse(content: content)
+    let generated = parser.generate(frontMatter: frontMatter)
+
+    XCTAssertFalse(
+      generated.contains("voicePrompts:"),
+      "Backward compat: generating from a member with no voicePrompts should not add voicePrompts block"
+    )
+    // Verify existing fields are present
+    XCTAssertTrue(generated.contains("ALICE"))
+    XCTAssertTrue(generated.contains("Jane Doe"))
+    XCTAssertTrue(generated.contains("voices:"))
+    XCTAssertTrue(generated.contains("apple: com.apple.voice.compact.en-US.Samantha"))
+  }
 }
 
 // MARK: - Test Settings Types

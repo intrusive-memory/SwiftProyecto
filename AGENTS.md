@@ -2,15 +2,15 @@
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 3.5.4 (May 2026)
+**Current Version**: 3.6.0 (June 2026)
 
-**Latest Changes (v3.5.0)**:
-- **SwiftAcervo 0.8.2 Migration**: Adopted manifest-first contract with bare-descriptor pattern
-- **Model Change**: Migrated from Phi-3-mini-4k-instruct-4bit to Llama-3.2-1B-Instruct-4bit
-- **Path Elimination**: Removed all direct filesystem path manipulation from consumer code
-- **CDN Integration**: All model access now goes through SwiftAcervo CDN with manifest verification
-- **Test Isolation**: Integration tests now run in sandboxed temp directories
-- **App Group Requirement**: Documented entitlement requirement for app consumers (group.intrusive-memory.models)
+**Latest Changes (v3.6.0)**:
+- **Foundation Models Integration**: Replaced SwiftBruja with Apple Foundation Models framework
+- **Model Change**: Qwen2.5 7B Instruct (4-bit) — enhanced instruction following and reasoning
+- **MLX Removal**: No longer depends on MLX or metal shader compilation
+- **Simplified Build**: `proyecto` CLI builds with standard `xcodebuild` (no Metal bundle management)
+- **SwiftAcervo 0.16.0**: Updated for compatibility with latest component descriptor patterns
+- **Per-Language Voice Prompts**: Voice selection now supports language-specific prompt tuning
 
 **Previous Changes (v3.4.0)**:
 - Updated SwiftBruja to 1.4.0 (improved LLM inference performance)
@@ -94,239 +94,144 @@ SwiftProyecto is a Swift package providing **extensible, agentic discovery of co
 
 ---
 
-## 🔐 Model Validation & CDN Integration
+## 🔐 Foundation Models Integration
 
-**SwiftProyecto 3.4.0+ integrates with SwiftAcervo for validated, CDN-based model distribution.**
+**SwiftProyecto 3.6.0+ uses Apple Foundation Models for on-device LLM inference.**
 
-### ComponentDescriptor Registration
+### Architecture: Foundation Models via SwiftAcervo
 
-The canonical language model is registered with SwiftAcervo via a `ComponentDescriptor` constant in `ModelManager.swift`:
+SwiftProyecto v3.6.0 replaces SwiftBruja with Apple's `FoundationModels` framework. The `proyecto` CLI downloads Qwen2.5 7B via SwiftAcervo CDN, then uses Foundation Models for zero-network inference:
+
+```
+proyecto CLI
+  ├─ FoundationModels (Apple framework) - LLM inference
+  ├─ SwiftAcervo (CDN model management) - Qwen2.5 model downloads
+  └─ UNIVERSAL (YAML parser) - PROJECT.md parsing
+```
+
+### Canonical Model Configuration
+
+The canonical language model is defined in `ModelManager.swift`:
 
 ```swift
 // Sources/SwiftProyecto/Infrastructure/ModelManager.swift
-import Foundation
-import SwiftAcervo
 
 /// The canonical model for PROJECT.md generation across SwiftProyecto.
-///
-/// This constant provides a single source of truth for the model used by:
-/// - `proyecto download` command
-/// - `proyecto init` command
-/// - All ModelManager operations
-/// - Integration tests
-///
-/// To change the model used by SwiftProyecto, update this constant.
 public let LanguageModel = ComponentDescriptor(
-    id: "llama-3.2-1b-instruct-4bit",
-    type: .languageModel,
-    displayName: "Llama 3.2 1B Instruct (4-bit)",
-    repoId: "mlx-community/Llama-3.2-1B-Instruct-4bit",
-    minimumMemoryBytes: 1_500_000_000,
-    metadata: [
-        "quantization": "4-bit",
-        "context_length": "8192",
-        "architecture": "Llama",
-        "version": "3.2",
-    ]
+  id: "qwen2.5-7b-instruct-4bit",
+  type: .languageModel,
+  displayName: "Qwen2.5 7B Instruct (4-bit)",
+  repoId: "mlx-community/Qwen2.5-7B-Instruct-4bit",
+  minimumMemoryBytes: 4_000_000_000,
+  metadata: [
+    "quantization": "4-bit",
+    "context_length": "131072",
+    "architecture": "Qwen2.5",
+    "version": "2.5",
+    "parameters": "7B",
+  ]
 )
-
-private let _registerLanguageModel: Void = {
-    Acervo.register([LanguageModel])
-}()
 ```
 
-**Key Points:**
-- **Single source of truth**: `LanguageModel` constant provides one canonical model for all SwiftProyecto operations.
-- **Bare descriptor**: `ComponentDescriptor` is registered without a file list. SwiftAcervo hydrates `files` and `estimatedSizeBytes` from the CDN manifest on first call to `ensureComponentReady`.
-- **Model choice**: Llama-3.2-1B-Instruct-4bit chosen for smaller download footprint (~1 GB vs. ~2.3 GB) and sufficient capability for PROJECT.md metadata generation.
+**Model Selection Rationale**:
+- **Qwen2.5 7B**: Excellent instruction following, minimal hallucination, 128K context
+- **4-bit quantization**: ~4GB download, practical for CDN distribution
+- **Foundation Models compatible**: Native support for on-device inference via Apple's framework
 
-### Download Workflow
+### Download & Inference Workflow
 
-When `proyecto download` or `proyecto init` runs, the workflow is:
+When `proyecto init` or `proyecto download` runs:
 
 ```
-1. Initialize ModelManager (registers `LanguageModel` constant with bare descriptor)
-   └─ Acervo.register([LanguageModel])
+1. Initialize ModelManager
+   └─ Registers LanguageModel descriptor with SwiftAcervo
 
 2. Call Acervo.ensureComponentReady(LanguageModel.id)
-   ├─ Check if model already cached
-   ├─ On first call: SwiftAcervo fetches CDN manifest and hydrates the descriptor
-   ├─ Download all required files in parallel
-   ├─ Verify SHA-256 checksum for each file
-   └─ Return success or AcervoError
+   ├─ Check if model cached locally
+   ├─ Download from CDN if needed (parallel file transfer)
+   ├─ Verify SHA-256 checksums
+   └─ Return model directory
 
-3. Get model path via Acervo.modelDirectory(for: LanguageModel.repoId)
-   └─ Returns: <group.intrusive-memory.models container>/SharedModels/mlx-community_Llama-3.2-1B-Instruct-4bit/
-   └─ Requires ACERVO_APP_GROUP_ID env var or com.apple.security.application-groups entitlement (no silent fallback)
+3. Load model with Foundation Models
+   └─ LanguageModelSession(model: url) — zero-network inference
+   └─ Prompt streaming with cancellation support
 
-4. Pass path to SwiftBruja for LLM inference
-   └─ Bruja.query(userPrompt, model: modelPath, ...)
-```
-
-**Error Handling**:
-```swift
-do {
-  try await Acervo.ensureComponentReady("phi3-mini-4k-4bit") { progress in
-    // Called during download with progress updates
-    print("Downloading \(progress.fileName): \(Int(progress.overallProgress * 100))%")
-  }
-} catch let error as AcervoError {
-  switch error {
-  case .modelNotFound:
-    print("Model not found in CDN manifest")
-  case .downloadFailed(let reason):
-    print("Download failed: \(reason)")
-  case .checksumMismatch:
-    print("File integrity check failed")
-  case .insufficientMemory:
-    print("Insufficient memory for model")
-  case .networkError(let reason):
-    print("Network error: \(reason)")
-  default:
-    print("Acervo error: \(error.localizedDescription)")
-  }
-}
+4. Stream responses for iterative generation
+   └─ One LLM query per PROJECT.md section
 ```
 
 ### Integration Points
 
-**DownloadCommand** (`Sources/proyecto/ProyectoCLI.swift`):
-```swift
-struct DownloadCommand: AsyncParsableCommand {
-  mutating func run() async throws {
-    _ = ModelManager()  // Triggers component registration
-    
-    let componentId = Phi3ModelRepo.mini4bit.componentId
-    
-    try await Acervo.ensureComponentReady(componentId) { progress in
-      print("\rDownloading \(progress.fileName): \(Int(progress.overallProgress * 100))%", terminator: "")
-      fflush(stdout)
-    }
-    
-    print("\n✅ Download complete!")
-    let modelPath = try Acervo.modelDirectory(for: componentId)
-    print("Model available at: \(modelPath.path)")
-  }
-}
-```
-
 **IterativeProjectGenerator** (`Sources/proyecto/IterativeProjectGenerator.swift`):
 ```swift
+import FoundationModels
+
 class IterativeProjectGenerator {
-  private static func resolveModelPath(_ model: String) throws -> String {
-    // If it's a local path, use it directly
-    if FileManager.default.fileExists(atPath: model) {
-      return model
-    }
-    
-    // Otherwise, it must be an org/repo slug — let SwiftAcervo resolve the directory
-    return try Acervo.modelDirectory(for: model).path
-  }
-  
   func generate(for directory: URL, progressHandler: ...) async throws -> ProjectFrontMatter {
     let context = try await directoryAnalyzer.analyze(directory)
     
     for section in ProjectSection.allCases {
-      let response = try await Bruja.query(
-        userPrompt,
-        model: modelPath,  // Path resolved via Acervo.modelDirectory(for:)
-        temperature: 0.3,
-        maxTokens: 512,
-        system: systemPrompt
+      let systemPrompt = section.systemPrompt(for: context, previousResults: results)
+      let userPrompt = section.userPrompt(for: context)
+      
+      // Query Foundation Models for this section
+      let response = try await queryFoundationModel(
+        userPrompt: userPrompt,
+        systemPrompt: systemPrompt,
+        maxTokens: 16_384
       )
       // Process response...
     }
   }
+  
+  private func queryFoundationModel(
+    userPrompt: String,
+    systemPrompt: String,
+    maxTokens: Int
+  ) async throws -> String {
+    let model = try await LanguageModelSession(
+      model: LanguageModel  // Qwen2.5 7B descriptor
+    )
+    
+    let params = LanguageModelSession.RequestParameters(
+      systemPrompt: systemPrompt,
+      temperature: 0.3,
+      topK: 40,
+      topP: 0.8,
+      maxTokens: maxTokens
+    )
+    
+    let response = try await model.complete(prompt: userPrompt, with: params)
+    return response
+  }
 }
 ```
 
-### Related Documentation
+### Changing the Model
 
-- **SwiftAcervo**: [github.com/intrusive-memory/SwiftAcervo](https://github.com/intrusive-memory/SwiftAcervo)
-  - Component descriptor validation and CDN download
-  - Shared models directory management
-  - Progress callbacks and error handling
-- **SwiftBruja**: [github.com/intrusive-memory/SwiftBruja](https://github.com/intrusive-memory/SwiftBruja)
-  - Uses SwiftAcervo for model management
-  - LLM inference via `Bruja.query()`
-- **ModelManager.swift**: `/Sources/SwiftProyecto/Infrastructure/ModelManager.swift`
-  - Actor managing model lifecycle
-  - Methods: `isModelReady()` (no parameter - checks LanguageModel), `ensureModelReady()` (no parameter - ensures LanguageModel)
-  - All operations use the `LanguageModel` constant
+To use a different model, update the `LanguageModel` constant in `ModelManager.swift`:
 
-## App Group configuration (required)
-
-This package depends on [SwiftAcervo](https://github.com/intrusive-memory/SwiftAcervo) for shared model storage. SwiftAcervo v0.10.0 resolves its App Group ID in this order: `ACERVO_APP_GROUP_ID` env var → `com.apple.security.application-groups` entitlement (macOS only) → `fatalError`. There is **no silent fallback**.
-
-- **Signed UI apps (macOS / iOS)**: declare `com.apple.security.application-groups` with `group.intrusive-memory.models` in your `.entitlements` file. iOS apps additionally need `ACERVO_APP_GROUP_ID=group.intrusive-memory.models` in the launch environment.
-- **CLI tools, scripts, CI jobs, test runners**: export `ACERVO_APP_GROUP_ID=group.intrusive-memory.models` in the shell or job environment. The standard place is `~/.zprofile`:
-
-    ```sh
-    export ACERVO_APP_GROUP_ID=group.intrusive-memory.models
-    ```
-
-Without this, `Acervo.sharedModelsDirectory` traps with `fatalError`. See [SwiftAcervo's USAGE.md](https://github.com/intrusive-memory/SwiftAcervo/blob/main/USAGE.md) for full details.
-
-**Xcode setup** (per target, for signed UI apps):
-1. Select the target → **Signing & Capabilities**.
-2. Click **+ Capability** → **App Groups**.
-3. Check (or add) `group.intrusive-memory.models`.
-4. Rebuild.
-
-**Manual `.entitlements` file** (non-Xcode builds):
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>com.apple.security.application-groups</key>
-    <array>
-        <string>group.intrusive-memory.models</string>
-    </array>
-</dict>
-</plist>
-```
-
-**Provisioning profile**: must include the App Group. Automatic signing handles this; for manual profiles, regenerate after adding the group in the Apple Developer portal.
-
-**Verify at runtime**: print `Acervo.sharedModelsDirectory` on first launch. A correctly entitled app shows a path under `~/Library/Group Containers/group.intrusive-memory.models/…` on macOS, or inside the sandbox's Group Containers on iOS. If `Acervo.sharedModelsDirectory` traps, confirm `ACERVO_APP_GROUP_ID` is set or the entitlement is present. See [SwiftAcervo USAGE.md](https://github.com/intrusive-memory/SwiftAcervo/blob/main/USAGE.md) and [SHARED_MODELS_DIRECTORY.md](https://github.com/intrusive-memory/SwiftAcervo/blob/main/SHARED_MODELS_DIRECTORY.md) for the full directory layout and troubleshooting.
-
-### Agent Guidance: Changing the Canonical Model
-
-**To change the model used by SwiftProyecto**, update the `LanguageModel` constant in `Sources/SwiftProyecto/Infrastructure/ModelManager.swift`.
-
-SwiftProyecto uses one canonical model for consistency across all operations (proyecto download, proyecto init, all ModelManager operations, and integration tests). There is no multi-model support.
-
-**Steps to change the model:**
-
-1. **Update LanguageModel constant** in `ModelManager.swift`:
-   - Change `repoId` to the new `org/repo` slug (e.g., `"mlx-community/Llama-3.2-3B-Instruct-4bit"`)
-   - Update metadata fields to match the new model:
-     - `quantization` (e.g., `"4-bit"`)
-     - `context_length` (e.g., `"8192"`)
-     - `architecture` (e.g., `"Llama"`)
-     - `version` (e.g., `"3.2"`)
-   - Update `minimumMemoryBytes` based on model requirements
-
-2. **Publish the new model to CDN**:
-   ```bash
-   acervo ship <org/repo>
+1. **Update the descriptor**:
+   ```swift
+   public let LanguageModel = ComponentDescriptor(
+     id: "new-model-id",
+     displayName: "New Model Name",
+     repoId: "org/model-repo",
+     minimumMemoryBytes: ...,
+     metadata: [...]
+   )
    ```
-   This downloads the model from HuggingFace, generates the manifest with checksums, uploads to R2, and verifies.
 
-3. **Update CI workflow** (`.github/workflows/ensure-model-cdn.yml`):
-   - Change `MODEL_REPO` to the new `org/repo` slug
-   - Change `MODEL_SLUG` to the new slugified form (e.g., `mlx-community_Llama-3.2-3B-Instruct-4bit`)
-
-4. **Verify integration**:
+2. **Publish model to CDN** (intrusive-memory team only):
    ```bash
-   xcodebuild test -scheme SwiftProyecto -destination 'platform=macOS'
+   acervo ship org/model-repo
    ```
-   Integration tests should pass against the new CDN manifest.
 
-5. **Update documentation**:
-   - Update AGENTS.md references to the new model
-   - Update README.md if the model change affects usage guidance
+3. **Verify with tests**:
+   ```bash
+   make test
+   ```
+
 
 ---
 
@@ -952,23 +857,25 @@ for (index, args) in allArgs.enumerated() {
 
 ## Dependencies
 
-**Current**:
-- **UNIVERSAL** (from 5.0.5): Zero-dependency YAML/JSON/XML parser for PROJECT.md parsing
-  - Spec-compliant YAML parsing
-  - Handles quoted strings, colons in values, complex arrays
+**Current (v3.6.0)**:
+- **UNIVERSAL** (5.3.0+): Zero-dependency YAML/JSON/XML parser for PROJECT.md parsing
+  - Spec-compliant YAML parsing with quoted strings, colons, complex arrays, ISO8601 dates
   - Used by ProjectMarkdownParser
-- **SwiftAcervo** (from main): Component descriptor validation and CDN-based model distribution (NEW in v3.4.0)
-  - Manages Phi-3 model downloads and integrity verification
-  - Enables shared model storage across intrusive-memory tools
+- **SwiftAcervo** (0.16.0+): Component descriptor validation and CDN-based model distribution
+  - Manages Qwen2.5 7B model downloads and SHA-256 verification
+  - Local model caching for all intrusive-memory tools
   - Used by `proyecto download` and `proyecto init` commands
-- **SwiftBruja** (from main): On-device LLM inference for PROJECT.md generation
-  - Uses SwiftAcervo for model management
-  - Used by the `proyecto` CLI for AI-powered metadata generation
-- **swift-argument-parser** (from 1.3.0): CLI argument parsing for the `proyecto` executable
+- **FoundationModels** (Apple framework): On-device LLM inference
+  - Zero-network inference after model download
+  - Part of macOS 26.0+, iOS 26.0+ platform SDK (no separate dependency)
+  - Used by `proyecto init` for iterative PROJECT.md generation
+- **swift-argument-parser** (1.7.1+): CLI argument parsing for the `proyecto` executable
 
-**Removed** (v2.0+):
-- ~~SwiftCompartido~~ - Apps integrate directly
-- ~~GRMustache.swift~~ - Template rendering was never used, removed in v2.0
+**Removed** (v3.6.0):
+- ~~SwiftBruja~~ - Replaced with Foundation Models
+- ~~MLX dependency~~ - Foundation Models provides native support
+- ~~SwiftCompartido~~ - Apps integrate directly (removed in v2.0)
+- ~~GRMustache.swift~~ - Template rendering removed in v2.0
 
 ---
 
@@ -1017,29 +924,23 @@ context.insert(registry)
 
 ## Building
 
-**CRITICAL: The `proyecto` CLI MUST be built with `xcodebuild`, NOT `swift build`.**
+**⚠️ IMPORTANT: Always use `make` targets for building and testing.** Do not use `swift build`, `swift test`, or raw `xcodebuild` commands directly.
 
-### Why xcodebuild is Required
-
-The `proyecto` CLI uses **SwiftBruja** for on-device LLM inference, which depends on **MLX** (Apple's ML framework). MLX requires **Metal shaders** to be compiled into a `.metallib` bundle (`mlx-swift_Cmlx.bundle`).
-
-- ✅ **xcodebuild**: Compiles Metal shaders + creates `.bundle` → CLI works
-- ❌ **swift build**: No Metal shader compilation → CLI fails with `MLX error: Failed to load the default metallib`
+The `proyecto` CLI can be built with standard Swift tools via the Makefile:
 
 ### Build Commands
 
 ```bash
-# Build and install proyecto CLI to ./bin (Debug, with Metal shaders)
+# Build and install proyecto CLI to ./bin (Debug)
 make install
 
-# Build and install proyecto CLI to ./bin (Release, with Metal shaders)
+# Build and install proyecto CLI to ./bin (Release)
 make release
 
-# Development build only (swift build - fast but NO Metal shaders)
-# ⚠️ WARNING: Binary will NOT work for LLM features
+# Swift Package build (fast, library + CLI)
 make build
 
-# Run tests (library tests only, no LLM)
+# Run tests
 make test
 
 # Clean all build artifacts
@@ -1049,32 +950,29 @@ make clean
 make help
 ```
 
-### Manual xcodebuild (if not using Makefile)
+### Swift Package vs. Xcode
 
-**CRITICAL: Use the correct destination string for macOS 26 on Apple Silicon.**
+Both are supported:
 
+**Swift Package Manager**:
 ```bash
-# MUST use this exact destination string for macOS 26 Apple Silicon:
-xcodebuild -scheme proyecto -destination 'platform=macOS,arch=arm64' build
-
-# Find the built binary and Metal bundle:
-# Binary: ~/Library/Developer/Xcode/DerivedData/SwiftProyecto-*/Build/Products/Debug/proyecto
-# Bundle: ~/Library/Developer/Xcode/DerivedData/SwiftProyecto-*/Build/Products/Debug/mlx-swift_Cmlx.bundle
+swift build -c release
+# Binary: .build/release/proyecto
 ```
 
-**Destination String:**
-- ✅ CORRECT: `'platform=macOS,arch=arm64'`
-- ❌ WRONG: `'platform=OS X'` (legacy, doesn't specify architecture)
-- ❌ WRONG: `'platform=macOS'` (missing architecture)
+**Xcode**:
+```bash
+xcodebuild -scheme proyecto -destination 'platform=macOS,arch=arm64' build
+# Binary: ~/Library/Developer/Xcode/DerivedData/SwiftProyecto-*/Build/Products/Release/proyecto
+```
 
-**Metal Bundle:**
-The `mlx-swift_Cmlx.bundle` must be copied alongside the `proyecto` binary for the CLI to work. The Makefile handles this automatically (lines 30-32, 50-52 in Makefile).
+Foundation Models framework is available on macOS 26.0+ and iOS 26.0+, so no special build steps or shaders are required.
 
 ---
 
 ## proyecto CLI
 
-The `proyecto` CLI uses local LLM inference (via SwiftBruja) to analyze directories and generate PROJECT.md files with appropriate metadata.
+The `proyecto` CLI uses local LLM inference (via Foundation Models) to analyze directories and generate PROJECT.md files with appropriate metadata.
 
 ### Installation
 
@@ -1089,8 +987,8 @@ proyecto --version
 
 **Build from Source:**
 ```bash
-make install  # Debug build with Metal shaders
-make release  # Release build with Metal shaders
+make install  # Debug build
+make release  # Release build
 ./bin/proyecto --version
 ```
 
@@ -1110,9 +1008,6 @@ proyecto init /path/to/podcast
 # Override author field
 proyecto init --author "Jane Doe"
 
-# Use specific model
-proyecto init --model ~/Models/Phi-3
-
 # Update existing PROJECT.md (preserves created, body, hooks)
 proyecto init --update
 
@@ -1125,11 +1020,12 @@ proyecto init --quiet
 
 **Options:**
 - `directory` (argument): Directory to analyze (default: current directory)
-- `--model`: Model path or HuggingFace ID (default: mlx-community/Phi-3-mini-4k-instruct-4bit)
 - `--author`: Override the author field (skip LLM detection)
 - `--update`: Update existing PROJECT.md, preserving created date, body content, and hooks
 - `--force`: Completely overwrite existing PROJECT.md
 - `--quiet, -q`: Suppress progress output
+
+**Model**: Uses the canonical Qwen2.5 7B Instruct model defined in `ModelManager.swift`. To use a different model, update the `LanguageModel` constant and rebuild the CLI.
 
 **Behavior with existing PROJECT.md:**
 - Default: Error if PROJECT.md exists (prevents accidental overwrites)
@@ -1138,10 +1034,10 @@ proyecto init --quiet
 
 #### `proyecto download`
 
-Downloads the Phi-3 LLM model from SwiftAcervo CDN for local inference. Model is cached in `~/Library/SharedModels/` for use by all intrusive-memory tools.
+Downloads the Qwen2.5 7B LLM model from SwiftAcervo CDN for local inference. Model is cached locally for use by `proyecto init` and all projects using Foundation Models.
 
 ```bash
-# Download Phi-3 model from CDN
+# Download Qwen2.5 7B model from CDN
 proyecto download
 
 # Force re-download (validates and re-downloads all files)
@@ -1156,22 +1052,23 @@ proyecto download --quiet
 - `--quiet, -q`: Suppress progress output
 
 **Model Details:**
-- **Name**: Phi-3 Mini 4K (4-bit quantized)
-- **Size**: ~2.3 GB
-- **Location**: `~/Library/SharedModels/mlx-community_Phi-3-mini-4k-instruct-4bit/`
+- **Name**: Qwen2.5 7B Instruct (4-bit quantized)
+- **Size**: ~4 GB
+- **Location**: Managed by SwiftAcervo (typically `~/Library/Group Containers/group.intrusive-memory.models/SharedModels/mlx-community_Qwen2.5-7B-Instruct-4bit/`)
 - **Checksum Verification**: All files verified with SHA-256 after download
-- **Shared Access**: Available to SwiftBruja, Produciesta, and other intrusive-memory tools
+- **Capability**: 128K context window, excellent instruction following, minimal hallucination
 
-**Note**: The model is downloaded from SwiftAcervo CDN (Cloudflare R2), not directly from HuggingFace, for reliable validation and checksumming.
+**Note**: The model is downloaded from SwiftAcervo CDN (Cloudflare R2) for reliable validation and checksumming.
 
-### Iterative LLM Architecture (v2.2.0+)
+### Iterative LLM Architecture (v3.6.0+)
 
-The `proyecto init` command uses an **iterative LLM approach** with 8 focused queries instead of one large request:
+The `proyecto init` command uses an **iterative LLM approach** with 8 focused queries via Foundation Models:
 
 **Components:**
 - **DirectoryContext** - Gathers directory analysis once, reused for all queries
 - **ProjectSection** - Enum defining 8 sections with focused prompt templates
-- **IterativeProjectGenerator** - Orchestrates sequential LLM queries with progress feedback
+- **IterativeProjectGenerator** - Orchestrates sequential Foundation Models queries with progress feedback
+- **FoundationModels** - Apple's on-device LLM framework (zero network, after model download)
 
 **Sections Queried (in order):**
 1. **Title** - Analyzes folder name, files, README for project title
