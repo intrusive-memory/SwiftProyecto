@@ -121,6 +121,17 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
   /// Invalid voice identifiers are permitted and will be handled at generation time.
   public var voices: [String: String]
 
+  /// Optional spoken language for this character's lines, as a BCP 47 language
+  /// tag (e.g. `"es"`, `"es-MX"`, `"en"`, `"fr-FR"`).
+  ///
+  /// Drives the TTS generation language so non-English dialogue is rendered with
+  /// the correct language prefill rather than an anglicized default. When `nil`,
+  /// the generator falls back to language inference (e.g. `"auto"`) — it must
+  /// never silently force English.
+  ///
+  /// Example: `MAESTRA → "es-MX"`, `NARRATOR → "en"`.
+  public var language: String?
+
   /// Unique identifier based on character name
   public var id: String { character }
 
@@ -130,13 +141,15 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     actor: String? = nil,
     gender: Gender? = nil,
     voiceDescription: String? = nil,
-    voices: [String: String] = [:]
+    voices: [String: String] = [:],
+    language: String? = nil
   ) {
     self.character = character
     self.actor = actor
     self.gender = gender
     self.voiceDescription = voiceDescription
     self.voices = voices
+    self.language = language
   }
 
   // MARK: - Convenience
@@ -217,6 +230,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     case voicePrompt
     case voiceDescription
     case voices
+    case language
   }
 
   public init(from decoder: Decoder) throws {
@@ -229,6 +243,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
       try container.decodeIfPresent(String.self, forKey: .voicePrompt)
       ?? container.decodeIfPresent(String.self, forKey: .voiceDescription)
     voices = try container.decodeIfPresent([String: String].self, forKey: .voices) ?? [:]
+    language = try container.decodeIfPresent(String.self, forKey: .language)
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -238,5 +253,6 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     try container.encodeIfPresent(gender, forKey: .gender)
     try container.encodeIfPresent(voiceDescription, forKey: .voicePrompt)
     try container.encode(voices, forKey: .voices)
+    try container.encodeIfPresent(language, forKey: .language)
   }
 }

@@ -172,6 +172,9 @@ public struct ProjectMarkdownParser {
         if let voicePrompt = member.voiceDescription {
           yaml += "    voicePrompt: \(escapeYAMLString(voicePrompt))\n"
         }
+        if let language = member.language {
+          yaml += "    language: \(escapeYAMLString(language))\n"
+        }
         if !member.voices.isEmpty {
           yaml += "    voices:\n"
           for (provider, voiceId) in member.voices.sorted(by: { $0.key < $1.key }) {
