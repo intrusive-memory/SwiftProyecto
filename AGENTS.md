@@ -94,6 +94,23 @@ SwiftProyecto is a Swift package providing **extensible, agentic discovery of co
 
 ---
 
+## 📖 PROJECT.md Syntax Quick Reference
+
+**🔗 Quick Reference**: See [**Docs/PROJECT_MD_REFERENCE.md**](Docs/PROJECT_MD_REFERENCE.md) for a concise schema guide.
+
+For agents needing to parse or generate PROJECT.md files:
+- **Field Reference**: Table of all front matter fields (required, optional, types, defaults)
+- **CastMember Structure**: Character-to-voice mapping syntax and voice provider keys
+- **Examples**: YAML examples from minimal to fully-featured projects
+- **App Settings**: How to extend PROJECT.md with custom app-specific sections
+- **Voice Providers**: Supported TTS providers (Apple, ElevenLabs, VoxAlta) with example voice IDs
+- **Validation Rules**: Required fields, enum values, format requirements
+- **Tips for Agents**: Best practices for parsing, validation, and safe field access
+
+**📄 Complete Example**: See [EXAMPLE_PROJECT.md](EXAMPLE_PROJECT.md) for a working PROJECT.md file.
+
+---
+
 ## 🔐 Foundation Models Integration
 
 **SwiftProyecto 3.6.0+ uses Apple Foundation Models for on-device LLM inference.**
