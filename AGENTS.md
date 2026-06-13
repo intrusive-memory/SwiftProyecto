@@ -96,6 +96,18 @@ SwiftProyecto is a Swift package providing **extensible, agentic discovery of co
 
 ## 📚 Developer Documentation
 
+### 🕸️ Knowledge Graph
+
+**Interactive Graph**: Open [`graphify-out/graph.html`](graphify-out/graph.html) in your browser for an interactive visual map of the codebase with 1104 nodes, 1662 edges, and 71 semantic communities.
+
+**Graph Report**: See [`graphify-out/GRAPH_REPORT.md`](graphify-out/GRAPH_REPORT.md) for:
+- God nodes (most connected abstractions)
+- Surprising cross-community connections
+- Hyperedges (group relationships)
+- Community structure and cohesion scores
+
+**Raw Data**: [`graphify-out/graph.json`](graphify-out/graph.json) is GraphRAG-ready for downstream LLM applications.
+
 ### 📖 Integration Guide for Developers
 
 **🔗 Main Reference**: See [**Docs/INTEGRATION_GUIDE.md**](Docs/INTEGRATION_GUIDE.md) for a complete guide to integrating SwiftProyecto into your app.

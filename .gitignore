@@ -19,3 +19,5 @@ DerivedData/
 /bin/
 *.profraw
 /default.profraw
+graphify-out/.*
+graphify-out/cache/

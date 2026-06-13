@@ -1,0 +1,537 @@
+{
+  "/Users/stovak/Projects/SwiftProyecto/.claude/settings.json": {
+    "mtime": 1765768135.0928671,
+    "ast_hash": "e77d1cd40e2bcdafa9aa505284883bce",
+    "semantic_hash": "e77d1cd40e2bcdafa9aa505284883bce"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/.claude/settings.local.json": {
+    "mtime": 1778980952.754094,
+    "ast_hash": "fba314dbeb53b69663850c7f924ff8ae",
+    "semantic_hash": "fba314dbeb53b69663850c7f924ff8ae"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Package.swift": {
+    "mtime": 1781313542.7811449,
+    "ast_hash": "237e8e33894de45d5970dc2123431890",
+    "semantic_hash": "237e8e33894de45d5970dc2123431890"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Extensions/ProjectFrontMatter+AppSettings.swift": {
+    "mtime": 1775652177.2733762,
+    "ast_hash": "d2cedc82a812fb6152b22dfe6ad2f490",
+    "semantic_hash": "d2cedc82a812fb6152b22dfe6ad2f490"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Extensions/ProjectModel+ParseBatch.swift": {
+    "mtime": 1775652177.2736888,
+    "ast_hash": "6f9d923b6978f0f8eb2b1af22b6bfad4",
+    "semantic_hash": "6f9d923b6978f0f8eb2b1af22b6bfad4"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/FileSource/DirectoryFileSource.swift": {
+    "mtime": 1775652177.2739952,
+    "ast_hash": "83de694d98f49889cd76acd37ea71317",
+    "semantic_hash": "83de694d98f49889cd76acd37ea71317"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/FileSource/FileSource.swift": {
+    "mtime": 1775652177.2743332,
+    "ast_hash": "4598569fb4ae47164602417fc6683f51",
+    "semantic_hash": "4598569fb4ae47164602417fc6683f51"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/FileSource/GitRepositoryFileSource.swift": {
+    "mtime": 1775652177.2745101,
+    "ast_hash": "eda606baafa14b44615b78a5a2ec3a60",
+    "semantic_hash": "eda606baafa14b44615b78a5a2ec3a60"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Infrastructure/ModelManager.swift": {
+    "mtime": 1777687646.6269393,
+    "ast_hash": "69f1fc8092275812715883a1cc39f900",
+    "semantic_hash": "69f1fc8092275812715883a1cc39f900"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Models/AnyCodable.swift": {
+    "mtime": 1781310154.9601786,
+    "ast_hash": "4576e3a766bacf476c0c745ab85da8be",
+    "semantic_hash": "4576e3a766bacf476c0c745ab85da8be"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Models/AppFrontMatterSettings.swift": {
+    "mtime": 1775652177.2749567,
+    "ast_hash": "4712de2f1402bec9e384ee0a3600366b",
+    "semantic_hash": "4712de2f1402bec9e384ee0a3600366b"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Models/CastMember.swift": {
+    "mtime": 1781313542.7393904,
+    "ast_hash": "bca5ef178041d9df036790a233a31b42",
+    "semantic_hash": "bca5ef178041d9df036790a233a31b42"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Models/FileNode.swift": {
+    "mtime": 1775652177.2754672,
+    "ast_hash": "e9649a6d724045294679146de4b5d8c0",
+    "semantic_hash": "e9649a6d724045294679146de4b5d8c0"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Models/FilePattern.swift": {
+    "mtime": 1775652177.2757082,
+    "ast_hash": "955aced670512e3aa6eb244c4f5c1808",
+    "semantic_hash": "955aced670512e3aa6eb244c4f5c1808"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Models/ParseBatchArguments.swift": {
+    "mtime": 1775652177.275956,
+    "ast_hash": "7e5555945a75f49fdf134eba42413bb9",
+    "semantic_hash": "7e5555945a75f49fdf134eba42413bb9"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Models/ParseBatchConfig.swift": {
+    "mtime": 1775652177.2762413,
+    "ast_hash": "d7b886a6113cefc8a9089d59e24009ca",
+    "semantic_hash": "d7b886a6113cefc8a9089d59e24009ca"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Models/ParseCommandArguments.swift": {
+    "mtime": 1775652177.2764926,
+    "ast_hash": "18edbc672b056b7ce0d4956e157c4fea",
+    "semantic_hash": "18edbc672b056b7ce0d4956e157c4fea"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Models/ParseFileIterator.swift": {
+    "mtime": 1775652177.2767093,
+    "ast_hash": "b8c6c9cec1b64afd7251b0ce7de3245f",
+    "semantic_hash": "b8c6c9cec1b64afd7251b0ce7de3245f"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Models/ProjectFileReference.swift": {
+    "mtime": 1775652177.2769732,
+    "ast_hash": "b7617abcdd6d7ab225cdbf8ea544a299",
+    "semantic_hash": "b7617abcdd6d7ab225cdbf8ea544a299"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Models/ProjectFrontMatter.swift": {
+    "mtime": 1777218350.0936444,
+    "ast_hash": "b9c81122b4978ea6bd8fe6d49144cc5d",
+    "semantic_hash": "b9c81122b4978ea6bd8fe6d49144cc5d"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Models/ProjectModel.swift": {
+    "mtime": 1775652177.2778127,
+    "ast_hash": "aefff327a428f17afaaa0432c1ffe67e",
+    "semantic_hash": "aefff327a428f17afaaa0432c1ffe67e"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Models/TTSConfig.swift": {
+    "mtime": 1775652177.278014,
+    "ast_hash": "ec9f1dff49f0b906e0642c153a3ae14b",
+    "semantic_hash": "ec9f1dff49f0b906e0642c153a3ae14b"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Services/DocumentContext.swift": {
+    "mtime": 1775652177.2782123,
+    "ast_hash": "713361f69096f1c42f6bc74cbc8222d4",
+    "semantic_hash": "713361f69096f1c42f6bc74cbc8222d4"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Services/ModelContainerFactory.swift": {
+    "mtime": 1775652177.278663,
+    "ast_hash": "8d51110be93ba4957945fe17a9e1c8c4",
+    "semantic_hash": "8d51110be93ba4957945fe17a9e1c8c4"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Services/ProjectDiscovery.swift": {
+    "mtime": 1775652177.2788584,
+    "ast_hash": "32983ce9b5060ca43406254555d9ab55",
+    "semantic_hash": "32983ce9b5060ca43406254555d9ab55"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Services/ProjectService.swift": {
+    "mtime": 1777218350.0938854,
+    "ast_hash": "232d07aaf1e716de8f24bc3345d0e8c6",
+    "semantic_hash": "232d07aaf1e716de8f24bc3345d0e8c6"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/SwiftProyecto.swift": {
+    "mtime": 1781313542.739557,
+    "ast_hash": "0314bf899d09d8e6e09761272b6efa05",
+    "semantic_hash": "0314bf899d09d8e6e09761272b6efa05"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Utilities/BookmarkManager.swift": {
+    "mtime": 1775652177.2797503,
+    "ast_hash": "f89bd58d951ba7bc9dc37ec8a33afdbe",
+    "semantic_hash": "f89bd58d951ba7bc9dc37ec8a33afdbe"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/SwiftProyecto/Utilities/ProjectMarkdownParser.swift": {
+    "mtime": 1781313542.739804,
+    "ast_hash": "99c2b0aee56feebb35bdbd30917f5d89",
+    "semantic_hash": "99c2b0aee56feebb35bdbd30917f5d89"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/proyecto/DirectoryContext.swift": {
+    "mtime": 1775652177.2803798,
+    "ast_hash": "f3b46018feb476e0a42451896da78c84",
+    "semantic_hash": "f3b46018feb476e0a42451896da78c84"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/proyecto/IterativeProjectGenerator.swift": {
+    "mtime": 1781310154.9605267,
+    "ast_hash": "c1ae25619cf2e157551449d757aa020e",
+    "semantic_hash": "c1ae25619cf2e157551449d757aa020e"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/proyecto/ProjectSection.swift": {
+    "mtime": 1775652177.2810702,
+    "ast_hash": "e28f5012e39b60e3ce5c15af9ff69cf5",
+    "semantic_hash": "e28f5012e39b60e3ce5c15af9ff69cf5"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Sources/proyecto/ProyectoCLI.swift": {
+    "mtime": 1781310154.960747,
+    "ast_hash": "786d9e8074ba9a70e35db175067f0a82",
+    "semantic_hash": "786d9e8074ba9a70e35db175067f0a82"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/AcervoDownloadIntegrationTests.swift": {
+    "mtime": 1781310154.9610026,
+    "ast_hash": "4849ff08508cdd069f570e0ee5c8be6e",
+    "semantic_hash": "4849ff08508cdd069f570e0ee5c8be6e"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/AnyCodableTests.swift": {
+    "mtime": 1775652177.2817318,
+    "ast_hash": "8c954cdca29fbdfdecd0610636517ad2",
+    "semantic_hash": "8c954cdca29fbdfdecd0610636517ad2"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/AppFrontMatterSettingsTests.swift": {
+    "mtime": 1775652177.282127,
+    "ast_hash": "9b8dd5dddddda020443993edded26460",
+    "semantic_hash": "9b8dd5dddddda020443993edded26460"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/BookmarkManagerTests.swift": {
+    "mtime": 1775652177.2825263,
+    "ast_hash": "bf45f6570f9dad109c938b02cb305838",
+    "semantic_hash": "bf45f6570f9dad109c938b02cb305838"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/CastMemberTests.swift": {
+    "mtime": 1781313542.740171,
+    "ast_hash": "8135f9a9d3de101d533f35ff21daec88",
+    "semantic_hash": "8135f9a9d3de101d533f35ff21daec88"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/DirectoryFileSourceTests.swift": {
+    "mtime": 1775652177.2831635,
+    "ast_hash": "22ecc5b4da4efd4aecff25051fefdc6f",
+    "semantic_hash": "22ecc5b4da4efd4aecff25051fefdc6f"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/DocumentContextTests.swift": {
+    "mtime": 1775652177.2835388,
+    "ast_hash": "f7e2597fbfd07771b591ae0e3b0ae3aa",
+    "semantic_hash": "f7e2597fbfd07771b591ae0e3b0ae3aa"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/DocumentationExamplesTests.swift": {
+    "mtime": 1775652177.283875,
+    "ast_hash": "5343e912f3d9e40cb47b5774ee3f1d13",
+    "semantic_hash": "5343e912f3d9e40cb47b5774ee3f1d13"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/FileNodeTests.swift": {
+    "mtime": 1775652177.2841923,
+    "ast_hash": "78688d9266d1fbddb0ea00952123827e",
+    "semantic_hash": "78688d9266d1fbddb0ea00952123827e"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/FilePatternTests.swift": {
+    "mtime": 1775652177.2846124,
+    "ast_hash": "30a1cb463ad8b116908d047b563197e8",
+    "semantic_hash": "30a1cb463ad8b116908d047b563197e8"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/GitRepositoryFileSourceTests.swift": {
+    "mtime": 1775652177.285037,
+    "ast_hash": "f3faadf37daa04d00b2a93dbafa044ad",
+    "semantic_hash": "f3faadf37daa04d00b2a93dbafa044ad"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/ModelContainerFactoryTests.swift": {
+    "mtime": 1775652177.2853034,
+    "ast_hash": "df8dcab42bd13f920cd8a574ca384c86",
+    "semantic_hash": "df8dcab42bd13f920cd8a574ca384c86"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/ModelManagerBareDescriptorTests.swift": {
+    "mtime": 1777687646.6280203,
+    "ast_hash": "a1e38f855e0223eda19789e7d4540ff2",
+    "semantic_hash": "a1e38f855e0223eda19789e7d4540ff2"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/ParseBatchConfigTests.swift": {
+    "mtime": 1775652177.2856047,
+    "ast_hash": "3c0cc1111110cfd1321105632bfcb6f5",
+    "semantic_hash": "3c0cc1111110cfd1321105632bfcb6f5"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/ProjectDiscoveryTests.swift": {
+    "mtime": 1775652177.2858891,
+    "ast_hash": "c8cedbbb2b5decdca9429aabcdd3b909",
+    "semantic_hash": "c8cedbbb2b5decdca9429aabcdd3b909"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/ProjectFileReferenceTests.swift": {
+    "mtime": 1775652177.2861712,
+    "ast_hash": "c86d2753b444fc987a526f508ee297c3",
+    "semantic_hash": "c86d2753b444fc987a526f508ee297c3"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/ProjectFrontMatterTests.swift": {
+    "mtime": 1775652177.2872038,
+    "ast_hash": "c89814eacf5848baff412c24c8705236",
+    "semantic_hash": "c89814eacf5848baff412c24c8705236"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/ProjectGenerationIntegrationTest.swift": {
+    "mtime": 1781310154.96121,
+    "ast_hash": "7369d94251b6622818bc8e27d4bb6802",
+    "semantic_hash": "7369d94251b6622818bc8e27d4bb6802"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/ProjectMarkdownParserTests.swift": {
+    "mtime": 1781313542.7404926,
+    "ast_hash": "9cb18e55ba9a79989978ee7d5c0c203b",
+    "semantic_hash": "9cb18e55ba9a79989978ee7d5c0c203b"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/ProjectModelTests.swift": {
+    "mtime": 1775652177.2878642,
+    "ast_hash": "b0730b6472cb9c5fe4393d12d758000d",
+    "semantic_hash": "b0730b6472cb9c5fe4393d12d758000d"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/ProjectServiceCastListTests.swift": {
+    "mtime": 1775652177.288176,
+    "ast_hash": "77fd8a72f7685798f2358fa15eac1c93",
+    "semantic_hash": "77fd8a72f7685798f2358fa15eac1c93"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/ProjectServiceTests.swift": {
+    "mtime": 1775652177.2885077,
+    "ast_hash": "20f5516d19be394abfb6821b4807a937",
+    "semantic_hash": "20f5516d19be394abfb6821b4807a937"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/ProyectoCLIValidateTests.swift": {
+    "mtime": 1775652227.590139,
+    "ast_hash": "6d620f13d8867cc9ad40217f2d5f3069",
+    "semantic_hash": "6d620f13d8867cc9ad40217f2d5f3069"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/SwiftProyectoTests.swift": {
+    "mtime": 1781310154.9613543,
+    "ast_hash": "c9ceeaddb46602f7ceaca0403ea598a7",
+    "semantic_hash": "c9ceeaddb46602f7ceaca0403ea598a7"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/.archive/2025-11-26_RefactoringDesign.md": {
+    "mtime": 1771131907.730005,
+    "ast_hash": "088082189d8f1ee932c2dd9b7c7220a5",
+    "semantic_hash": "088082189d8f1ee932c2dd9b7c7220a5"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/.archive/2026-02-09_VoiceAPI_COMPLETED.md": {
+    "mtime": 1771131907.7301397,
+    "ast_hash": "2c1dee7f4d22698e986c83f5f5d1249c",
+    "semantic_hash": "2c1dee7f4d22698e986c83f5f5d1249c"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/.archive/execution_plans/2026-02-09_AppFrontMatterSettings_COMPLETED.md": {
+    "mtime": 1771131907.7303596,
+    "ast_hash": "2f30fc7a15313ba726abea6a2f1545f0",
+    "semantic_hash": "2f30fc7a15313ba726abea6a2f1545f0"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/.archive/execution_plans/2026-02-09_AppFrontMatterSettings_STATE.md": {
+    "mtime": 1771131907.7304893,
+    "ast_hash": "873d7de4c79472cd0575c3f3bd359457",
+    "semantic_hash": "873d7de4c79472cd0575c3f3bd359457"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/.claude/WORKFLOW.md": {
+    "mtime": 1769545307.1277928,
+    "ast_hash": "6c0794bacc4b20fe351a88a9f69deba4",
+    "semantic_hash": "6c0794bacc4b20fe351a88a9f69deba4"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/.claude/commands/project.md": {
+    "mtime": 1769493953.8363047,
+    "ast_hash": "eb32417e76efa258e56922a5d9f163ca",
+    "semantic_hash": "eb32417e76efa258e56922a5d9f163ca"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/.github/workflows/ensure-model-cdn.yml": {
+    "mtime": 1777939462.7788577,
+    "ast_hash": "958a8aa95f958c916821b1307042314b",
+    "semantic_hash": "958a8aa95f958c916821b1307042314b"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/.github/workflows/release.yml": {
+    "mtime": 1777218350.0882134,
+    "ast_hash": "30d0f763d232bbd48441cf483a0ac80f",
+    "semantic_hash": "30d0f763d232bbd48441cf483a0ac80f"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/.github/workflows/tests.yml": {
+    "mtime": 1777939462.7792504,
+    "ast_hash": "6bd747d3bf4bc5d2cb3ac4c424df9c50",
+    "semantic_hash": "6bd747d3bf4bc5d2cb3ac4c424df9c50"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/.swiftlint.yml": {
+    "mtime": 1765777306.8559415,
+    "ast_hash": "78b18f123b960ce4b4e48f20b068fcb6",
+    "semantic_hash": "78b18f123b960ce4b4e48f20b068fcb6"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/AGENTS.md": {
+    "mtime": 1781313856.3360975,
+    "ast_hash": "a7a74f10a1d5416379c11c2f7ed09d90",
+    "semantic_hash": "a7a74f10a1d5416379c11c2f7ed09d90"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/CHANGELOG.md": {
+    "mtime": 1777218350.0893145,
+    "ast_hash": "6837f357da25b68e95db8feab6c0abda",
+    "semantic_hash": "6837f357da25b68e95db8feab6c0abda"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/CLAUDE.md": {
+    "mtime": 1781308964.2643044,
+    "ast_hash": "23a287a51741a837d62f4045cdab58ba",
+    "semantic_hash": "23a287a51741a837d62f4045cdab58ba"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/CONTRIBUTING.md": {
+    "mtime": 1763442130.869499,
+    "ast_hash": "bab44a2542751b4236a2499daf68ae27",
+    "semantic_hash": "bab44a2542751b4236a2499daf68ae27"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/ACERVO_MIGRATION_REQUIREMENTS.md": {
+    "mtime": 1777218350.089741,
+    "ast_hash": "1e7a23a6ad7cea5af0aa3bd6e4919510",
+    "semantic_hash": "1e7a23a6ad7cea5af0aa3bd6e4919510"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/AGENTS_PROPERTY_SPEC.md": {
+    "mtime": 1772865834.119877,
+    "ast_hash": "748431df4ec75bb6657c21bbe83eb015",
+    "semantic_hash": "748431df4ec75bb6657c21bbe83eb015"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/EXTENDING_PROJECT_MD.md": {
+    "mtime": 1770593595.0899487,
+    "ast_hash": "218f6d34923e99b8ba52e52ac3e23a4b",
+    "semantic_hash": "218f6d34923e99b8ba52e52ac3e23a4b"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/GENERATION_CONFIG_REQUIREMENTS.md": {
+    "mtime": 1773431774.4348452,
+    "ast_hash": "503f0c0d3ed6110f68ca31d3fe32d3a6",
+    "semantic_hash": "503f0c0d3ed6110f68ca31d3fe32d3a6"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/IMPLEMENTATION_STRATEGY.md": {
+    "mtime": 1763442109.9691284,
+    "ast_hash": "613a0be9b6459d56de2947252214b191",
+    "semantic_hash": "613a0be9b6459d56de2947252214b191"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/INTEGRATION_GUIDE.md": {
+    "mtime": 1781313847.4290287,
+    "ast_hash": "1e68e09e0ceebd975d446e99dabdc86a",
+    "semantic_hash": "1e68e09e0ceebd975d446e99dabdc86a"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/PARSE_ARCHITECTURE.md": {
+    "mtime": 1769741416.5733464,
+    "ast_hash": "eaa67d4dd6204a6d4fb9823e569e9b91",
+    "semantic_hash": "eaa67d4dd6204a6d4fb9823e569e9b91"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/PERFORMANCE_TESTING.md": {
+    "mtime": 1764187656.6376495,
+    "ast_hash": "32ccabbc72bb1d51a41be825dd479762",
+    "semantic_hash": "32ccabbc72bb1d51a41be825dd479762"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/PLATFORM-ENFORCEMENT.md": {
+    "mtime": 1765777306.8564785,
+    "ast_hash": "e19c1a2fd4ccc17c9574868aa40343b8",
+    "semantic_hash": "e19c1a2fd4ccc17c9574868aa40343b8"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/PROJECT_MD_REFERENCE.md": {
+    "mtime": 1781313631.427192,
+    "ast_hash": "64ba59ffcc2ac92000741a7ea171eb72",
+    "semantic_hash": "64ba59ffcc2ac92000741a7ea171eb72"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/complete/ACERVO_MIGRATION_REQUIREMENTS_2026-03.md": {
+    "mtime": 1777218350.0900922,
+    "ast_hash": "b1b5cb405e2c192eb0b8c9f8c6b03315",
+    "semantic_hash": "b1b5cb405e2c192eb0b8c9f8c6b03315"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/complete/EXECUTION_PLAN_CDN_MIGRATION.md": {
+    "mtime": 1777218350.090392,
+    "ast_hash": "db69f50d7d5adb26a26192cc6e3efbd0",
+    "semantic_hash": "db69f50d7d5adb26a26192cc6e3efbd0"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/complete/OPERATION_STAGE_WHISPER_1_COMPLETE.md": {
+    "mtime": 1774616303.4890563,
+    "ast_hash": "3df7fb7a8c083ba1d8fbe4f02ea44976",
+    "semantic_hash": "3df7fb7a8c083ba1d8fbe4f02ea44976"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/complete/OPERATION_STAGE_WHISPER_1_SUMMARY.md": {
+    "mtime": 1774616303.4892902,
+    "ast_hash": "b6d57ef9bdd2e18ac953cd7f8f9424cc",
+    "semantic_hash": "b6d57ef9bdd2e18ac953cd7f8f9424cc"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/complete/REQUIREMENTS_ACERVO_INTEGRATION.md": {
+    "mtime": 1777218350.0905747,
+    "ast_hash": "812febc2a7562f7cd58a9375abe698f9",
+    "semantic_hash": "812febc2a7562f7cd58a9375abe698f9"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/complete/REQUIREMENTS_ACERVO_V2_MIGRATION.md": {
+    "mtime": 1777218350.0906713,
+    "ast_hash": "920a27833141b586cc8741666f77aa1e",
+    "semantic_hash": "920a27833141b586cc8741666f77aa1e"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/incomplete/EXECUTION_PLAN_CUSTOM_PAGES_REMOVAL.md": {
+    "mtime": 1777218350.0909476,
+    "ast_hash": "60b356c3ba567397aa43981173cba255",
+    "semantic_hash": "60b356c3ba567397aa43981173cba255"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/incomplete/README.md": {
+    "mtime": 1777218350.0910633,
+    "ast_hash": "44c9973c96041f4c110d60296b219287",
+    "semantic_hash": "44c9973c96041f4c110d60296b219287"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/incomplete/REQUIREMENTS_ORIGINAL.md": {
+    "mtime": 1777218350.091207,
+    "ast_hash": "a38b77c1d9088f66cb8c2913bddea529",
+    "semantic_hash": "a38b77c1d9088f66cb8c2913bddea529"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/incomplete/REQUIREMENTS_PER_LANGUAGE_VOICE_PROMPTS.md": {
+    "mtime": 1781313542.7807913,
+    "ast_hash": "66afa300ab8efdfd6bf89561ae1cdc60",
+    "semantic_hash": "66afa300ab8efdfd6bf89561ae1cdc60"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/missions/EXECUTION_PLAN.md": {
+    "mtime": 1776354431.1864889,
+    "ast_hash": "60b356c3ba567397aa43981173cba255",
+    "semantic_hash": "60b356c3ba567397aa43981173cba255"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/missions/manifest-airdrop-2026-04/ACERVO_AUDIT.md": {
+    "mtime": 1777218350.0915413,
+    "ast_hash": "fb8bf11b5da829331ae026ab483e3801",
+    "semantic_hash": "fb8bf11b5da829331ae026ab483e3801"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/missions/manifest-airdrop-2026-04/EXECUTION_PLAN.md": {
+    "mtime": 1777218350.0919087,
+    "ast_hash": "3193257905fa9d5f64ee1e3439707c7d",
+    "semantic_hash": "3193257905fa9d5f64ee1e3439707c7d"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/missions/manifest-airdrop-2026-04/README.md": {
+    "mtime": 1777218350.0921795,
+    "ast_hash": "30991dc7f001629b85aaf869b17dde4a",
+    "semantic_hash": "30991dc7f001629b85aaf869b17dde4a"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/missions/manifest-airdrop-2026-04/manifest-airdrop-01-brief.md": {
+    "mtime": 1777218350.0924551,
+    "ast_hash": "fb0bef00482da11e12ea8bb2bdde5f97",
+    "semantic_hash": "fb0bef00482da11e12ea8bb2bdde5f97"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/old/2026-02-15_v3.1.0_ProjectDiscovery_COMPLETED.md": {
+    "mtime": 1777218350.0926106,
+    "ast_hash": "60b356c3ba567397aa43981173cba255",
+    "semantic_hash": "60b356c3ba567397aa43981173cba255"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Docs/old/GENERATION_CONFIG_REQUIREMENTS.md": {
+    "mtime": 1777218350.092769,
+    "ast_hash": "503f0c0d3ed6110f68ca31d3fe32d3a6",
+    "semantic_hash": "503f0c0d3ed6110f68ca31d3fe32d3a6"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/EXAMPLE_PROJECT.md": {
+    "mtime": 1771036154.6367693,
+    "ast_hash": "112f3cd5d933dc51adc866f4593ce091",
+    "semantic_hash": "112f3cd5d933dc51adc866f4593ce091"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/GEMINI.md": {
+    "mtime": 1781308964.2645307,
+    "ast_hash": "e01d790877fbf866e6102d800b90c5d1",
+    "semantic_hash": "e01d790877fbf866e6102d800b90c5d1"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/QUICK-START-ENFORCEMENT.md": {
+    "mtime": 1765777306.85692,
+    "ast_hash": "1fb08b1337154fe548671bf3c4ae787f",
+    "semantic_hash": "1fb08b1337154fe548671bf3c4ae787f"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/README.md": {
+    "mtime": 1781313861.049772,
+    "ast_hash": "fae1d26b98c257318d614a49cafe6a66",
+    "semantic_hash": "fae1d26b98c257318d614a49cafe6a66"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/TODO.md": {
+    "mtime": 1781310154.9608488,
+    "ast_hash": "bc045a919f0353d90b7e86689ebf4c53",
+    "semantic_hash": "bc045a919f0353d90b7e86689ebf4c53"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/Tests/SwiftProyectoTests/Fixtures/PROJECT.md": {
+    "mtime": 1777218350.0951092,
+    "ast_hash": "e5aaa5a5b3160b4dfd7e8bc54731f7f3",
+    "semantic_hash": "e5aaa5a5b3160b4dfd7e8bc54731f7f3"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/SwiftProyecto.jpg": {
+    "mtime": 1769493953.8433232,
+    "ast_hash": "355efaad8617c4bfec39975480f36845",
+    "semantic_hash": "355efaad8617c4bfec39975480f36845"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/SwiftProyecto.png": {
+    "mtime": 1769493953.8800833,
+    "ast_hash": "a41556fad7e2b3902ac482cb81c95c85",
+    "semantic_hash": "a41556fad7e2b3902ac482cb81c95c85"
+  },
+  "/Users/stovak/Projects/SwiftProyecto/icon-sm.png": {
+    "mtime": 1770593595.0960712,
+    "ast_hash": "84d05f0075bef93789cf6f5bbd73ca8f",
+    "semantic_hash": "84d05f0075bef93789cf6f5bbd73ca8f"
+  }
+}
