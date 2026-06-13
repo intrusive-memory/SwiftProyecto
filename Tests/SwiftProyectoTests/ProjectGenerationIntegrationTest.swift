@@ -134,12 +134,12 @@ final class ProjectGenerationIntegrationTest: XCTestCase {
     print("Testing Foundation Models availability...")
 
     #if os(macOS)
-    // Foundation Models are natively available on macOS 27+
-    // No download required - models are built into the OS
-    print("✓ Foundation Models available on macOS 27")
-    XCTAssertTrue(true, "Foundation Models are natively available")
+      // Foundation Models are natively available on macOS 27+
+      // No download required - models are built into the OS
+      print("✓ Foundation Models available on macOS 27")
+      XCTAssertTrue(true, "Foundation Models are natively available")
     #else
-    XCTSkip("Foundation Models only available on macOS")
+      XCTSkip("Foundation Models only available on macOS")
     #endif
   }
 
