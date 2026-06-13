@@ -20,10 +20,10 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/marcprux/universal.git", .upToNextMajor(from: "5.3.0")),
-    .package(
-      url: "https://github.com/intrusive-memory/SwiftBruja.git", .upToNextMajor(from: "1.6.3")),
-    .package(
-      url: "https://github.com/intrusive-memory/SwiftAcervo.git", .upToNextMajor(from: "0.13.1")),
+    sibling(
+      "SwiftAcervo",
+      remote: "https://github.com/intrusive-memory/SwiftAcervo.git",
+      from: "0.16.0"),
     .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMajor(from: "1.7.1")),
   ],
   targets: [
@@ -42,7 +42,6 @@ let package = Package(
       name: "proyecto",
       dependencies: [
         "SwiftProyecto",
-        .product(name: "SwiftBruja", package: "SwiftBruja"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       swiftSettings: [
@@ -54,7 +53,6 @@ let package = Package(
       name: "SwiftProyectoTests",
       dependencies: [
         "SwiftProyecto",
-        .product(name: "SwiftBruja", package: "SwiftBruja"),
         .product(name: "SwiftAcervo", package: "SwiftAcervo"),
       ],
       swiftSettings: [
