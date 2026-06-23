@@ -32,9 +32,11 @@ struct ProyectoCLI: AsyncParsableCommand {
         proyecto init --update            # Update existing PROJECT.md
         proyecto validate                 # Validate PROJECT.md in current directory
         proyecto validate /path/to/dir    # Validate PROJECT.md in specific directory
+        proyecto generate                 # Generate output for current directory
+        proyecto generate --season 2      # Generate output for season 2 only
       """,
     version: SwiftProyecto.version,
-    subcommands: [InitCommand.self, ValidateCommand.self],
+    subcommands: [InitCommand.self, ValidateCommand.self, GenerateCommand.self],
     defaultSubcommand: InitCommand.self
   )
 }
@@ -97,82 +99,143 @@ struct ValidateCommand: ParsableCommand {
       throw ProyectoError.projectMdNotFound(projectMdURL.path)
     }
 
-    // Parse and validate
+    // Parse the file
     let parser = ProjectMarkdownParser()
     do {
       let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
 
-      // Success!
-      print("✅ Valid PROJECT.md: \(projectMdURL.path)")
-      print()
+      // Create validator and validate
+      let validator = ProjectValidator()
+      let result = validator.validate(frontMatter)
 
-      if verbose {
-        print("Parsed metadata:")
-        print("  Type: \(frontMatter.type)")
-        print("  Title: \(frontMatter.title)")
-        print("  Author: \(frontMatter.author)")
+      // Display header
+      print("✓ Validating: \(projectMdURL.path)")
 
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .medium
-        dateFormatter.timeStyle = .none
-        print("  Created: \(dateFormatter.string(from: frontMatter.created))")
+      // Display schema and file type info
+      let schemaVersionStr = result.metadata.schemaVersion == 4 ? "v4.0.0" : "v3.x"
+      print("ℹ Schema version: \(schemaVersionStr)")
+      print("ℹ File type: \(result.metadata.fileType)")
 
-        if let description = frontMatter.description {
-          print("  Description: \(description.prefix(80))\(description.count > 80 ? "..." : "")")
-        }
-        if let season = frontMatter.season {
-          print("  Season: \(season)")
-        }
-        if let episodes = frontMatter.episodes {
-          print("  Episodes: \(episodes)")
-        }
-        if let genre = frontMatter.genre {
-          print("  Genre: \(genre)")
-        }
-        if let tags = frontMatter.tags {
-          print("  Tags: \(tags.joined(separator: ", "))")
-        }
-        if let episodesDir = frontMatter.episodesDir {
-          print("  Episodes Directory: \(episodesDir)")
-        }
-        if let audioDir = frontMatter.audioDir {
-          print("  Audio Directory: \(audioDir)")
-        }
-        if let filePattern = frontMatter.filePattern {
-          print("  File Pattern: \(filePattern)")
-        }
-        if let exportFormat = frontMatter.exportFormat {
-          print("  Export Format: \(exportFormat)")
-        }
-        if let cast = frontMatter.cast, !cast.isEmpty {
-          print("  Cast: \(cast.count) member(s)")
-        }
-        if frontMatter.tts != nil {
-          print("  TTS Configuration: present")
-        }
-        if frontMatter.preGenerateHook != nil {
-          print("  Pre-generate Hook: present")
-        }
-        if frontMatter.postGenerateHook != nil {
-          print("  Post-generate Hook: present")
-        }
+      // Display counts if present
+      if let seasonCount = result.metadata.seasonCount, seasonCount > 0 {
+        let seasonStr = result.metadata.seasonNumbers.map { $0.map(String.init).joined(separator: ", ") } ?? ""
+        print("ℹ Seasons: \(seasonCount) (IDs: \(seasonStr))")
+      }
 
+      if let languageCount = result.metadata.languageCount, languageCount > 0 {
+        let langStr = result.metadata.languageCodes.map { $0.joined(separator: ", ") } ?? ""
+        print("ℹ Languages: \(languageCount) (\(langStr))")
+      }
+
+      if let variantCount = result.metadata.variantCount, variantCount > 0 {
+        print("ℹ Variants: \(variantCount)")
+      }
+
+      // Check validation result
+      if result.isValid {
+        print("✓ VALID PROJECT")
         print()
-        print("Body content: \(body.isEmpty ? "empty" : "\(body.count) characters")")
+
+        // Show warnings if any
+        if !result.warnings.isEmpty {
+          print("⚠ Warnings:")
+          for warning in result.warnings {
+            print("  - \(warning)")
+          }
+          print()
+        }
+
+        // Show verbose metadata if requested
+        if verbose {
+          print("Parsed metadata:")
+          print("  Type: \(frontMatter.type)")
+          print("  Title: \(frontMatter.title)")
+          print("  Author: \(frontMatter.author)")
+
+          let dateFormatter = DateFormatter()
+          dateFormatter.dateStyle = .medium
+          dateFormatter.timeStyle = .none
+          print("  Created: \(dateFormatter.string(from: frontMatter.created))")
+
+          if let description = frontMatter.description {
+            print("  Description: \(description.prefix(80))\(description.count > 80 ? "..." : "")")
+          }
+          if let season = frontMatter.season {
+            print("  Season: \(season)")
+          }
+          if let episodes = frontMatter.episodes {
+            print("  Episodes: \(episodes)")
+          }
+          if let genre = frontMatter.genre {
+            print("  Genre: \(genre)")
+          }
+          if let tags = frontMatter.tags {
+            print("  Tags: \(tags.joined(separator: ", "))")
+          }
+          if let episodesDir = frontMatter.episodesDir {
+            print("  Episodes Directory: \(episodesDir)")
+          }
+          if let audioDir = frontMatter.audioDir {
+            print("  Audio Directory: \(audioDir)")
+          }
+          if let filePattern = frontMatter.filePattern {
+            print("  File Pattern: \(filePattern)")
+          }
+          if let exportFormat = frontMatter.exportFormat {
+            print("  Export Format: \(exportFormat)")
+          }
+          if let cast = frontMatter.cast, !cast.isEmpty {
+            print("  Cast: \(cast.count) member(s)")
+          }
+          if frontMatter.tts != nil {
+            print("  TTS Configuration: present")
+          }
+          if frontMatter.preGenerateHook != nil {
+            print("  Pre-generate Hook: present")
+          }
+          if frontMatter.postGenerateHook != nil {
+            print("  Post-generate Hook: present")
+          }
+
+          print()
+          print("Body content: \(body.isEmpty ? "empty" : "\(body.count) characters")")
+        }
+      } else {
+        // Validation failed
+        print("✗ VALIDATION FAILED:")
+        print()
+
+        // Show all errors
+        for error in result.errors {
+          print("  - \(error)")
+        }
+
+        // Show warnings too
+        if !result.warnings.isEmpty {
+          print()
+          print("⚠ Warnings:")
+          for warning in result.warnings {
+            print("  - \(warning)")
+          }
+        }
+
+        throw ExitCode.validationFailure
       }
 
     } catch let error as ProjectMarkdownParser.ParserError {
-      // Validation failed - show detailed error
-      print("❌ Invalid PROJECT.md: \(projectMdURL.path)")
+      // Parser error - show detailed error
+      print("✗ Validating: \(projectMdURL.path)")
       print()
-      print("Error: \(error.localizedDescription)")
+      print("✗ PARSE ERROR:")
+      print("  - \(error.localizedDescription)")
       throw ExitCode.validationFailure
 
     } catch {
       // Other errors
-      print("❌ Failed to validate PROJECT.md: \(projectMdURL.path)")
+      print("✗ Validating: \(projectMdURL.path)")
       print()
-      print("Error: \(error.localizedDescription)")
+      print("✗ ERROR:")
+      print("  - \(error.localizedDescription)")
       throw ExitCode.failure
     }
   }

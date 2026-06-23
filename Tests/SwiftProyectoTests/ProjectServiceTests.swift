@@ -111,10 +111,12 @@ final class ProjectServiceTests: XCTestCase {
     XCTAssertEqual(project.genre, "Science Fiction")
     XCTAssertEqual(project.tags, ["sci-fi", "drama"])
 
-    // Verify PROJECT.md includes all fields
+    // Verify PROJECT.md includes all fields (v4.0.0 format)
     let manifestURL = projectURL.appendingPathComponent("PROJECT.md")
     let content = try String(contentsOf: manifestURL, encoding: .utf8)
-    XCTAssertTrue(content.contains("season: 2"))
+    XCTAssertTrue(content.contains("schemaVersion: 4"))
+    XCTAssertTrue(content.contains("seasons:"))
+    XCTAssertTrue(content.contains("number: 2"))
     XCTAssertTrue(content.contains("episodes: 10"))
     XCTAssertTrue(content.contains("genre: Science Fiction"))
   }
