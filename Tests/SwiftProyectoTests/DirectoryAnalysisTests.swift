@@ -128,21 +128,6 @@ final class CastExtractorTests: XCTestCase {
     XCTAssertTrue(cast.isEmpty)
   }
 
-  func testLinguaMatra() throws {
-    let lingmaURL = URL(fileURLWithPath: "/Users/stovak/Projects/podcasts/lingua-matra/episodes/it/episode_01.fountain")
-    let cast = try extractor.extractCast(from: lingmaURL)
-
-    XCTAssertTrue(cast.contains("NARRADOR"))
-    XCTAssertTrue(cast.contains("MAESTRA"))
-    XCTAssertGreaterThanOrEqual(cast.count, 2)
-  }
-
-  func testProduciesta() throws {
-    let prodURL = URL(fileURLWithPath: "/Users/stovak/Projects/Produciesta/fixtures/cast-demo/cast-demo.fountain")
-    let cast = try extractor.extractCast(from: prodURL)
-
-    XCTAssertTrue(cast.contains("UNCLE FU"))
-  }
 
   func testCharacterNamesWithApostrophes() {
     let fountain = """
@@ -260,36 +245,11 @@ final class MetadataExtractorTests: XCTestCase {
     XCTAssertTrue(metadata?.seasons?.contains(3) ?? false)
   }
 
-  func testLinguaMatra() {
-    let projectPath = URL(fileURLWithPath: "/Users/stovak/Projects/podcasts/lingua-matra")
-    let metadata = extractor.inferMetadata(from: projectPath)
-
-    XCTAssertEqual(metadata?.title, "Lingua Matra")
-    XCTAssertNotNil(metadata?.languages)
-    XCTAssertFalse(metadata?.languages?.isEmpty ?? true)
-  }
 }
 
 // MARK: - ProjectService Analysis Pipeline Tests
 
 final class ProjectServiceAnalysisTests: XCTestCase {
-  func testAnalyzeLinguaMatra() {
-    let projectPath = URL(fileURLWithPath: "/Users/stovak/Projects/podcasts/lingua-matra")
-    let analysis = ProjectService.analyzeForGeneration(at: projectPath)
-
-    XCTAssertNotNil(analysis)
-    XCTAssertFalse(analysis?.extractedCast.isEmpty ?? true)
-    XCTAssertTrue(analysis?.extractedCast.contains("NARRADOR") ?? false)
-    XCTAssertTrue(analysis?.extractedCast.contains("MAESTRA") ?? false)
-  }
-
-  func testAnalyzeProduciesta() {
-    let projectPath = URL(fileURLWithPath: "/Users/stovak/Projects/Produciesta")
-    let analysis = ProjectService.analyzeForGeneration(at: projectPath)
-
-    XCTAssertNotNil(analysis)
-    XCTAssertFalse(analysis?.extractedCast.isEmpty ?? true)
-  }
 
   func testNonExistentDirectory() {
     let projectPath = URL(fileURLWithPath: "/nonexistent/path-\(UUID().uuidString)")
@@ -310,21 +270,6 @@ final class ProjectServiceAnalysisTests: XCTestCase {
     XCTAssertTrue(analysis?.extractedCast.isEmpty ?? false)
   }
 
-  func testExtractsAllCast() {
-    let projectPath = URL(fileURLWithPath: "/Users/stovak/Projects/podcasts/lingua-matra")
-    let analysis = ProjectService.analyzeForGeneration(at: projectPath)
-
-    let castSet = Set(analysis?.extractedCast ?? [])
-    XCTAssertEqual(castSet.count, analysis?.extractedCast.count ?? 0)
-  }
-
-  func testDetectsEpisodePattern() {
-    let projectPath = URL(fileURLWithPath: "/Users/stovak/Projects/podcasts/lingua-matra")
-    let analysis = ProjectService.analyzeForGeneration(at: projectPath)
-
-    XCTAssertNotNil(analysis?.episodePattern)
-    XCTAssertTrue(analysis?.episodePattern?.contains("Multi-language") ?? false)
-  }
 }
 
 // MARK: - Integration Tests with Reference Projects
@@ -333,41 +278,4 @@ final class DirectoryAnalysisIntegrationTests: XCTestCase {
   let castExtractor = CastExtractor()
   let metadataExtractor = MetadataExtractor()
 
-  func testLinguaMatraCastAccuracy() throws {
-    let episodePath = URL(fileURLWithPath: "/Users/stovak/Projects/podcasts/lingua-matra/episodes/it/episode_01.fountain")
-    let cast = try castExtractor.extractCast(from: episodePath)
-
-    XCTAssertTrue(cast.contains("NARRADOR"))
-    XCTAssertTrue(cast.contains("MAESTRA"))
-    XCTAssertFalse(cast.contains("INT"))
-    XCTAssertFalse(cast.contains("EXT"))
-  }
-
-  func testProduciestaCastAccuracy() throws {
-    let castPath = URL(fileURLWithPath: "/Users/stovak/Projects/Produciesta/fixtures/cast-demo/cast-demo.fountain")
-    let cast = try castExtractor.extractCast(from: castPath)
-
-    XCTAssertTrue(cast.contains("UNCLE FU"))
-  }
-
-  func testLinguaMatraMetadata() {
-    let projectPath = URL(fileURLWithPath: "/Users/stovak/Projects/podcasts/lingua-matra")
-    let metadata = metadataExtractor.inferMetadata(from: projectPath)
-
-    XCTAssertEqual(metadata?.title, "Lingua Matra")
-    XCTAssertNotNil(metadata?.languages)
-    XCTAssertTrue(metadata?.languages?.contains("it") ?? false)
-  }
-
-  func testEndToEndLinguaMatra() {
-    let projectPath = URL(fileURLWithPath: "/Users/stovak/Projects/podcasts/lingua-matra")
-    let analysis = ProjectService.analyzeForGeneration(at: projectPath)
-
-    XCTAssertNotNil(analysis)
-    XCTAssertEqual(analysis?.projectPath, projectPath)
-    XCTAssertFalse(analysis?.extractedCast.isEmpty ?? true)
-    XCTAssertEqual(analysis?.inferredTitle, "Lingua Matra")
-    XCTAssertFalse(analysis?.detectedLanguages.isEmpty ?? true)
-    XCTAssertTrue(analysis?.discoveredFiles.contains("*.fountain") ?? false)
-  }
 }
