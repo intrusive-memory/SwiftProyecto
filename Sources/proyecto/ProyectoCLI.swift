@@ -39,7 +39,7 @@ struct ProyectoCLI: AsyncParsableCommand {
     version: SwiftProyecto.version,
     subcommands: [
       InitCommand.self, ValidateCommand.self, GenerateCommand.self, VariantsCommand.self,
-      InfoCommand.self,
+      InfoCommand.self, GenerateProjectCommand.self,
     ],
     defaultSubcommand: InitCommand.self
   )
