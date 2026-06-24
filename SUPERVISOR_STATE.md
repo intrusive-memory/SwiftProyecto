@@ -167,10 +167,13 @@ last_updated: 2026-06-23T00:00:00Z
   - Files: Multiple tests (7 test suites)
 
 - **Sortie 7.2**: **CRITICAL** Multi-Backend Comparison on lingua-matra
-  - State: PENDING
-  - Depends on: Sortie 6.1 → COMPLETED
-  - **CRITICAL GATE**: Acceptance criterion for entire mission
+  - State: PENDING → DISPATCHED (RUNNING NOW)
+  - Agent: a7fc03cee1becda97
+  - Depends on: Sortie 6.1 → COMPLETED ✅, Sortie 7.1 → COMPLETED ✅
+  - Dispatched: 2026-06-23T03:16:30Z
+  - **CRITICAL GATE**: Acceptance criterion for ENTIRE MISSION
   - Context fit: 25 turns (budget: 50) ✅
+  - **Verdict Status**: ⏳ Testing in progress...
 
 - **Sortie 7.3**: CLI Integration Tests
   - State: PENDING
