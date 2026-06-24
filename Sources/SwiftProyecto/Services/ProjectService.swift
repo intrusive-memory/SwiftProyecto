@@ -1127,4 +1127,160 @@ extension ProjectService {
       || lowercased.hasSuffix("_voices.yml")
       || lowercased.hasSuffix("_narrators.json")
   }
+
+  // MARK: - LLM-Based Analysis Pipeline
+
+  /// Analyzes a project directory and returns structured data for LLM backends.
+  ///
+  /// This method orchestrates the full preprocessing pipeline:
+  /// 1. Scans directory structure and recognizes organizational patterns
+  /// 2. Extracts character names from Fountain scripts
+  /// 3. Infers project metadata (title, languages, TTS providers, episodes)
+  /// 4. Returns a `ProjectAnalysis` ready for LLM backends
+  ///
+  /// ## Pipeline Steps
+  ///
+  /// - **Directory Scanning**: Identifies language/season structure, file types
+  /// - **Cast Extraction**: Parses all `.fountain` files for character names
+  /// - **Metadata Inference**: Detects title, languages, episode patterns, TTS setup
+  /// - **Analysis Assembly**: Combines results into `ProjectAnalysis` struct
+  ///
+  /// ## Error Handling
+  ///
+  /// The pipeline gracefully handles:
+  /// - Missing directories (returns `nil`)
+  /// - Unreadable files (skipped with silent continuation)
+  /// - Ambiguous metadata (fields left `nil`)
+  /// - Empty projects (returns analysis with empty cast/metadata)
+  ///
+  /// - Parameter projectPath: The root project directory to analyze
+  /// - Returns: `ProjectAnalysis` ready for LLM backends, or `nil` if path is invalid
+  ///
+  /// ## Example
+  ///
+  /// ```swift
+  /// let analysis = ProjectService.analyzeForGeneration(at: projectURL)
+  /// if let analysis = analysis {
+  ///   let metadata = try await generator.generate(project: analysis)
+  /// }
+  /// ```
+  public nonisolated static func analyzeForGeneration(at projectPath: URL) -> ProjectAnalysis? {
+    let fileManager = FileManager.default
+
+    // Verify directory exists
+    var isDir: ObjCBool = false
+    guard fileManager.fileExists(atPath: projectPath.path, isDirectory: &isDir),
+      isDir.boolValue
+    else {
+      return nil
+    }
+
+    // Step 1: Scan directory structure
+    let structure = scanAndRecognize(at: projectPath)
+
+    // Step 2: Extract cast from all Fountain files
+    let castExtractor = CastExtractor()
+    var extractedCast: [String] = []
+    var processedFiles = Set<String>()
+
+    if let contents = try? fileManager.contentsOfDirectory(at: projectPath, includingPropertiesForKeys: nil) {
+      scanForFountainFiles(
+        at: projectPath,
+        in: contents,
+        fileManager: fileManager,
+        castExtractor: castExtractor,
+        extractedCast: &extractedCast,
+        processedFiles: &processedFiles
+      )
+    }
+
+    // Deduplicate and sort cast
+    let uniqueCast = Array(Set(extractedCast)).sorted()
+
+    // Step 3: Infer metadata
+    let metadataExtractor = MetadataExtractor()
+    let inferredMetadata = metadataExtractor.inferMetadata(from: projectPath)
+
+    // Step 4: Extract episode pattern from structure
+    let episodePattern = inferEpisodePattern(from: structure)
+
+    // Step 5: Assemble ProjectAnalysis
+    let analysis = ProjectAnalysis(
+      projectPath: projectPath,
+      discoveredFiles: structure.filePatterns,
+      extractedCast: uniqueCast,
+      episodePattern: episodePattern,
+      inferredTitle: inferredMetadata?.title,
+      detectedLanguages: inferredMetadata?.languages ?? []
+    )
+
+    return analysis
+  }
+
+  /// Recursively scans for Fountain files and extracts cast.
+  private nonisolated static func scanForFountainFiles(
+    at rootURL: URL,
+    in contents: [URL],
+    fileManager: FileManager,
+    castExtractor: CastExtractor,
+    extractedCast: inout [String],
+    processedFiles: inout Set<String>
+  ) {
+    for item in contents {
+      let fileName = item.lastPathComponent
+
+      // Skip hidden files
+      if fileName.hasPrefix(".") {
+        continue
+      }
+
+      if let isDir = try? item.resourceValues(forKeys: [.isDirectoryKey]).isDirectory, isDir {
+        // Recurse into subdirectories
+        if let subContents = try? fileManager.contentsOfDirectory(at: item, includingPropertiesForKeys: nil) {
+          scanForFountainFiles(
+            at: rootURL,
+            in: subContents,
+            fileManager: fileManager,
+            castExtractor: castExtractor,
+            extractedCast: &extractedCast,
+            processedFiles: &processedFiles
+          )
+        }
+      } else if fileName.lowercased().hasSuffix(".fountain") {
+        // Extract cast from this file
+        do {
+          let cast = try castExtractor.extractCast(from: item)
+          extractedCast.append(contentsOf: cast)
+          processedFiles.insert(fileName)
+        } catch {
+          // Silently skip files that can't be read
+          continue
+        }
+      }
+    }
+  }
+
+  /// Infers an episode pattern description from the project structure.
+  private nonisolated static func inferEpisodePattern(from structure: ProjectStructure) -> String? {
+    switch structure.recognizedPattern {
+    case .languageFirstMultiSeason(let languages, let seasons):
+      let langStr = languages.joined(separator: ", ")
+      let seasonStr = seasons.map(String.init).joined(separator: ", ")
+      return "Multi-language (\(langStr)), Multi-season (\(seasonStr))"
+
+    case .singleLanguageMultiSeason(let seasons):
+      let seasonStr = seasons.map(String.init).joined(separator: ", ")
+      return "Multi-season (\(seasonStr))"
+
+    case .languageOnly(let languages):
+      let langStr = languages.joined(separator: ", ")
+      return "Multi-language (\(langStr))"
+
+    case .flat:
+      return "Flat (no language/season structure)"
+
+    case .unknown:
+      return nil
+    }
+  }
 }

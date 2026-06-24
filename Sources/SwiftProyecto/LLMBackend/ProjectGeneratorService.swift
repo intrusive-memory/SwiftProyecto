@@ -118,4 +118,31 @@ public final class ProjectGeneratorService: @unchecked Sendable {
     // All backends exhausted
     throw LLMBackendError.unavailable(reason: "No LLM backends available for generation")
   }
+
+  /// Analyzes a project directory and generates PROJECT.md metadata.
+  ///
+  /// Convenience method that combines preprocessing and generation:
+  /// 1. Analyzes project directory (cast extraction, metadata inference)
+  /// 2. Passes analysis to backend generation pipeline
+  /// 3. Returns generated metadata ready for writing
+  ///
+  /// - Parameter projectPath: Path to the project directory to analyze
+  /// - Returns: Generated project metadata
+  /// - Throws: `LLMBackendError` if analysis or generation fails
+  ///
+  /// ## Example
+  ///
+  /// ```swift
+  /// let metadata = try await service.generateFrom(projectPath: projectURL)
+  /// // metadata is ready to write to PROJECT.md
+  /// ```
+  public func generateFrom(projectPath: URL) async throws -> ProjectMetadata {
+    // Analyze the project directory
+    guard let analysis = ProjectService.analyzeForGeneration(at: projectPath) else {
+      throw LLMBackendError.invalidInput(reason: "Cannot analyze project directory at \(projectPath.path)")
+    }
+
+    // Generate metadata using fallback chain
+    return try await generate(project: analysis)
+  }
 }
