@@ -27,11 +27,14 @@ struct GenerateCommand: AsyncParsableCommand {
       For v3.x single-season projects, generates output for the single season.
 
       Examples:
-        proyecto generate                              # Generate for current directory
-        proyecto generate /path/to/project             # Generate for specific directory
-        proyecto generate --season 2                   # Generate only season 2
-        proyecto generate --intro-only                 # Generate intro files only
-        proyecto generate --season 1 --outro-only      # Generate outro only for season 1
+        proyecto generate                                    # Generate for current directory
+        proyecto generate /path/to/project                   # Generate for specific directory
+        proyecto generate --season 2                         # Generate only season 2
+        proyecto generate --language es                      # Generate only Spanish variant
+        proyecto generate --season 2 --language es           # Generate season 2 in Spanish
+        proyecto generate --intro-only                       # Generate intro files only
+        proyecto generate --season 1 --outro-only            # Generate outro only for season 1
+        proyecto generate --list                             # List variants (v4 only)
       """
   )
 
@@ -46,6 +49,12 @@ struct GenerateCommand: AsyncParsableCommand {
     help: "Limit generation to specific season number (optional)"
   )
   var season: Int?
+
+  @Option(
+    name: .long,
+    help: "Limit generation to specific language variant (e.g., 'en', 'es')"
+  )
+  var language: String?
 
   @Flag(
     name: .long,
@@ -65,10 +74,22 @@ struct GenerateCommand: AsyncParsableCommand {
   @Flag(name: .shortAndLong, help: "Show verbose output with resolved properties per season")
   var verbose: Bool = false
 
+  @Flag(
+    name: .long,
+    help: "List variants with episode counts, intro/outro presence, and status (v4 schema only)"
+  )
+  var list: Bool = false
+
   mutating func run() async throws {
     // Validate flag combinations
     if introOnly && outroOnly {
       throw ValidationError("Cannot use both --intro-only and --outro-only")
+    }
+
+    // If --list flag is specified, show variants and exit
+    if list {
+      try await showVariantsList()
+      return
     }
 
     // Resolve path
@@ -114,6 +135,7 @@ struct GenerateCommand: AsyncParsableCommand {
       let seasonsToProcess = try getSeasonsTogenerate(
         from: projectFrontMatter,
         requestedSeason: season,
+        requestedLanguage: language,
         isV4: isV4
       )
 
@@ -169,8 +191,21 @@ struct GenerateCommand: AsyncParsableCommand {
   private func getSeasonsTogenerate(
     from project: ProjectFrontMatter,
     requestedSeason: Int?,
+    requestedLanguage: String?,
     isV4: Bool
   ) throws -> [SeasonDefinition] {
+    // Validate language filter if provided
+    if let langCode = requestedLanguage {
+      // Check if language exists in the project
+      let availableLanguages = project.languages?.map { $0.code } ?? []
+      let availableVariants = project.variants?.map { $0.language } ?? []
+      let knownLanguages = Set(availableLanguages + availableVariants)
+
+      if !knownLanguages.isEmpty && !knownLanguages.contains(langCode) {
+        throw GenerateError.languageNotFound(langCode, availableLanguages: Array(knownLanguages))
+      }
+    }
+
     // For v4.0.0 multi-season projects
     if isV4, let seasons = project.seasons, !seasons.isEmpty {
       if let requested = requestedSeason {
@@ -198,8 +233,6 @@ struct GenerateCommand: AsyncParsableCommand {
       }
     }
     return [seasonDef]
-
-    return []
   }
 
   /// Generate output for a specific season.
@@ -356,6 +389,168 @@ struct GenerateCommand: AsyncParsableCommand {
       print("    - Audio Dir: \(audioDir)")
     }
   }
+
+  /// Show variants list grouped by season then language.
+  private func showVariantsList() async throws {
+    // Resolve path
+    let inputPath = path ?? FileManager.default.currentDirectoryPath
+    let inputURL = URL(fileURLWithPath: inputPath).standardizedFileURL
+
+    // Determine if path is a directory or file
+    var isDir: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: inputURL.path, isDirectory: &isDir) else {
+      throw GenerateError.directoryNotFound(inputURL.path)
+    }
+
+    // Get PROJECT.md file URL
+    let projectMdURL: URL
+    if isDir.boolValue {
+      projectMdURL = inputURL.appendingPathComponent("PROJECT.md")
+    } else if inputURL.lastPathComponent == "PROJECT.md" {
+      projectMdURL = inputURL
+    } else {
+      throw GenerateError.invalidPath(
+        "Path must be a directory containing PROJECT.md or a PROJECT.md file")
+    }
+
+    // Check if PROJECT.md exists
+    guard FileManager.default.fileExists(atPath: projectMdURL.path) else {
+      throw GenerateError.projectMdNotFound(projectMdURL.path)
+    }
+
+    // Parse the project file
+    let parser = ProjectMarkdownParser()
+    do {
+      let (projectFrontMatter, _) = try parser.parse(fileURL: projectMdURL)
+
+      // Verify this is a v4 schema project
+      guard projectFrontMatter.schemaVersion == 4 else {
+        throw GenerateError.parseError(
+          "--list is only available for v4.0.0 schema projects (schemaVersion: 4)")
+      }
+
+      // Print title and project info
+      print("\(projectFrontMatter.title)")
+      print("Author: \(projectFrontMatter.author)")
+      if let desc = projectFrontMatter.description {
+        print("Description: \(desc)")
+      }
+      print("")
+
+      // Group variants by season, then by language
+      var variantsBySeasonAndLanguage: [Int: [String: VariantInfo]] = [:]
+
+      if let variants = projectFrontMatter.variants {
+        for variant in variants {
+          if variantsBySeasonAndLanguage[variant.season] == nil {
+            variantsBySeasonAndLanguage[variant.season] = [:]
+          }
+          variantsBySeasonAndLanguage[variant.season]?[variant.language] = VariantInfo(
+            variant: variant,
+            episodeCount: nil
+          )
+        }
+      }
+
+      // Add season-level information
+      if let seasons = projectFrontMatter.seasons {
+        for season in seasons {
+          if variantsBySeasonAndLanguage[season.number] == nil {
+            variantsBySeasonAndLanguage[season.number] = [:]
+          }
+          // Add a default entry if no variants exist for this season
+          if variantsBySeasonAndLanguage[season.number]?.isEmpty ?? true {
+            variantsBySeasonAndLanguage[season.number]?[""] = VariantInfo(
+              variant: nil,
+              episodeCount: season.episodes
+            )
+          } else {
+            // Update episode count for existing variants
+            if var seasonVariants = variantsBySeasonAndLanguage[season.number] {
+              for language in seasonVariants.keys {
+                if var info = seasonVariants[language] {
+                  info.episodeCount = season.episodes
+                  seasonVariants[language] = info
+                }
+              }
+              variantsBySeasonAndLanguage[season.number] = seasonVariants
+            }
+          }
+        }
+      }
+
+      // Sort and print results
+      let sortedSeasons = variantsBySeasonAndLanguage.keys.sorted()
+
+      if sortedSeasons.isEmpty {
+        print("No seasons or variants found in PROJECT.md")
+        return
+      }
+
+      for seasonNum in sortedSeasons {
+        let variants = variantsBySeasonAndLanguage[seasonNum] ?? [:]
+        let seasonTitle = projectFrontMatter.seasons?
+          .first(where: { $0.number == seasonNum })?
+          .title ?? ""
+        let seasonTitleStr = seasonTitle.isEmpty ? "" : " (\(seasonTitle))"
+
+        print("Season \(seasonNum)\(seasonTitleStr):")
+
+        // Sort languages alphabetically (empty language code goes first)
+        let sortedLanguages = variants.keys.sorted { a, b in
+          if a.isEmpty { return true }
+          if b.isEmpty { return false }
+          return a < b
+        }
+
+        for language in sortedLanguages {
+          guard let info = variants[language] else { continue }
+
+          let langLabel = language.isEmpty ? "Default" : "Language \(language)"
+          let episodeCount = info.episodeCount ?? 0
+          let episodeLabel = episodeCount == 1 ? "episode" : "episodes"
+
+          // Check intro/outro presence
+          let hasIntro = info.variant?.introFile != nil
+          let hasOutro = info.variant?.outroFile != nil
+          let introStatus = hasIntro ? "✓" : "✗"
+          let outroStatus = hasOutro ? "✓" : "✗"
+
+          // Get status - format the VariantStatus enum value
+          let statusStr: String
+          if let status = info.variant?.status {
+            switch status {
+            case .published:
+              statusStr = "published"
+            case .inProgress:
+              statusStr = "in_progress"
+            case .draft:
+              statusStr = "draft"
+            case .obsolete:
+              statusStr = "obsolete"
+            }
+          } else {
+            statusStr = "no status"
+          }
+
+          print("  \(langLabel): \(episodeCount) \(episodeLabel) (intro: \(introStatus), outro: \(outroStatus)) [\(statusStr)]")
+        }
+        print("")
+      }
+
+    } catch let error as ProjectMarkdownParser.ParserError {
+      throw GenerateError.parseError(
+        "Failed to parse PROJECT.md: \(error.localizedDescription)")
+    } catch {
+      throw error
+    }
+  }
+
+  /// Helper struct for variant information
+  private struct VariantInfo {
+    var variant: VariantReference?
+    var episodeCount: Int?
+  }
 }
 
 // MARK: - Errors
@@ -366,6 +561,7 @@ enum GenerateError: LocalizedError {
   case invalidPath(String)
   case parseError(String)
   case seasonNotFound(Int)
+  case languageNotFound(String, availableLanguages: [String])
   case noSeasonsFound(String)
   case seasonGenerationFailed(Int, Error)
 
@@ -381,6 +577,12 @@ enum GenerateError: LocalizedError {
       return "Parse error: \(message)"
     case .seasonNotFound(let seasonNum):
       return "Season \(seasonNum) not found in PROJECT.md"
+    case .languageNotFound(let langCode, let availableLanguages):
+      if availableLanguages.isEmpty {
+        return "Language '\(langCode)' not found: no languages defined in PROJECT.md"
+      } else {
+        return "Language '\(langCode)' not found. Available: \(availableLanguages.joined(separator: ", "))"
+      }
     case .noSeasonsFound(let message):
       return message
     case .seasonGenerationFailed(let seasonNum, let error):

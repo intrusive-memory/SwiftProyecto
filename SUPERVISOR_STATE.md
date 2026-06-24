@@ -7,7 +7,7 @@ created: 2026-06-23
 updated: 2026-06-23
 starting_point_commit: 4d4eb3ac4540c5dae6174a97225781b787ea4ec5
 mission_branch: mission/multiseason-schema/01
-operation_name: PENDING_RITUAL
+operation_name: OPERATION POLYPHONIC REPERTORY - 50% COMPLETE
 max_retries: 3
 ---
 
