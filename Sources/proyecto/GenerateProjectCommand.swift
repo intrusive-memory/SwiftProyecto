@@ -365,6 +365,7 @@ struct GenerateProjectCommand: AsyncParsableCommand {
       title: metadata.title,
       author: metadata.author,
       created: metadata.created,
+      updated: Date(),
       description: metadata.description,
       season: metadata.season,
       episodes: metadata.episodes,
