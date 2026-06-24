@@ -72,11 +72,20 @@ last_updated: 2026-06-23T00:00:00Z
 **Sub-agents**: A, B, C, D (launching now - no supervising responsibility)
 
 - **Sortie 2.1**: Claude API Backend
-  - State: PENDING → DISPATCHED (running in parallel)
+  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
   - Agent: ac027680c3de7c766
   - Depends on: Sortie 1.2 → COMPLETED ✅
   - Dispatched: 2026-06-23T02:19:30Z
+  - Completed: 2026-06-23T02:43:00Z
   - Context fit: 25 turns (budget: 50) ✅
+  - Exit Criteria: All verified ✅
+    - ✅ Compiles without errors
+    - ✅ Few-shot prompts work (10+ edge cases tested)
+    - ✅ JSON parsing robust (nested structures, optional fields)
+    - ✅ Token usage ≤5000 (logged: typical 2000-3500)
+    - ✅ 24 tests passing
+    - ✅ No regressions
+  - Files: 1 source + 1 test (2 total)
 
 - **Sortie 3.1**: Foundation Models Backend
   - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
