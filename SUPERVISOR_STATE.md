@@ -79,11 +79,19 @@ last_updated: 2026-06-23T00:00:00Z
   - Context fit: 25 turns (budget: 50) ✅
 
 - **Sortie 3.1**: Foundation Models Backend
-  - State: PENDING → DISPATCHED (running in parallel)
+  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
   - Agent: a15435e501718dbbf
   - Depends on: Sortie 1.2 → COMPLETED ✅
   - Dispatched: 2026-06-23T02:19:30Z
+  - Completed: 2026-06-23T02:41:00Z
   - Context fit: 22 turns (budget: 50) ✅
+  - Exit Criteria: All verified ✅
+    - ✅ Compiles with #available guards
+    - ✅ macOS 27+ platform gating working
+    - ✅ Graceful fallback on macOS 26
+    - ✅ 20 tests passing
+    - ✅ No regressions
+  - Files: 1 source + 1 test (2 total)
 
 - **Sortie 4.1**: SwiftBruja Backend (Optional)
   - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
