@@ -153,8 +153,10 @@ last_updated: 2026-06-23T00:00:00Z
   - Commit: 5709b81
 
 - **Sortie 7.1**: Unit & Integration Tests
-  - State: PENDING
-  - Depends on: Sortie 6.1 → COMPLETED
+  - State: PENDING → DISPATCHED (running now)
+  - Agent: ab6846bc8b1e9a830
+  - Depends on: Sortie 6.1 → COMPLETED ✅
+  - Dispatched: 2026-06-23T03:08:30Z
   - Context fit: 30 turns (budget: 50) ✅
 
 - **Sortie 7.2**: **CRITICAL** Multi-Backend Comparison on lingua-matra
