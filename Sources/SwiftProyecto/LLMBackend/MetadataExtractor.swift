@@ -110,21 +110,37 @@ public final class MetadataExtractor {
   /// - "my_podcast" → "My Podcast"
   /// - "MyShow" → "MyShow"
   /// - "content" → "Content"
+  /// - "project-12345678" → "Project" (strips UUIDs)
   ///
   /// - Parameter dirName: The directory name
   /// - Returns: A formatted title
   private func titleFromDirectoryName(_ dirName: String) -> String {
+    var name = dirName
+
+    // Strip trailing UUID patterns (from test directories)
+    // Pattern: -xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    if let range = name.range(of: "-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", options: .regularExpression) {
+      name.removeSubrange(range)
+    }
+
     // Replace underscores and hyphens with spaces
-    let withSpaces = dirName
+    let withSpaces = name
       .replacingOccurrences(of: "_", with: " ")
       .replacingOccurrences(of: "-", with: " ")
 
-    // Capitalize each word
+    // Capitalize each word (preserve case for words that are already mixed-case)
     return withSpaces.split(separator: " ")
       .map { word in
-        let first = word.prefix(1).uppercased()
-        let rest = word.dropFirst().lowercased()
-        return first + rest
+        let wordStr = String(word)
+        // If word is all lowercase, capitalize first letter
+        // If word is mixed case or all uppercase, keep as is
+        if wordStr == wordStr.lowercased() {
+          let first = word.prefix(1).uppercased()
+          let rest = word.dropFirst()
+          return first + rest
+        } else {
+          return wordStr
+        }
       }
       .joined(separator: " ")
   }
