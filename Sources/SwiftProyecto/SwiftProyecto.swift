@@ -24,8 +24,19 @@ import SwiftAcervo
 /// - ``ModelContainerFactory``
 public struct SwiftProyecto {
   /// The current version of SwiftProyecto
-  public static let version = "4.0.0"
+  public static let version = "4.1.0"
 
   /// Private initializer - SwiftProyecto is a namespace
   private init() {}
+}
+
+/// Initialize all LLM backends.
+///
+/// This function ensures all LLM backends are registered with the BackendRegistry.
+/// Call this once at application startup to enable backend discovery.
+public func initializeLLMBackends() {
+  // Explicitly call registration functions to ensure backends are registered
+  registerClaudeAPIBackend()
+  registerAppleFoundationModelsBackend()
+  registerSwiftBrujaBackend()
 }
