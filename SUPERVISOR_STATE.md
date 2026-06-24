@@ -211,16 +211,26 @@ last_updated: 2026-06-23T00:00:00Z
 **Sub-agents**: Sequential (no builds after Phase 3)
 
 - **Sortie 8.1**: User Guide & AGENTS.md update
-  - State: PENDING → DISPATCHED → RUNNING ⏳
-  - Agent: a12b3c4d (RUNNING NOW)
+  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
+  - Agent: a15518488758e80ff (COMPLETED ✅)
   - Depends on: Sortie 7.3 → COMPLETED ✅
   - Dispatch: 2026-06-24T06:15:00Z
-  - Context fit: 15 turns (budget: 50) ✅
+  - Completion: 2026-06-24T06:51:00Z
+  - Exit Criteria: All verified ✅
+    - ✅ User guide section with examples and error handling
+    - ✅ Technical description for agents with code examples
+    - ✅ All 7 flags documented and tested
+    - ✅ All 3 backends documented and tested
+    - ✅ README.md v4.1.0 release notes added
+    - ✅ Quality: No broken links, professional tone, examples tested
+  - Files: AGENTS.md (+450 lines), README.md (+35 lines)
+  - Commit: 8b5d294
 
-- **Sortie 8.2**: Developer Documentation
-  - State: PENDING
-  - Depends on: Sortie 8.1 → COMPLETED
-  - Agent: Sub-agent
+- **Sortie 8.2**: Developer Documentation (Internal APIs, Testing)
+  - State: PENDING → DISPATCHED → RUNNING ⏳
+  - Agent: a26c3d4e (RUNNING NOW)
+  - Depends on: Sortie 8.1 → COMPLETED ✅
+  - Dispatch: 2026-06-24T06:52:00Z
   - Context fit: 18 turns (budget: 50) ✅
 
 ---
