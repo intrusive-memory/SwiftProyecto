@@ -9,14 +9,21 @@ updated: 2026-06-23
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 3.6.0 (June 2026)
+**Current Version**: 4.0.0 (June 2026)
 
-**Latest Changes (v3.6.0)**:
+**Latest Changes (v4.0.0)**:
+- **Multi-Season Schema**: `seasons[]` array replaces single `season` field for multi-season projects
+- **Per-Character Language**: Optional `language` field on CastMember for language-specific voice selection
+- **Property Hierarchy**: Four-level resolution (variant > season > master > default)
+- **Backward Compatible**: v3.x PROJECT.md files automatically convert to synthetic seasons
+- **CLI Enhancement**: `proyecto generate --season N` for per-season output
+
+See [UPGRADING.md](UPGRADING.md) for complete v3.x → v4.0 migration guide.
+
+**Previous Changes (v3.6.0)**:
 - **Foundation Models Integration**: Replaced SwiftBruja with Apple Foundation Models framework
 - **Model Change**: Qwen2.5 7B Instruct (4-bit) — enhanced instruction following and reasoning
 - **MLX Removal**: No longer depends on MLX or metal shader compilation
-- **Simplified Build**: `proyecto` CLI builds with standard `xcodebuild` (no Metal bundle management)
-- **SwiftAcervo 0.16.0**: Updated for compatibility with latest component descriptor patterns
 - **Per-Language Voice Prompts**: Voice selection now supports language-specific prompt tuning
 
 **Previous Changes (v3.4.0)**:
