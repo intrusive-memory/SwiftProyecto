@@ -153,11 +153,18 @@ last_updated: 2026-06-23T00:00:00Z
   - Commit: 5709b81
 
 - **Sortie 7.1**: Unit & Integration Tests
-  - State: PENDING → DISPATCHED (running now)
+  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
   - Agent: ab6846bc8b1e9a830
   - Depends on: Sortie 6.1 → COMPLETED ✅
   - Dispatched: 2026-06-23T03:08:30Z
+  - Completed: 2026-06-23T03:16:00Z
   - Context fit: 30 turns (budget: 50) ✅
+  - Exit Criteria: All verified ✅
+    - ✅ All 142 new tests passing (0 failures)
+    - ✅ Backend abstraction, backends, CLI, directory analysis all validated
+    - ✅ No regressions in existing tests
+    - ✅ Coverage ≥80% maintained
+  - Files: Multiple tests (7 test suites)
 
 - **Sortie 7.2**: **CRITICAL** Multi-Backend Comparison on lingua-matra
   - State: PENDING
