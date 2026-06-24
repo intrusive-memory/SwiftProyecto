@@ -68,8 +68,9 @@ last_updated: 2026-06-23T00:00:00Z
   - Commit: ca35777
 
 ### Phase 2 — Backends (4-Way Parallel)
-**Status**: RUNNING
-**Sub-agents**: A, B, C, D (launching now - no supervising responsibility)
+**Status**: COMPLETED ✅
+**Sub-agents**: A, B, C, D (all complete)
+**Summary**: All 3 LLM backends + directory analysis implemented. Total: 98 tests passing, 0 failures
 
 - **Sortie 2.1**: Claude API Backend
   - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
@@ -117,15 +118,24 @@ last_updated: 2026-06-23T00:00:00Z
   - Files: 1 source + 1 test (2 total)
 
 - **Sortie 5.1**: Directory Analysis & Preprocessing
-  - State: PENDING → DISPATCHED (running in parallel)
+  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
   - Agent: a5bd80f505f8214b0
   - Depends on: Sortie 1.2 → COMPLETED ✅
   - Dispatched: 2026-06-23T02:19:30Z
+  - Completed: 2026-06-23T02:56:00Z
   - Context fit: 24 turns (budget: 50) ✅
+  - Exit Criteria: All verified ✅
+    - ✅ CastExtractor (Fountain parsing, ≥80% accuracy)
+    - ✅ MetadataExtractor (title, patterns, TTS providers)
+    - ✅ ProjectService.analyzeForGeneration()
+    - ✅ 31 tests passing
+    - ✅ Validated against lingua-matra & Produciesta
+  - Files: Multiple source + 1 test (5 total)
 
 ### Phase 3 — Integration (Sequential)
-**Status**: NOT_STARTED
+**Status**: RUNNING
 **Supervising Agent**: Primary agent (builds included)
+**Summary**: CLI integration, testing, and critical lingua-matra validation gate
 
 - **Sortie 6.1**: CLI Integration
   - State: PENDING
