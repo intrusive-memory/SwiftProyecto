@@ -320,6 +320,369 @@ To use a different model, update the `LanguageModel` constant in `ModelManager.s
    make test
    ```
 
+---
+
+## 🚀 Generating PROJECT.md with LLM Backends (v4.1.0+)
+
+**SwiftProyecto v4.1.0 introduces automated PROJECT.md generation using LLM backends.**
+
+### Overview
+
+The `proyecto generate-project` command analyzes a project directory structure and generates a valid v4.x PROJECT.md file using available LLM backends. This enables AI agents to understand projects in a single pass without manual metadata curation.
+
+**What it does:**
+- Analyzes directory structure, discovers files, extracts cast names from scripts
+- Generates PROJECT.md with inferred title, author, description, genre, tags, and cast list
+- Validates generated content against v4.x schema
+- Outputs to stdout, interactive review, or direct file write (with automatic backup)
+
+**Why it matters:**
+- Eliminates manual PROJECT.md creation for new projects
+- Reduces time for AI agents to understand project composition
+- Enables batch project processing in CI/CD pipelines
+- Fallback chain ensures generation works across platforms
+
+### Backend Availability
+
+`proyecto generate-project` uses a **priority-ordered fallback chain** to select the best available LLM backend:
+
+| Priority | Backend | Availability | When Used |
+|----------|---------|--------------|-----------|
+| 1 | **SwiftBruja** | When linked to proyecto CLI | Local inference, fastest |
+| 2 | **Apple Foundation Models** | macOS 27+ only | Native on-device inference |
+| 3 | **Claude API** (fallback) | Requires `CLAUDE_API_KEY` | Network-based, always available |
+
+**How it works:**
+1. Tries SwiftBruja if available
+2. If SwiftBruja fails or unavailable, tries Foundation Models (macOS 27+ only)
+3. If both fail or unavailable, uses Claude API
+4. Fails with error if no backends are available
+
+### Command Usage
+
+#### Basic Syntax
+
+```bash
+proyecto generate-project [OPTIONS] [DIRECTORY]
+```
+
+**Arguments:**
+- `DIRECTORY`: Path to project directory to analyze (default: current directory `.`)
+
+#### Common Usage Patterns
+
+**1. Dry-Run Preview (default)**
+```bash
+# Preview generated PROJECT.md without writing to disk
+proyecto generate-project /path/to/project
+
+# Shows output in terminal, suggests how to write if needed
+```
+
+**2. Interactive Review**
+```bash
+# Display generated content and prompt for confirmation
+proyecto generate-project /path/to/project --interactive
+
+# You'll see:
+#   - Generated PROJECT.md in terminal
+#   - "Confirm to proceed? (yes/no):" prompt
+#   - Writes file only if you answer "yes"
+```
+
+**3. Force Overwrite (with backup)**
+```bash
+# Overwrite existing PROJECT.md without confirmation
+proyecto generate-project /path/to/project --force
+
+# Creates PROJECT.md.bak before writing
+# Validates content before write
+```
+
+**4. Specific Backend Selection**
+```bash
+# Use Claude API backend explicitly
+proyecto generate-project /path/to/project --llm claude --force
+
+# Use Foundation Models backend (macOS 27+)
+proyecto generate-project /path/to/project --llm fm --force
+
+# Use SwiftBruja backend (if available)
+proyecto generate-project /path/to/project --llm bruja --force
+```
+
+**5. Custom Claude Model**
+```bash
+# Use a specific Claude model (default: claude-3-5-sonnet-20241022)
+proyecto generate-project /path/to/project --llm claude --model claude-3-opus-20250219 --force
+```
+
+**6. Quiet Mode (CI/CD)**
+```bash
+# Suppress progress output for automated workflows
+proyecto generate-project /path/to/project --quiet --force
+
+# Only output errors (if any)
+```
+
+**7. Verbose Output (Debugging)**
+```bash
+# Show detailed analysis and extraction information
+proyecto generate-project /path/to/project --verbose --dry-run
+
+# Displays:
+#   - Cast members extracted: N
+#   - Episode pattern: <detected pattern>
+#   - Full generated PROJECT.md
+```
+
+### Option Reference
+
+| Option | Short | Default | Description |
+|--------|-------|---------|-------------|
+| `--dry-run` | | enabled | Output to stdout, no disk write |
+| `--interactive` | | disabled | Show generated content, prompt for confirmation |
+| `--force` | | disabled | Overwrite existing PROJECT.md without confirmation |
+| `--llm NAME` | | auto | Select backend: `claude`, `fm`, or `bruja` |
+| `--model NAME` | | `claude-3-5-sonnet-20241022` | Claude model to use (Claude API backend only) |
+| `--quiet` | `-q` | disabled | Suppress progress output |
+| `--verbose` | `-v` | disabled | Show detailed analysis and output |
+
+**Flag Combinations:**
+- `--dry-run` and `--force` are mutually exclusive
+- `--interactive` and `--force` are mutually exclusive
+- `--quiet` suppresses progress but still shows errors
+
+### Generated PROJECT.md Structure
+
+The command generates valid v4.x PROJECT.md with YAML front matter:
+
+```yaml
+---
+type: project
+title: Inferred Project Title
+author: Inferred Author Name
+created: 2025-06-23T14:30:00Z
+description: Inferred project description based on directory analysis
+genre: Inferred Genre (e.g., Podcast, Drama, Comedy)
+tags: [tag1, tag2, tag3]
+seasons:
+  - number: 1
+    episodes: Inferred episode count
+cast:
+  - character: CHARACTER_NAME
+    actor: Actor/Performer Name
+    voiceProvider: apple
+    voiceId: com.apple.voice.compact.en-US.Aaron
+    voiceDescription: Voice description for TTS provider selection
+  # ... more cast members
+---
+
+# Project Metadata
+
+Generated metadata summary and project notes.
+```
+
+**Generated Fields:**
+- ✅ `type`: Always `"project"`
+- ✅ `title`: Inferred from directory name or README content
+- ✅ `author`: Inferred from git config or file metadata
+- ✅ `created`: Timestamp when PROJECT.md is generated
+- ✅ `description`: Inferred from README or file content
+- ✅ `genre`: Inferred from file patterns and content analysis
+- ✅ `tags`: Inferred categories (e.g., podcast, audio, drama)
+- ✅ `seasons`: Array with detected episode count
+- ✅ `cast`: Extracted character names with voice provider suggestions
+
+**Not Generated (Manual):**
+- `episodesDir`, `audioDir`, `filePattern`, `exportFormat` (inferred in future versions)
+- `preGenerateHook`, `postGenerateHook` (project-specific, not auto-generated)
+- Voice IDs and detailed cast descriptions (user must review and complete)
+
+### Error Handling
+
+**Common Errors and Solutions:**
+
+#### 1. Directory Not Found
+```
+Error: Directory not found: /nonexistent/path
+```
+**Solution**: Verify the path exists and is a directory.
+
+#### 2. PROJECT.md Already Exists
+```
+Error: PROJECT.md already exists at /path/to/project/PROJECT.md
+Use --force to overwrite, --interactive to review, or --dry-run to preview
+```
+**Solution:** Choose one of:
+- `--dry-run`: Preview before making changes
+- `--interactive`: Review and confirm before writing
+- `--force`: Overwrite existing file (creates .bak backup)
+
+#### 3. Invalid Backend Name
+```
+Error: Invalid backend 'xyz'
+Valid options: claude, fm, bruja
+```
+**Solution**: Use one of the valid backend names: `claude`, `fm`, or `bruja`.
+
+#### 4. Backend Unavailable
+```
+Error: Backend 'Apple Foundation Models' is not available
+Backend is not available on this system
+```
+**Solutions:**
+- For FM: Ensure you're on macOS 27 or later
+- For Claude API: Set `CLAUDE_API_KEY` environment variable
+- Use `--llm claude` to fallback to Claude API
+
+#### 5. Generation Failed
+```
+Error: Failed to generate metadata: <backend error details>
+```
+**Solutions:**
+- Verify directory is a valid project (has .fountain files, README, etc.)
+- Check backend logs: `--verbose --dry-run` for details
+- Try a different backend: `--llm claude`
+- Check network connectivity (Claude API backend only)
+
+#### 6. Schema Validation Error
+```
+Error: Schema validation error: Generated PROJECT.md failed validation: <details>
+```
+**Solutions:**
+- This is rare - indicates a backend bug
+- Report with `--verbose` output
+- Try a different backend: `--llm claude`
+
+### Use Cases
+
+#### Use Case 1: Preview Before Committing
+
+```bash
+cd ~/Projects/my-podcast-series
+proyecto generate-project --dry-run
+
+# Review output in terminal
+# If acceptable: proyecto generate-project --force
+```
+
+#### Use Case 2: Interactive Review with Editing
+
+```bash
+proyecto generate-project . --interactive
+
+# Shows generated metadata
+# Prompts "Confirm to proceed? (yes/no): "
+# User reviews and answers
+```
+
+#### Use Case 3: Automated CI/CD Pipeline
+
+```bash
+#!/bin/bash
+set -e
+
+# Generate PROJECT.md in CI/CD with automatic backend selection
+proyecto generate-project . \
+  --force \
+  --quiet \
+  --verbose
+
+# Optional: Validate generated file
+proyecto validate PROJECT.md
+```
+
+#### Use Case 4: Batch Processing Multiple Projects
+
+```bash
+#!/bin/bash
+
+for project_dir in projects/*/; do
+  echo "Generating PROJECT.md for $project_dir"
+  proyecto generate-project "$project_dir" \
+    --force \
+    --quiet \
+    --llm claude  # Use Claude API for consistency
+done
+```
+
+### Directory Analysis
+
+Before generation, the command analyzes the project directory:
+
+**Cast Extraction:**
+- Discovers `.fountain` script files
+- Extracts all-uppercase character lines
+- Removes parentheticals: `(V.O.)`, `(O.S.)`, `(CONT'D)`
+- Deduplicates across all files
+- Returns sorted list
+
+**Episode Pattern Detection:**
+- Looks for numbered file patterns: `s01e01`, `ep001`, `episode_1`, etc.
+- Counts matching files
+- Infers season/episode structure
+- Handles multi-season projects
+
+**Metadata Inference:**
+- Reads README.md or similar documentation
+- Inspects git author information
+- Analyzes file types and structure
+- Infers project type (podcast, screenplay, etc.)
+
+### Integration with Agents
+
+**For AI Agents:**
+
+Use the fallback chain via `ProjectGeneratorService` in code:
+
+```swift
+import SwiftProyecto
+
+let service = ProjectGeneratorService()
+let analysis = ProjectService.analyzeForGeneration(at: projectURL)
+let metadata = try await service.generate(project: analysis)
+
+// metadata is ready for ProjectFrontMatter conversion
+```
+
+**Check available backends:**
+
+```swift
+let backends = BackendRegistry.shared.availableBackends()
+for backend in backends {
+  print("Available: \(backend.backendName)")
+}
+```
+
+**Use specific backend:**
+
+```swift
+if let backend = BackendRegistry.shared.backend(named: "Claude API") {
+  let metadata = try await backend.generate(project: analysis)
+}
+```
+
+### Limitations & Caveats
+
+- **Cast Accuracy**: Typical ≥80% accuracy for cast extraction (manual review recommended)
+- **Metadata Inference**: Generated descriptions may be generic; manual refinement suggested
+- **Schema Validation**: All generated content is validated, but fields are optional - may need completion
+- **Voice Providers**: Voice IDs are suggested but must be verified for correctness
+- **Language Detection**: Limited detection for multi-language projects (manual override recommended)
+- **Backend Performance**: Generation time varies by backend (SwiftBruja fastest, Claude API may have latency)
+- **API Rate Limits**: Claude API backend respects rate limits (may fail during high volume)
+
+### Best Practices
+
+1. **Always use `--dry-run` first** to preview before committing
+2. **Review cast extraction** - manual verification ensures voice assignment correctness
+3. **Validate generated schema** - use `proyecto validate PROJECT.md` after generation
+4. **Use `--force` with `--quiet`** only in trusted CI/CD pipelines
+5. **Prefer SwiftBruja/FM** for speed; use Claude API as fallback
+6. **Test with `--verbose`** to debug directory analysis issues
+7. **Create backups** - `--force` creates `.bak` files automatically
+8. **Commit generated PROJECT.md** - include in version control for project reproducibility
 
 ---
 
@@ -640,6 +1003,119 @@ EOF
 - Handles response parsing and validation
 - Assembles final `ProjectFrontMatter` from individual section results
 - Robust error handling with section-specific retry capability
+
+### LLM Backend Services (v4.1.0+) — For Agents
+
+**LLMBackendProtocol** - Abstract protocol for LLM backends
+- All backends conform to this protocol
+- Required properties: `backendName`, `isAvailable`
+- Core method: `generate(project: ProjectAnalysis) async throws -> ProjectMetadata`
+- Implementors: SwiftBruja, Apple Foundation Models, Claude API
+
+**ProjectGeneratorService** - High-level generation service
+- Singleton at `ProjectGeneratorService.default`
+- Implements **priority-ordered fallback chain**:
+  1. SwiftBruja (fastest if available)
+  2. Apple Foundation Models (macOS 27+ only)
+  3. Claude API (always available with CLAUDE_API_KEY)
+- Core method: `generate(project: ProjectAnalysis) async throws -> ProjectMetadata`
+- Convenience method: `generateFrom(projectPath: URL) async throws -> ProjectMetadata`
+- Thread-safe for concurrent use
+
+**BackendRegistry** - Backend discovery and management
+- Singleton at `BackendRegistry.shared`
+- Backends auto-register at initialization
+- Key methods:
+  - `availableBackends()` - Returns only backends where `isAvailable == true`
+  - `backend(named:)` - Get backend by name (first match, availability-aware)
+  - `allBackends()` - For debugging (includes unavailable backends)
+
+**ProjectAnalysis** - Input data structure for backends
+- `projectPath: URL` - Project directory location
+- `discoveredFiles: [String]` - File names found in directory
+- `extractedCast: [String]` - Character names from scripts
+- `episodePattern: String?` - Detected episode numbering pattern
+- `inferredTitle: String?` - Detected project title
+- `detectedLanguages: [String]` - Languages found in project
+
+**ProjectMetadata** - Output data structure from backends
+- `title: String` - Project title
+- `author: String` - Project creator
+- `description: String?` - Project description
+- `created: Date` - Generation timestamp
+- `type: String` - Project type (usually "project")
+- `episodes: Int?` - Episode count
+- `season: Int?` - Season number
+- `genre: String?` - Genre classification
+- `tags: [String]` - Categorization tags
+- `ttsProvider: String?` - TTS recommendation
+- `cast: [CastMemberData]` - Character list with voices
+
+**LLMBackendError** - Error types from backends
+- `.unavailable(reason:)` - Backend not available on this system
+- `.generationFailed(reason:)` - LLM generation error
+- `.invalidInput(reason:)` - Bad input to backend
+
+**Example: Using ProjectGeneratorService in an Agent**
+
+```swift
+import SwiftProyecto
+
+// 1. Analyze project directory
+guard let analysis = ProjectService.analyzeForGeneration(at: projectURL) else {
+  throw LLMBackendError.invalidInput(reason: "Cannot analyze directory")
+}
+
+// 2. Generate using fallback chain
+let service = ProjectGeneratorService()
+let metadata = try await service.generate(project: analysis)
+
+// 3. Convert to ProjectFrontMatter
+let frontMatter = ProjectFrontMatter(
+  type: metadata.type,
+  title: metadata.title,
+  author: metadata.author,
+  created: metadata.created,
+  description: metadata.description,
+  season: metadata.season,
+  episodes: metadata.episodes,
+  genre: metadata.genre,
+  tags: metadata.tags
+)
+
+// 4. Write to PROJECT.md
+let parser = ProjectMarkdownParser()
+let content = parser.generate(frontMatter: frontMatter, body: "")
+try content.write(to: projectURL.appendingPathComponent("PROJECT.md"), atomically: true, encoding: .utf8)
+```
+
+**Example: Selecting a Specific Backend**
+
+```swift
+// Check available backends
+let available = BackendRegistry.shared.availableBackends()
+print("Available backends: \(available.map { $0.backendName }.joined(separator: ", "))")
+
+// Use specific backend
+if let claudeBackend = BackendRegistry.shared.backend(named: "Claude API") {
+  let metadata = try await claudeBackend.generate(project: analysis)
+} else {
+  print("Claude API not available - check CLAUDE_API_KEY")
+}
+
+// Use Foundation Models (macOS 27+ only)
+if let fmBackend = BackendRegistry.shared.backend(named: "Apple Foundation Models") {
+  let metadata = try await fmBackend.generate(project: analysis)
+}
+```
+
+**Backend Availability Guide for Agents**
+
+| Backend | Name | Availability Check | When to Use |
+|---------|------|-------------------|------------|
+| SwiftBruja | `"SwiftBruja"` | `backend(named:) != nil` | Local inference, fastest |
+| Foundation Models | `"Apple Foundation Models"` | macOS 27+ check | On-device, native Apple API |
+| Claude API | `"Claude API"` | `CLAUDE_API_KEY` env var set | Fallback, network-based |
 
 ### PROJECT.md Parsing Pattern
 

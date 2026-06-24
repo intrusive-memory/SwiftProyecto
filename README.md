@@ -12,7 +12,7 @@ type: reference
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-4.0.0-green.svg" />
+    <img src="https://img.shields.io/badge/Version-4.1.0-green.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -30,6 +30,45 @@ This project exists to provide **extensible, agentic discovery of projects and p
 - Comprehend project intent (genre, description, tags) without inference
 
 By providing **structured, machine-readable metadata**, SwiftProyecto reduces cognitive load for AI agents working with content projects.
+
+## Release Notes
+
+### v4.1.0 (June 2026) — LLM-Based PROJECT.md Generation
+
+**New:**
+- **`proyecto generate-project` command**: Automated PROJECT.md generation from directory analysis
+- **LLMBackendProtocol**: Abstract protocol for pluggable LLM backends
+- **ProjectGeneratorService**: High-level service with fallback chain (SwiftBruja → Foundation Models → Claude API)
+- **BackendRegistry**: Discover and query available LLM backends
+- **Directory analysis**: Cast extraction, episode pattern detection, metadata inference
+- **Three LLM backends**: SwiftBruja (local), Apple Foundation Models (macOS 27+), Claude API (fallback)
+
+**Usage:**
+```bash
+# Dry-run preview (default)
+proyecto generate-project /path/to/project
+
+# Generate with confirmation
+proyecto generate-project /path/to/project --interactive
+
+# Force overwrite (creates .bak backup)
+proyecto generate-project /path/to/project --force
+```
+
+**For Agents:**
+```swift
+let service = ProjectGeneratorService()
+let analysis = ProjectService.analyzeForGeneration(at: projectURL)
+let metadata = try await service.generate(project: analysis)
+```
+
+See **[AGENTS.md § Generating PROJECT.md with LLM Backends](AGENTS.md#-generating-projectmd-with-llm-backends-v410)** for complete documentation, examples, and API reference.
+
+---
+
+### v4.0.0 (April 2026) — Multi-Season & Per-Character Language Support
+
+See [AGENTS.md](AGENTS.md) for complete changelog.
 
 ## Overview
 
