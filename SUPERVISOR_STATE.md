@@ -33,21 +33,30 @@ last_updated: 2026-06-23T00:00:00Z
 **Supervising Agent**: Primary agent (builds included)
 
 - **Sortie 1.1**: LLMBackendProtocol + BackendRegistry, OS detection
-  - State: DISPATCHED → RUNNING
+  - State: DISPATCHED → RUNNING → COMPLETED ✅
   - Agent ID: ad3badcdf2c1882ad
   - Entry criteria: Clean working tree ✅
-  - Exit criteria: 6 criteria (see EXECUTION_PLAN.md)
+  - Exit criteria: All 6 verified ✅
+    - ✅ Compiles without errors
+    - ✅ LLMBackendProtocol implemented with all methods
+    - ✅ BackendRegistry singleton (thread-safe, availability-aware)
+    - ✅ OS version detection (macOSVersion, isMacOSVersionAtLeast)
+    - ✅ Unit tests pass: 19 tests, >80% coverage
+    - ✅ No regressions in existing tests
   - Priority: 39.5
   - Context fit: 20 turns (budget: 50) ✅
   - Dispatched: 2026-06-23T00:00:00Z
+  - Completed: 2026-06-23T02:16:00Z
+  - Files Created: 3 source + 1 test (4 total)
 
 - **Sortie 1.2**: ProjectGeneratorService, fallback chain
-  - State: PENDING
-  - Depends on: Sortie 1.1 → COMPLETED
-  - Entry criteria: Protocol & Registry available
+  - State: PENDING → DISPATCHED
+  - Depends on: Sortie 1.1 → COMPLETED ✅
+  - Entry criteria: Protocol & Registry available ✅
   - Exit criteria: 4 criteria (see EXECUTION_PLAN.md)
   - Priority: 36.5
   - Context fit: 15 turns (budget: 50) ✅
+  - Dispatched: 2026-06-23T02:16:00Z
 
 ### Phase 2 — Backends (4-Way Parallel)
 **Status**: NOT_STARTED
