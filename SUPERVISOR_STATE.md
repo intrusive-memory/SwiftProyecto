@@ -156,9 +156,20 @@ last_updated: 2026-06-23T00:00:00Z
 - Phase 1 ready to dispatch
 - Sortie 1.1 entry criteria satisfied: clean working tree on development branch ✅
 
+**2026-06-23 02:16:00Z — Sortie 1.1 Complete**
+- All 6 exit criteria verified ✅
+- LLMBackendProtocol with full interface (generate, isAvailable, backendName)
+- BackendRegistry singleton (thread-safe, availability-aware)
+- OS Detection (macOSVersion, isMacOSVersionAtLeast)
+- 19 unit tests passing, >80% coverage
+- No regressions in existing tests
+- 4 new files created and committed
+- Sortie 1.2 (ProjectGeneratorService) dispatched to supervising agent (Haiku)
+- Agent ID: ad936ea330e4205a0
+
 ---
 
 ## Next Action
 
-→ Dispatch Sortie 1.1 to supervising agent
-→ Run THE RITUAL (name-feature) after Sortie 1.1 starts
+→ Monitor Sortie 1.2 (ProjectGeneratorService + fallback chain)
+→ Once 1.2 complete: Launch Phase 2 (4-way parallel backends: 2.1, 3.1, 4.1, 5.1)
