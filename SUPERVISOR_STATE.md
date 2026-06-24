@@ -138,8 +138,10 @@ last_updated: 2026-06-23T00:00:00Z
 **Summary**: CLI integration, testing, and critical lingua-matra validation gate
 
 - **Sortie 6.1**: CLI Integration
-  - State: PENDING
-  - Depends on: Sortie 1.2 → COMPLETED, Sortie 2.1 + 5.1 → COMPLETED
+  - State: PENDING → DISPATCHED (running now)
+  - Agent: aa7a942175dab2853
+  - Depends on: Sortie 1.2 → COMPLETED ✅, Sortie 2.1 + 5.1 → COMPLETED ✅
+  - Dispatched: 2026-06-23T02:56:30Z
   - Context fit: 28 turns (budget: 50) ✅
 
 - **Sortie 7.1**: Unit & Integration Tests
