@@ -1,3 +1,7 @@
+---
+type: reference
+---
+
 <p align="center">
   <img src="SwiftProyecto.jpg" alt="SwiftProyecto" width="200" height="200">
 </p>
@@ -8,7 +12,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-3.6.0-green.svg" />
+    <img src="https://img.shields.io/badge/Version-4.0.0-green.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -1292,6 +1296,7 @@ SwiftProyecto v2.0 is a major refactoring focused on **file discovery, PROJECT.m
 - ✅ PROJECT.md parser using UNIVERSAL library (spec-compliant YAML, lazy loading)
 - ✅ Per-file bookmark support added
 - ✅ FileNode tree structure complete
+- ✅ SwiftData models complete
 - ✅ All 361 tests passing with v2.0+ API
 
 **Integration**: Apps integrate SwiftProyecto with their own screenplay parsers (e.g., SwiftCompartido) via DocumentRegistry pattern.

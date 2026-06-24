@@ -195,7 +195,7 @@ final class VariantResolverTests: XCTestCase {
       CastMember(
         character: "NARRATOR",
         voices: ["elevenlabs": ["voice3"]]
-      ),
+      )
     ]
     let variant = makeVariantProjectFrontMatter(cast: variantCast)
 
@@ -242,7 +242,7 @@ final class VariantResolverTests: XCTestCase {
       CastMember(
         character: "NARRATOR",
         voices: ["elevenlabs": ["voice3"]]
-      ),
+      )
     ]
     let variant = makeVariantProjectFrontMatter(cast: variantCast)
 
@@ -274,13 +274,13 @@ final class VariantResolverTests: XCTestCase {
       CastMember(
         character: "NARRATOR",
         voices: ["apple": ["master-voice"]]
-      ),
+      )
     ]
     let seasonCast = [
       CastMember(
         character: "NARRATOR",
         voices: ["elevenlabs": ["season-voice"]]
-      ),
+      )
     ]
     let seasonDef = SeasonDefinition(
       number: 1,
@@ -296,7 +296,7 @@ final class VariantResolverTests: XCTestCase {
       CastMember(
         character: "NARRATOR",
         voices: ["voxalta": ["variant-voice"]]
-      ),
+      )
     ]
     let variant = makeVariantProjectFrontMatter(cast: variantCast)
 
@@ -328,7 +328,7 @@ final class VariantResolverTests: XCTestCase {
       CastMember(
         character: "NARRATOR",
         voices: ["apple": ["voice1"]]
-      ),
+      )
     ]
     let master = makeMasterProjectFrontMatter(cast: masterCast)
 
@@ -336,7 +336,7 @@ final class VariantResolverTests: XCTestCase {
       CastMember(
         character: "NEW_CHARACTER",
         voices: ["elevenlabs": ["voice2"]]
-      ),
+      )
     ]
     let variant = makeVariantProjectFrontMatter(cast: variantCast)
 

@@ -809,7 +809,8 @@ extension ProjectService {
     audioDirectories: inout Set<String>,
     voiceFiles: inout Set<String>
   ) {
-    guard let contents = try? fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
+    guard
+      let contents = try? fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
     else {
       return
     }
@@ -894,7 +895,8 @@ extension ProjectService {
     audioDirectories: inout Set<String>,
     voiceFiles: inout Set<String>
   ) {
-    guard let contents = try? fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
+    guard
+      let contents = try? fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
     else {
       return
     }
@@ -902,7 +904,10 @@ extension ProjectService {
     var seasonsInLanguage: [Int] = []
 
     for item in contents {
-      guard let isDir = try? item.resourceValues(forKeys: [URLResourceKey.isDirectoryKey]).isDirectory, isDir else {
+      guard
+        let isDir = try? item.resourceValues(forKeys: [URLResourceKey.isDirectoryKey]).isDirectory,
+        isDir
+      else {
         // File in language directory
         let fileName = item.lastPathComponent
         let ext = item.pathExtension.lowercased()
@@ -1034,14 +1039,15 @@ extension ProjectService {
       "pa", "pi", "pl", "ps", "pt",
       "qu",
       "rm", "rn", "ro", "ru", "rw",
-      "sa", "sc", "sd", "se", "sg", "si", "sk", "sl", "sm", "sn", "so", "sq", "sr", "ss", "st", "su", "sv", "sw",
+      "sa", "sc", "sd", "se", "sg", "si", "sk", "sl", "sm", "sn", "so", "sq", "sr", "ss", "st",
+      "su", "sv", "sw",
       "ta", "te", "tg", "th", "ti", "tk", "tl", "tn", "to", "tr", "ts", "tt", "tw", "ty",
       "ug", "uk", "ur", "uz",
       "ve", "vi", "vo",
       "wa", "wo",
       "xh",
       "yi", "yo",
-      "za", "zh", "zu"
+      "za", "zh", "zu",
     ]
 
     if iso639_1.contains(lowercased) {

@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import XCTest
 import SwiftProyecto
+import XCTest
 
 /// Unit tests for the ProjectValidator.
 final class ProjectValidatorTests: XCTestCase {
@@ -211,7 +211,7 @@ final class ProjectValidatorTests: XCTestCase {
 
   func testValidateZeroEpisodes() {
     let seasons = [
-      SeasonDefinition(number: 1, episodes: 0),
+      SeasonDefinition(number: 1, episodes: 0)
     ]
     let frontMatter = ProjectFrontMatter(
       type: "project",
@@ -234,7 +234,7 @@ final class ProjectValidatorTests: XCTestCase {
 
   func testValidateNegativeEpisodes() {
     let seasons = [
-      SeasonDefinition(number: 1, episodes: -5),
+      SeasonDefinition(number: 1, episodes: -5)
     ]
     let frontMatter = ProjectFrontMatter(
       type: "project",
@@ -291,7 +291,7 @@ final class ProjectValidatorTests: XCTestCase {
 
   func testMetadataDetectionMaster() {
     let variants = [
-      VariantReference(season: 1, language: "en", path: "s1_en/PROJECT.md"),
+      VariantReference(season: 1, language: "en", path: "s1_en/PROJECT.md")
     ]
     let frontMatter = ProjectFrontMatter(
       type: "overview",

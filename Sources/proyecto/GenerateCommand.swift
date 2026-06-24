@@ -489,7 +489,8 @@ struct GenerateCommand: AsyncParsableCommand {
 
       for seasonNum in sortedSeasons {
         let variants = variantsBySeasonAndLanguage[seasonNum] ?? [:]
-        let seasonTitle = projectFrontMatter.seasons?
+        let seasonTitle =
+          projectFrontMatter.seasons?
           .first(where: { $0.number == seasonNum })?
           .title ?? ""
         let seasonTitleStr = seasonTitle.isEmpty ? "" : " (\(seasonTitle))"
@@ -533,7 +534,9 @@ struct GenerateCommand: AsyncParsableCommand {
             statusStr = "no status"
           }
 
-          print("  \(langLabel): \(episodeCount) \(episodeLabel) (intro: \(introStatus), outro: \(outroStatus)) [\(statusStr)]")
+          print(
+            "  \(langLabel): \(episodeCount) \(episodeLabel) (intro: \(introStatus), outro: \(outroStatus)) [\(statusStr)]"
+          )
         }
         print("")
       }
@@ -581,7 +584,8 @@ enum GenerateError: LocalizedError {
       if availableLanguages.isEmpty {
         return "Language '\(langCode)' not found: no languages defined in PROJECT.md"
       } else {
-        return "Language '\(langCode)' not found. Available: \(availableLanguages.joined(separator: ", "))"
+        return
+          "Language '\(langCode)' not found. Available: \(availableLanguages.joined(separator: ", "))"
       }
     case .noSeasonsFound(let message):
       return message

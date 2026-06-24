@@ -37,7 +37,10 @@ struct ProyectoCLI: AsyncParsableCommand {
         proyecto generate --intro-only    # Generate intro files only
       """,
     version: SwiftProyecto.version,
-    subcommands: [InitCommand.self, ValidateCommand.self, GenerateCommand.self, VariantsCommand.self, InfoCommand.self],
+    subcommands: [
+      InitCommand.self, ValidateCommand.self, GenerateCommand.self, VariantsCommand.self,
+      InfoCommand.self,
+    ],
     defaultSubcommand: InitCommand.self
   )
 }
@@ -119,7 +122,8 @@ struct ValidateCommand: ParsableCommand {
 
       // Display counts if present
       if let seasonCount = result.metadata.seasonCount, seasonCount > 0 {
-        let seasonStr = result.metadata.seasonNumbers.map { $0.map(String.init).joined(separator: ", ") } ?? ""
+        let seasonStr =
+          result.metadata.seasonNumbers.map { $0.map(String.init).joined(separator: ", ") } ?? ""
         print("ℹ Seasons: \(seasonCount) (IDs: \(seasonStr))")
       }
 
@@ -585,7 +589,8 @@ struct VariantsCommand: ParsableCommand {
         let extra = [intro, outro].filter { !$0.isEmpty }.joined(separator: ", ")
         let extraStr = extra.isEmpty ? "" : " (\(extra))"
 
-        print("  S\(String(format: "%02d", variant.season)): \(status) — \(variant.path)\(extraStr)")
+        print(
+          "  S\(String(format: "%02d", variant.season)): \(status) — \(variant.path)\(extraStr)")
 
         if verbose {
           print("    Status: \(status)")
@@ -696,7 +701,8 @@ struct InfoCommand: ParsableCommand {
 
       // Seasons
       if let seasonCount = result.metadata.seasonCount, seasonCount > 0 {
-        let seasonStr = result.metadata.seasonNumbers.map { $0.map(String.init).joined(separator: ", ") } ?? ""
+        let seasonStr =
+          result.metadata.seasonNumbers.map { $0.map(String.init).joined(separator: ", ") } ?? ""
         print("Seasons: \(seasonCount) (IDs: \(seasonStr))")
       } else if let season = frontMatter.season {
         print("Season: \(season)")

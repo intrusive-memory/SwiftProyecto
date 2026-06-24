@@ -251,7 +251,8 @@ struct ProjectDiscoveryCastReadingTests {
   func readAllCast() throws {
     let cast = [
       CastMember(
-        character: "NARRATOR", actor: "Tom", voices: ["apple": ["voice-1"], "elevenlabs": ["voice-2"]]),
+        character: "NARRATOR", actor: "Tom",
+        voices: ["apple": ["voice-1"], "elevenlabs": ["voice-2"]]),
       CastMember(character: "LAO TZU", actor: "Jason", voices: ["apple": ["voice-3"]]),
     ]
     let (projectDir, cleanUp) = try makeTestProject(cast: cast)

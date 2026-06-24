@@ -1,5 +1,5 @@
-import XCTest
 import Foundation
+import XCTest
 
 @testable import SwiftProyecto
 
@@ -390,7 +390,8 @@ final class ProjectStructureRecognitionTests: XCTestCase {
   // MARK: - Pattern Recognition Pattern Tests
 
   func testRecognitionPattern_Description() {
-    let p1 = RecognitionPattern.languageFirstMultiSeason(languages: ["en", "es"], seasons: [1, 2, 3])
+    let p1 = RecognitionPattern.languageFirstMultiSeason(
+      languages: ["en", "es"], seasons: [1, 2, 3])
     XCTAssertTrue(p1.description.contains("Language-first"))
     XCTAssertTrue(p1.description.contains("2 languages"))
     XCTAssertTrue(p1.description.contains("3 seasons"))

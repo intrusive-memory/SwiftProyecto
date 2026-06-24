@@ -428,7 +428,9 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     // - Old format: { provider: "voice-id" } → { provider: ["voice-id"] }
     // - New format: { provider: ["voice-id-1", "voice-id-2"] } → use as-is
     var decodedVoices: [String: [String]] = [:]
-    if let voicesContainer = try container.decodeIfPresent([String: AnyCodable].self, forKey: .voices) {
+    if let voicesContainer = try container.decodeIfPresent(
+      [String: AnyCodable].self, forKey: .voices)
+    {
       for (provider, value) in voicesContainer {
         let lowercaseProvider = provider.lowercased()
 

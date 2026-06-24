@@ -1,5 +1,5 @@
-import XCTest
 import Foundation
+import XCTest
 
 @testable import SwiftProyecto
 
@@ -207,8 +207,10 @@ final class IntroOutroAssetsTests: XCTestCase {
       )
 
       // Create actual files
-      let introURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent("intro.m4a")
-      let outroURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent("outro.m4a")
+      let introURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent(
+        "intro.m4a")
+      let outroURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent(
+        "outro.m4a")
 
       FileManager.default.createFile(atPath: introURL.path, contents: nil)
       FileManager.default.createFile(atPath: outroURL.path, contents: nil)
@@ -296,7 +298,8 @@ final class IntroOutroAssetsTests: XCTestCase {
       )
 
       // Create only intro file
-      let introURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent("intro.m4a")
+      let introURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent(
+        "intro.m4a")
       FileManager.default.createFile(atPath: introURL.path, contents: nil)
 
       let master = ProjectFrontMatter(
@@ -343,8 +346,10 @@ final class IntroOutroAssetsTests: XCTestCase {
       )
 
       // Create season intro files
-      let season1IntroURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent("s1-intro.m4a")
-      let season2IntroURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent("s2-intro.m4a")
+      let season1IntroURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent(
+        "s1-intro.m4a")
+      let season2IntroURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent(
+        "s2-intro.m4a")
 
       FileManager.default.createFile(atPath: season1IntroURL.path, contents: nil)
       FileManager.default.createFile(atPath: season2IntroURL.path, contents: nil)
@@ -411,8 +416,10 @@ final class IntroOutroAssetsTests: XCTestCase {
       )
 
       // Create files
-      let seasonIntroURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent("season-intro.m4a")
-      let variantIntroURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent("variant-intro.m4a")
+      let seasonIntroURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent(
+        "season-intro.m4a")
+      let variantIntroURL = projectDir.appendingPathComponent(episodesDir).appendingPathComponent(
+        "variant-intro.m4a")
 
       FileManager.default.createFile(atPath: seasonIntroURL.path, contents: nil)
       FileManager.default.createFile(atPath: variantIntroURL.path, contents: nil)

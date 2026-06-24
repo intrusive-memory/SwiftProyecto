@@ -633,7 +633,7 @@ final class CastMemberTests: XCTestCase {
       voices: [
         "elevenlabs": ["voice-A"],
         "apple": ["voice-B"],
-        "voxalta": ["voice-C"]
+        "voxalta": ["voice-C"],
       ]
     )
     let variant = CastMember(character: "ACTOR")
@@ -686,14 +686,14 @@ final class CastMemberTests: XCTestCase {
       character: "ACTOR",
       voices: [
         "apple": ["voice-1", "voice-2"],
-        "elevenlabs": ["voice-3"]
+        "elevenlabs": ["voice-3"],
       ]
     )
     let variant = CastMember(
       character: "ACTOR",
       voices: [
         "apple": ["voice-4"],
-        "elevenlabs": ["voice-5"]
+        "elevenlabs": ["voice-5"],
       ]
     )
 
@@ -708,14 +708,14 @@ final class CastMemberTests: XCTestCase {
       character: "ACTOR",
       voices: [
         "apple": ["voice-1"],
-        "elevenlabs": ["voice-3"]
+        "elevenlabs": ["voice-3"],
       ]
     )
     let variant = CastMember(
       character: "ACTOR",
       voices: [
         "apple": ["voice-2"],
-        "voxalta": ["voice-4"]
+        "voxalta": ["voice-4"],
       ]
     )
 
@@ -732,14 +732,14 @@ final class CastMemberTests: XCTestCase {
       character: "ACTOR",
       voices: [
         "apple": ["voice-1"],
-        "elevenlabs": ["voice-3"]
+        "elevenlabs": ["voice-3"],
       ]
     )
     let variant = CastMember(
       character: "ACTOR",
       voices: [
         "apple": ["voice-2"],
-        "voxalta": ["voice-4"]
+        "voxalta": ["voice-4"],
       ]
     )
 
@@ -770,14 +770,14 @@ final class CastMemberTests: XCTestCase {
       character: "ACTOR",
       voices: [
         "apple": ["a1", "a2"],
-        "elevenlabs": ["e1"]
+        "elevenlabs": ["e1"],
       ]
     )
     let variant = CastMember(
       character: "ACTOR",
       voices: [
         "apple": ["a2", "a3"],
-        "elevenlabs": ["e1", "e2"]
+        "elevenlabs": ["e1", "e2"],
       ]
     )
 
@@ -931,7 +931,7 @@ final class CastMemberTests: XCTestCase {
     let variant = CastMember(
       character: "CHAR",
       actor: "Variant Actor"
-      // gender and language unspecified
+        // gender and language unspecified
     )
 
     let merged = master.merge(with: variant, strategy: .preferNew)
@@ -1086,7 +1086,7 @@ final class CastMemberTests: XCTestCase {
       voices: [
         "elevenlabs": ["v1"],
         "voxalta": ["v2"],
-        "apple": ["v3"]
+        "apple": ["v3"],
       ]
     )
     let variant = CastMember(character: "NARRATOR")
@@ -1144,11 +1144,11 @@ final class CastMemberTests: XCTestCase {
   func testMergeCast_MasterAndVariantCombined() {
     let masterCast = [
       CastMember(character: "NARRATOR", voices: ["apple": ["v1"]]),
-      CastMember(character: "MAESTRA", voices: ["apple": ["v2"]])
+      CastMember(character: "MAESTRA", voices: ["apple": ["v2"]]),
     ]
     let variantCast = [
       CastMember(character: "NARRATOR", voices: ["elevenlabs": ["v3"]]),
-      CastMember(character: "GUARDIAN", voices: ["voxalta": ["v4"]])
+      CastMember(character: "GUARDIAN", voices: ["voxalta": ["v4"]]),
     ]
 
     let merged = ProjectFrontMatter.mergeCast(masterCast, variantCast, strategy: .combine)
@@ -1380,14 +1380,14 @@ final class CastMemberTests: XCTestCase {
       voices: [
         "apple": ["a1", "a2", "a3"],
         "elevenlabs": ["e1", "e2"],
-        "voxalta": ["v1"]
+        "voxalta": ["v1"],
       ]
     )
     let variant = CastMember(
       character: "COMPREHENSIVE",
       voices: [
         "apple": ["a2", "a4"],
-        "google": ["g1", "g2"]
+        "google": ["g1", "g2"],
       ]
     )
 
@@ -1399,7 +1399,8 @@ final class CastMemberTests: XCTestCase {
     XCTAssertEqual(merged.voices["voxalta"]?.count, 1)  // v1
     XCTAssertEqual(merged.voices["google"]?.count, 2)  // g1, g2
 
-    let totalVoices = (merged.voices["apple"] ?? []).count
+    let totalVoices =
+      (merged.voices["apple"] ?? []).count
       + (merged.voices["elevenlabs"] ?? []).count
       + (merged.voices["voxalta"] ?? []).count
       + (merged.voices["google"] ?? []).count

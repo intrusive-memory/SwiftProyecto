@@ -579,8 +579,9 @@ final class GenerateCommandTests: XCTestCase {
     // Verify that requesting non-existent language would fail
     let availableLanguages = frontMatter.languages?.map { $0.code } ?? []
     let requestedLanguage = "fr"  // French not in the list
-    XCTAssertFalse(availableLanguages.contains(requestedLanguage),
-                   "French should not be available")
+    XCTAssertFalse(
+      availableLanguages.contains(requestedLanguage),
+      "French should not be available")
   }
 
   func testGenerateCommand_LanguageFilter_WithVariants() throws {
@@ -1008,7 +1009,8 @@ final class GenerateCommandTests: XCTestCase {
     let outroOnlyFlag = true
 
     // Verify they conflict
-    XCTAssertTrue(introOnlyFlag && outroOnlyFlag, "Both flags should be able to be set independently")
+    XCTAssertTrue(
+      introOnlyFlag && outroOnlyFlag, "Both flags should be able to be set independently")
   }
 
   func testGenerateCommand_IntroOnly_WithSeasonFilter() throws {
@@ -1138,7 +1140,9 @@ final class GenerateCommandTests: XCTestCase {
     let (frontMatter, _) = try parser.parse(fileURL: tempDir.appendingPathComponent("PROJECT.md"))
 
     // Verify language variants with intros are present
-    let spanishVariant = frontMatter.variants?.first(where: { $0.language == "es" && $0.season == 1 })
+    let spanishVariant = frontMatter.variants?.first(where: {
+      $0.language == "es" && $0.season == 1
+    })
     XCTAssertNotNil(spanishVariant)
     XCTAssertEqual(spanishVariant?.introFile, "intro-es.fountain")
   }
@@ -1180,7 +1184,9 @@ final class GenerateCommandTests: XCTestCase {
     let (frontMatter, _) = try parser.parse(fileURL: tempDir.appendingPathComponent("PROJECT.md"))
 
     // Verify language variants with outros are present
-    let spanishVariant = frontMatter.variants?.first(where: { $0.language == "es" && $0.season == 1 })
+    let spanishVariant = frontMatter.variants?.first(where: {
+      $0.language == "es" && $0.season == 1
+    })
     XCTAssertNotNil(spanishVariant)
     XCTAssertEqual(spanishVariant?.outroFile, "outro-es.fountain")
   }

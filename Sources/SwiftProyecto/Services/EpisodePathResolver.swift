@@ -137,7 +137,8 @@ public class EpisodePathResolver {
   ///   validateTemplate("episodes/<language>/<unknown>/<episode>.<ext>")
   ///   // Returns: (true, ["unknown"])
   ///   ```
-  public static func validateTemplate(_ template: String) -> (isValid: Bool, invalidVars: [String]) {
+  public static func validateTemplate(_ template: String) -> (isValid: Bool, invalidVars: [String])
+  {
     let found = extractVariables(from: template)
     let invalid = found.filter { !knownVariables.contains($0) }
 

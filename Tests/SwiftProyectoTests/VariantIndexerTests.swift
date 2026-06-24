@@ -135,7 +135,8 @@ private func makeTestMasterProject(
 
   // Create variant PROJECT.md files
   for (season, language, audioDir) in variants {
-    let variantDir = tempDir
+    let variantDir =
+      tempDir
       .appendingPathComponent("projects")
       .appendingPathComponent("s\(String(format: "%02d", season))_\(language)")
 
@@ -533,7 +534,8 @@ struct ProjectDiscoveryVariantResolutionTests {
     try masterContent.write(to: masterPath, atomically: true, encoding: .utf8)
 
     // Create variant with different audioDir
-    let variantDir = tempDir
+    let variantDir =
+      tempDir
       .appendingPathComponent("projects")
       .appendingPathComponent("s01_es")
     try FileManager.default.createDirectory(at: variantDir, withIntermediateDirectories: true)

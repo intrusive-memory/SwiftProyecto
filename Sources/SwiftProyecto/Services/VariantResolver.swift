@@ -108,17 +108,21 @@ public class VariantResolver {
     // Resolve simple properties with hierarchy: variant > season > master > default
     let resolvedDescription = variant.description ?? seasonDef?.description ?? master.description
     let resolvedGenre = variant.genre ?? master.genre
-    let resolvedTags = isEffectivelyNil(variant.tags)
+    let resolvedTags =
+      isEffectivelyNil(variant.tags)
       ? master.tags
       : variant.tags
 
     // Resolve generation configuration properties
-    let resolvedEpisodesDir = variant.episodesDir
+    let resolvedEpisodesDir =
+      variant.episodesDir
       ?? seasonDef?.episodesDir
       ?? master.episodesDir
-    let resolvedAudioDir = variant.audioDir
+    let resolvedAudioDir =
+      variant.audioDir
       ?? master.audioDir
-    let resolvedFilePattern = variant.filePattern
+    let resolvedFilePattern =
+      variant.filePattern
       ?? seasonDef?.filePattern
       ?? master.filePattern
     let resolvedExportFormat = variant.exportFormat ?? master.exportFormat
@@ -131,10 +135,12 @@ public class VariantResolver {
     let resolvedTTS = variant.tts ?? seasonDef?.tts ?? master.tts
 
     // Resolve intro/outro files - hierarchy: variant > season > master > nil
-    let resolvedIntroFile = variant.introFile
+    let resolvedIntroFile =
+      variant.introFile
       ?? seasonDef?.introFile
       ?? master.introFile
-    let resolvedOutroFile = variant.outroFile
+    let resolvedOutroFile =
+      variant.outroFile
       ?? seasonDef?.outroFile
       ?? master.outroFile
 
@@ -323,7 +329,9 @@ extension ProjectFrontMatter {
   ///   - season: The season number for looking up season-level overrides
   ///
   /// - Returns: A new ProjectFrontMatter with properties fully resolved
-  public func resolve(withMaster master: ProjectFrontMatter, forSeason season: Int) -> ProjectFrontMatter {
+  public func resolve(withMaster master: ProjectFrontMatter, forSeason season: Int)
+    -> ProjectFrontMatter
+  {
     VariantResolver.resolve(variant: self, withMaster: master, forSeason: season)
   }
 }
