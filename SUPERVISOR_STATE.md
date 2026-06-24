@@ -86,11 +86,18 @@ last_updated: 2026-06-23T00:00:00Z
   - Context fit: 22 turns (budget: 50) ✅
 
 - **Sortie 4.1**: SwiftBruja Backend (Optional)
-  - State: PENDING → DISPATCHED (running in parallel)
+  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
   - Agent: a150eee2938d66bb2
   - Depends on: Sortie 1.2 → COMPLETED ✅
   - Dispatched: 2026-06-23T02:19:30Z
+  - Completed: 2026-06-23T02:35:00Z
   - Context fit: 18 turns (budget: 50) ✅
+  - Exit Criteria: All verified ✅
+    - ✅ Soft dependency pattern working
+    - ✅ OQ-7 resolved (query format documented)
+    - ✅ 23 tests passing
+    - ✅ No regressions
+  - Files: 1 source + 1 test (2 total)
 
 - **Sortie 5.1**: Directory Analysis & Preprocessing
   - State: PENDING → DISPATCHED (running in parallel)
