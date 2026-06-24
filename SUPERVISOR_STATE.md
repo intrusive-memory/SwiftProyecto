@@ -133,9 +133,10 @@ last_updated: 2026-06-23T00:00:00Z
   - Files: Multiple source + 1 test (5 total)
 
 ### Phase 3 — Integration (Sequential)
-**Status**: RUNNING
+**Status**: BLOCKED ❌
 **Supervising Agent**: Primary agent (builds included)
-**Summary**: CLI integration, testing, and critical lingua-matra validation gate
+**Summary**: CLI integration incomplete. Sortie 7.2 (CRITICAL GATE) REJECTED due to missing backend selection implementation in GenerateProjectCommand.
+**Blocker**: Sortie 6.1 patch needed to implement `--llm` flag backend selection
 
 - **Sortie 6.1**: CLI Integration
   - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
@@ -167,13 +168,21 @@ last_updated: 2026-06-23T00:00:00Z
   - Files: Multiple tests (7 test suites)
 
 - **Sortie 7.2**: **CRITICAL** Multi-Backend Comparison on lingua-matra
-  - State: PENDING → DISPATCHED (RUNNING NOW)
+  - State: DISPATCHED → RUNNING → FAILED → BLOCKED ❌
   - Agent: a7fc03cee1becda97
-  - Depends on: Sortie 6.1 → COMPLETED ✅, Sortie 7.1 → COMPLETED ✅
+  - Depends on: Sortie 6.1 → COMPLETED ⚠️ (INCOMPLETE), Sortie 7.1 → COMPLETED ✅
   - Dispatched: 2026-06-23T03:16:30Z
-  - **CRITICAL GATE**: Acceptance criterion for ENTIRE MISSION
-  - Context fit: 25 turns (budget: 50) ✅
-  - **Verdict Status**: ⏳ Testing in progress...
+  - Completed: 2026-06-23T03:24:00Z
+  - **VERDICT**: REJECT — BLOCKING ISSUES FOUND
+  - **Root Cause**: CLI backend selection (`--llm` flag) NOT IMPLEMENTED
+    - Flag is parsed but never used in GenerateProjectCommand
+    - Cannot select individual backends for testing
+    - All backends fail with "No LLM backends available" error
+  - **Blocker Details**:
+    - GenerateProjectCommand.swift lines 104-108: flag defined
+    - Lines 177-187: llm variable never referenced
+    - Service created without backend selection
+  - **Impact**: Mission BLOCKED until Sortie 6.1 patch applied
 
 - **Sortie 7.3**: CLI Integration Tests
   - State: PENDING
