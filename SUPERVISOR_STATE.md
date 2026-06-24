@@ -29,8 +29,9 @@ last_updated: 2026-06-23T00:00:00Z
 ## Phase Progress
 
 ### Phase 1 — Foundation (Sequential)
-**Status**: RUNNING
+**Status**: COMPLETED ✅
 **Supervising Agent**: Primary agent (builds included)
+**Summary**: LLMBackendProtocol, BackendRegistry, OS detection, and ProjectGeneratorService all implemented with comprehensive test coverage (36 tests passing)
 
 - **Sortie 1.1**: LLMBackendProtocol + BackendRegistry, OS detection
   - State: DISPATCHED → RUNNING → COMPLETED ✅
@@ -50,40 +51,52 @@ last_updated: 2026-06-23T00:00:00Z
   - Files Created: 3 source + 1 test (4 total)
 
 - **Sortie 1.2**: ProjectGeneratorService, fallback chain
-  - State: PENDING → DISPATCHED
+  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
+  - Agent ID: ad936ea330e4205a0
   - Depends on: Sortie 1.1 → COMPLETED ✅
   - Entry criteria: Protocol & Registry available ✅
-  - Exit criteria: 4 criteria (see EXECUTION_PLAN.md)
+  - Exit criteria: All 4 verified ✅
+    - ✅ Compiles without errors
+    - ✅ ProjectGeneratorService implemented with fallback chain
+    - ✅ Fallback chain works: SwiftBruja → FM → Claude
+    - ✅ Unit tests pass: 17 tests, all passing
   - Priority: 36.5
   - Context fit: 15 turns (budget: 50) ✅
   - Dispatched: 2026-06-23T02:16:00Z
+  - Completed: 2026-06-23T02:19:00Z
+  - Files Created: 1 source + 1 test (2 total)
+  - Commit: ca35777
 
 ### Phase 2 — Backends (4-Way Parallel)
-**Status**: NOT_STARTED
-**Sub-agents**: A, B, C, D (no supervising responsibility)
+**Status**: RUNNING
+**Sub-agents**: A, B, C, D (launching now - no supervising responsibility)
 
 - **Sortie 2.1**: Claude API Backend
-  - State: PENDING
-  - Depends on: Sortie 1.2 → COMPLETED
-  - Agent: Sub-agent A
+  - State: PENDING → DISPATCHED (running in parallel)
+  - Agent: ac027680c3de7c766
+  - Depends on: Sortie 1.2 → COMPLETED ✅
+  - Dispatched: 2026-06-23T02:19:30Z
   - Context fit: 25 turns (budget: 50) ✅
 
 - **Sortie 3.1**: Foundation Models Backend
-  - State: PENDING
-  - Depends on: Sortie 1.2 → COMPLETED
-  - Agent: Sub-agent B
+  - State: PENDING → DISPATCHED (running in parallel)
+  - Agent: a15435e501718dbbf
+  - Depends on: Sortie 1.2 → COMPLETED ✅
+  - Dispatched: 2026-06-23T02:19:30Z
   - Context fit: 22 turns (budget: 50) ✅
 
 - **Sortie 4.1**: SwiftBruja Backend (Optional)
-  - State: PENDING
-  - Depends on: Sortie 1.2 → COMPLETED
-  - Agent: Sub-agent C
+  - State: PENDING → DISPATCHED (running in parallel)
+  - Agent: a150eee2938d66bb2
+  - Depends on: Sortie 1.2 → COMPLETED ✅
+  - Dispatched: 2026-06-23T02:19:30Z
   - Context fit: 18 turns (budget: 50) ✅
 
 - **Sortie 5.1**: Directory Analysis & Preprocessing
-  - State: PENDING
-  - Depends on: Sortie 1.2 → COMPLETED
-  - Agent: Sub-agent D
+  - State: PENDING → DISPATCHED (running in parallel)
+  - Agent: a5bd80f505f8214b0
+  - Depends on: Sortie 1.2 → COMPLETED ✅
+  - Dispatched: 2026-06-23T02:19:30Z
   - Context fit: 24 turns (budget: 50) ✅
 
 ### Phase 3 — Integration (Sequential)
