@@ -177,6 +177,32 @@ struct GenerateProjectCommand: AsyncParsableCommand {
     // Step 2: Generate metadata using ProjectGeneratorService
     let service = ProjectGeneratorService()
 
+    // Validate backend selection if --llm specified
+    if let backendName = llm {
+      let normalizedName: String
+      switch backendName.lowercased() {
+      case "claude":
+        normalizedName = "Claude API"
+      case "fm":
+        normalizedName = "Apple Foundation Models"
+      case "bruja":
+        normalizedName = "SwiftBruja"
+      default:
+        throw GenerateProjectError.invalidBackend(
+          backendName,
+          guidance: "Valid options: claude, fm, bruja"
+        )
+      }
+
+      let backend = BackendRegistry.shared.backend(named: normalizedName)
+      guard backend != nil else {
+        throw GenerateProjectError.backendUnavailable(
+          normalizedName,
+          guidance: "Backend is not available on this system"
+        )
+      }
+    }
+
     if !quiet {
       print("Generating PROJECT.md metadata...", terminator: "")
       fflush(stdout)
@@ -358,6 +384,8 @@ enum GenerateProjectError: LocalizedError {
   case validationError(String)
   case backupError(String)
   case writeError(String)
+  case invalidBackend(String, guidance: String)
+  case backendUnavailable(String, guidance: String)
 
   var errorDescription: String? {
     switch self {
@@ -375,6 +403,10 @@ enum GenerateProjectError: LocalizedError {
       return "Failed to create backup: \(message)"
     case .writeError(let message):
       return "Failed to write PROJECT.md: \(message)"
+    case .invalidBackend(let backend, let guidance):
+      return "Invalid backend '\(backend)'. \(guidance)"
+    case .backendUnavailable(let backend, let guidance):
+      return "Backend '\(backend)' is not available. \(guidance)"
     }
   }
 }
