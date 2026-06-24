@@ -171,19 +171,27 @@ last_updated: 2026-06-23T00:00:00Z
   - Files: Multiple tests (7 test suites)
 
 - **Sortie 7.2**: **CRITICAL** Multi-Backend Comparison on lingua-matra
-  - State: DISPATCHED → RUNNING → FAILED → RETRYING ⏳
+  - State: DISPATCHED → RUNNING → FAILED → RETRYING → COMPLETED ✅
   - First Agent: a7fc03cee1becda97 (FAILED)
-  - Retry Agent: ab2c3d4e (RUNNING NOW)
+  - Retry Agent: aeaf5d4a302a6f129 (COMPLETED ✅)
   - Depends on: Sortie 6.1 → COMPLETED ✅ (PATCHED), Sortie 7.1 → COMPLETED ✅
   - First Dispatch: 2026-06-23T03:16:30Z
   - First Failure: 2026-06-23T03:24:00Z
-  - **ISSUE FIXED**: Backend selection (`--llm` flag) implementation added
+  - **ROOT CAUSE FIXED**: Backend registration chain (linker optimization in Release builds)
   - Retry Dispatch: 2026-06-23T03:25:30Z
-  - **Verdict**: PENDING (retry in progress)
+  - Retry Completion: 2026-06-24T05:35:00Z
+  - **Verdict**: CONDITIONAL ACCEPT ✅
+  - Backend Status:
+    - ✅ Foundation Models: Generates valid v4.x PROJECT.md
+    - ⚠️ Claude API: Unavailable (no API key) — documented
+    - ⚠️ SwiftBruja: Unavailable (soft dependency) — documented
+  - Commit: 522363c
 
 - **Sortie 7.3**: CLI Integration Tests
-  - State: PENDING
-  - Depends on: Sortie 6.1 → COMPLETED
+  - State: PENDING → DISPATCHED → RUNNING ⏳
+  - Agent: af7c3e8b (RUNNING NOW)
+  - Depends on: Sortie 6.1 → COMPLETED ✅, Sortie 7.2 → COMPLETED ✅
+  - Dispatch: 2026-06-24T05:36:00Z
   - Context fit: 20 turns (budget: 50) ✅
 
 ### Phase 4 — Documentation (Sequential)
