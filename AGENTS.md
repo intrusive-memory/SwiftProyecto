@@ -1,15 +1,29 @@
+---
+type: reference
+name: AGENTS.md
+description: Comprehensive documentation for AI agents working with SwiftProyecto codebase
+updated: 2026-06-23
+---
+
 # AGENTS.md
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 3.6.0 (June 2026)
+**Current Version**: 4.0.0 (June 2026)
 
-**Latest Changes (v3.6.0)**:
+**Latest Changes (v4.0.0)**:
+- **Multi-Season Schema**: `seasons[]` array replaces single `season` field for multi-season projects
+- **Per-Character Language**: Optional `language` field on CastMember for language-specific voice selection
+- **Property Hierarchy**: Four-level resolution (variant > season > master > default)
+- **Backward Compatible**: v3.x PROJECT.md files automatically convert to synthetic seasons
+- **CLI Enhancement**: `proyecto generate --season N` for per-season output
+
+See [UPGRADING.md](UPGRADING.md) for complete v3.x → v4.0 migration guide.
+
+**Previous Changes (v3.6.0)**:
 - **Foundation Models Integration**: Replaced SwiftBruja with Apple Foundation Models framework
 - **Model Change**: Qwen2.5 7B Instruct (4-bit) — enhanced instruction following and reasoning
 - **MLX Removal**: No longer depends on MLX or metal shader compilation
-- **Simplified Build**: `proyecto` CLI builds with standard `xcodebuild` (no Metal bundle management)
-- **SwiftAcervo 0.16.0**: Updated for compatibility with latest component descriptor patterns
 - **Per-Language Voice Prompts**: Voice selection now supports language-specific prompt tuning
 
 **Previous Changes (v3.4.0)**:
@@ -119,20 +133,52 @@ Covers:
 - **Best Practices**: Security-scoped bookmarks, batch processing, error handling
 - **Integration Patterns**: SwiftUI views, batch processing, SwiftData models
 
-### 📖 PROJECT.md Syntax Quick Reference
+### 📖 PROJECT.md Documentation — v4.0.0 Schema
 
-**🔗 Quick Reference**: See [**Docs/PROJECT_MD_REFERENCE.md**](Docs/PROJECT_MD_REFERENCE.md) for a concise schema guide.
+**v4.0.0 introduced multi-season and multi-language support with full backward compatibility for v3.x files.**
 
-For agents needing to parse or generate PROJECT.md files:
-- **Field Reference**: Table of all front matter fields (required, optional, types, defaults)
-- **CastMember Structure**: Character-to-voice mapping syntax and voice provider keys
-- **Examples**: YAML examples from minimal to fully-featured projects
-- **App Settings**: How to extend PROJECT.md with custom app-specific sections
-- **Voice Providers**: Supported TTS providers (Apple, ElevenLabs, VoxAlta) with example voice IDs
-- **Validation Rules**: Required fields, enum values, format requirements
-- **Tips for Agents**: Best practices for parsing, validation, and safe field access
+#### Core Documentation (Recommended Reading Order)
 
-**📄 Complete Example**: See [EXAMPLE_PROJECT.md](EXAMPLE_PROJECT.md) for a working PROJECT.md file.
+1. **[PROJECT_MD_REFERENCE_v4.md](Docs/PROJECT_MD_REFERENCE_v4.md)** — Complete field reference
+   - All v4.0.0 schema fields and types
+   - Multi-season array structure
+   - Language definitions and variants
+   - Cast member structure (including multi-voice support)
+   - Property inheritance and resolution hierarchy
+   - v3.x backward compatibility and auto-migration
+
+2. **[EXAMPLE_PROJECT_v4.md](Docs/EXAMPLE_PROJECT_v4.md)** — Working examples
+   - Single-season projects
+   - Multi-season projects
+   - Master + variant files (multi-language)
+   - Variant files with language-specific casting
+   - Single file with `episodePath` templating
+
+3. **[MIGRATION_GUIDE.md](Docs/MIGRATION_GUIDE.md)** — v3.x → v4.0.0 upgrade
+   - Step-by-step migration paths for different project types
+   - Scenarios: single-season, multi-season, multi-language variants
+   - Backward compatibility and safe upgrade procedures
+   - Validation and testing
+
+4. **[VARIANT_REFERENCE.md](Docs/VARIANT_REFERENCE.md)** — Master + variant patterns
+   - When to use variants vs. single files
+   - Master file structure (type: overview)
+   - Variant file structure (type: project)
+   - Pattern types: language variants, season variants, multi-language matrices
+   - Directory organization best practices
+   - Property inheritance and cast merging
+
+5. **[INTRO_OUTRO_GUIDE.md](Docs/INTRO_OUTRO_GUIDE.md)** — Text directions and segment files
+   - `introFile` and `outroFile` field usage
+   - Path resolution and relative paths
+   - Per-season and per-language intros
+   - Fallback hierarchies and inheritance
+   - Real-world patterns
+
+#### Legacy Documentation (v3.x)
+
+- **[PROJECT_MD_REFERENCE.md](Docs/PROJECT_MD_REFERENCE.md)** — v3.x schema (maintained for compatibility)
+- **[EXAMPLE_PROJECT.md](Docs/EXAMPLE_PROJECT.md)** — v3.x example (maintained for reference)
 
 ---
 

@@ -1,3 +1,7 @@
+---
+type: reference
+---
+
 <p align="center">
   <img src="SwiftProyecto.jpg" alt="SwiftProyecto" width="200" height="200">
 </p>
@@ -8,7 +12,7 @@
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-3.6.0-green.svg" />
+    <img src="https://img.shields.io/badge/Version-4.0.0-green.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -259,6 +263,17 @@ let response = try await session.complete(
 
 ## Features
 
+### ✨ v4.0.0: Multi-Season & Per-Character Language Support (June 2026)
+
+- **Multi-Season Schema**: `seasons[]` array replaces single `season` field
+- **Per-Character Language**: Optional `language` field on each CastMember for language-specific voice selection
+- **Property Hierarchy**: Four-level resolution (variant > season > master > default)
+- **Backward Compatible**: v3.x PROJECT.md files continue to work without modification
+- **CLI Enhancements**: `proyecto generate --season N` for per-season output
+- **Foundation Models Ready**: Language-aware generation via per-character language field
+
+**Migration**: See [UPGRADING.md](UPGRADING.md) for complete migration guide. Existing v3.x projects work unchanged.
+
 ### ✨ v3.6.0: Foundation Models Integration (June 2026)
 
 - **Foundation Models Framework**: Replaced SwiftBruja with Apple's native LLM framework
@@ -268,17 +283,6 @@ let response = try await session.complete(
 - **SwiftAcervo 0.16.0**: Updated for component management and model distribution
 - **Reduced Dependencies**: Removed MLX and SwiftBruja dependencies
 - **Per-Language Voice Prompts**: Enhanced voice selection with language-specific guidance
-
-### ✨ v3.3.0: proyecto validate Command (April 2026)
-
-- **proyecto validate**: New CLI command to validate PROJECT.md files
-  - Validates frontmatter syntax and structure
-  - Supports directory or direct file path arguments
-  - `--verbose` flag to show parsed metadata
-  - Returns exit code 0 for valid files, 1 for errors
-- **9 comprehensive integration tests** for validation command
-- **Synchronized CLI version** with library version (both 3.3.0)
-- **Better error messages** for invalid PROJECT.md files
 
 ### ✨ v3.3.0: proyecto validate Command (April 2026)
 
@@ -1252,7 +1256,25 @@ SwiftProyecto is released under the MIT License. See [LICENSE](./LICENSE) for de
 
 ## Status
 
-### ✨ v3.6.0 - Foundation Models Integration (Current - June 2026)
+### ✨ v4.0.0 - Multi-Season & Per-Character Language (Current - June 2026)
+
+**Major Features**:
+- ✅ Multi-season schema with `seasons[]` array
+- ✅ Per-character language support for multilingual cast
+- ✅ Four-level property resolution hierarchy (variant > season > master > default)
+- ✅ Full backward compatibility with v3.x PROJECT.md files
+- ✅ `proyecto generate --season N` for per-season output
+- ✅ All tests passing
+
+**Known Limitations**:
+- `proyecto init` does not yet generate v4.0 schema (coming in v4.1)
+- Language field must be added manually to CastMember (auto in v4.1)
+
+**Migration Guide**: See [UPGRADING.md](UPGRADING.md) for complete details.
+
+**Previous**: v3.6.0 added Foundation Models integration and per-language voice prompts.
+
+### ✅ v3.6.0 - Foundation Models Integration (June 2026)
 
 **Major Features**:
 - ✅ Foundation Models framework for on-device LLM inference (zero network)
@@ -1292,6 +1314,7 @@ SwiftProyecto v2.0 is a major refactoring focused on **file discovery, PROJECT.m
 - ✅ PROJECT.md parser using UNIVERSAL library (spec-compliant YAML, lazy loading)
 - ✅ Per-file bookmark support added
 - ✅ FileNode tree structure complete
+- ✅ SwiftData models complete
 - ✅ All 361 tests passing with v2.0+ API
 
 **Integration**: Apps integrate SwiftProyecto with their own screenplay parsers (e.g., SwiftCompartido) via DocumentRegistry pattern.

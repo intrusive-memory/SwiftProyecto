@@ -117,6 +117,125 @@ public struct ProjectDiscovery: Sendable {
   }
 }
 
+// MARK: - File Type Detection
+
+extension ProjectDiscovery {
+
+  /// Returns true if the ProjectFrontMatter represents a master file (type: overview).
+  /// Master files contain variant references and are not directly generatable.
+  public static func isMasterFile(_ project: ProjectFrontMatter) -> Bool {
+    project.projectType?.lowercased() == "overview"
+      || (project.variants != nil && !project.variants!.isEmpty)
+  }
+
+  /// Returns true if the ProjectFrontMatter represents a variant file.
+  /// Variants have BOTH season and language specified, indicating multi-season/multi-language support.
+  public static func isVariantFile(_ project: ProjectFrontMatter) -> Bool {
+    (project.season != nil && (project.languages != nil && !project.languages!.isEmpty))
+      && project.projectType?.lowercased() != "overview"
+  }
+
+  /// Returns true if this is a standalone project file (not part of a master/variant pair).
+  /// Single project files have no master reference and no variants.
+  public static func isSingleProjectFile(_ project: ProjectFrontMatter) -> Bool {
+    !isMasterFile(project) && !isVariantFile(project)
+  }
+}
+
+// MARK: - Variant Discovery
+
+extension ProjectDiscovery {
+
+  /// Find all variants of a master PROJECT.md.
+  ///
+  /// Loads the master file at the given path, discovers all variants
+  /// from the variants[] array, and returns them as ProjectFrontMatter objects.
+  ///
+  /// ## Usage
+  ///
+  /// ```swift
+  /// let discovery = ProjectDiscovery()
+  /// let masterPath = URL(fileURLWithPath: "/path/to/master/PROJECT.md")
+  /// let variants = try discovery.findVariants(from: masterPath)
+  /// for variant in variants {
+  ///     print("Variant: \(variant.title)")
+  /// }
+  /// ```
+  ///
+  /// - Parameters:
+  ///   - masterPath: Path to the master PROJECT.md file
+  ///
+  /// - Returns: Array of variant ProjectFrontMatter objects
+  ///
+  /// - Throws: VariantIndexError if master or variants can't be loaded
+  public static func findVariants(from masterPath: URL) throws -> [ProjectFrontMatter] {
+    // 1. Load master PROJECT file
+    let parser = ProjectMarkdownParser()
+    let (master, _) = try parser.parse(fileURL: masterPath)
+
+    // Verify it's a master file
+    guard isMasterFile(master) else {
+      throw VariantIndexError.notAMasterFile(masterPath.lastPathComponent)
+    }
+
+    // 2. Create variant indexer
+    let masterDirectory = masterPath.deletingLastPathComponent()
+    let indexer = VariantIndexer(master: master, masterDirectory: masterDirectory)
+
+    // 3. Load all variants
+    try indexer.loadVariants()
+
+    // 4. Return all variants as array
+    return indexer.allVariants()
+  }
+
+  /// Load a specific variant by language and season.
+  ///
+  /// Given a variant reference (language + season), loads the variant file
+  /// and resolves all properties using the master and season hierarchy.
+  ///
+  /// ## Usage
+  ///
+  /// ```swift
+  /// let discovery = ProjectDiscovery()
+  /// let masterPath = URL(fileURLWithPath: "/path/to/master/PROJECT.md")
+  /// let reference = VariantReference(season: 1, language: "es", path: "projects/s01_es/PROJECT.md")
+  /// let resolved = try discovery.loadVariant(reference, from: masterPath)
+  /// ```
+  ///
+  /// - Parameters:
+  ///   - reference: VariantReference specifying language and season
+  ///   - masterPath: Path to the master PROJECT.md
+  ///
+  /// - Returns: Resolved ProjectFrontMatter with all inherited properties
+  ///
+  /// - Throws: VariantIndexError if variant can't be loaded
+  public static func loadVariant(
+    reference: VariantReference,
+    from masterPath: URL
+  ) throws -> ProjectFrontMatter {
+    // 1. Load master
+    let parser = ProjectMarkdownParser()
+    let (master, _) = try parser.parse(fileURL: masterPath)
+
+    // 2. Construct variant path
+    let masterDirectory = masterPath.deletingLastPathComponent()
+    let variantPath = masterDirectory.appendingPathComponent(reference.path)
+
+    // 3. Load variant
+    guard FileManager.default.fileExists(atPath: variantPath.path) else {
+      throw VariantIndexError.variantFileNotFound(path: reference.path)
+    }
+
+    let (variant, _) = try parser.parse(fileURL: variantPath)
+
+    // 4. Resolve with master (applies property inheritance)
+    let resolved = variant.resolve(withMaster: master, forSeason: reference.season)
+
+    return resolved
+  }
+}
+
 // MARK: - Cast Reading
 
 extension ProjectDiscovery {

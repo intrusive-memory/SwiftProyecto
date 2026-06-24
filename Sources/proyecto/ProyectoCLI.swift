@@ -32,9 +32,15 @@ struct ProyectoCLI: AsyncParsableCommand {
         proyecto init --update            # Update existing PROJECT.md
         proyecto validate                 # Validate PROJECT.md in current directory
         proyecto validate /path/to/dir    # Validate PROJECT.md in specific directory
+        proyecto generate                 # Generate output for current directory
+        proyecto generate --season 2      # Generate output for season 2 only
+        proyecto generate --intro-only    # Generate intro files only
       """,
     version: SwiftProyecto.version,
-    subcommands: [InitCommand.self, ValidateCommand.self],
+    subcommands: [
+      InitCommand.self, ValidateCommand.self, GenerateCommand.self, VariantsCommand.self,
+      InfoCommand.self,
+    ],
     defaultSubcommand: InitCommand.self
   )
 }
@@ -97,82 +103,144 @@ struct ValidateCommand: ParsableCommand {
       throw ProyectoError.projectMdNotFound(projectMdURL.path)
     }
 
-    // Parse and validate
+    // Parse the file
     let parser = ProjectMarkdownParser()
     do {
       let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
 
-      // Success!
-      print("✅ Valid PROJECT.md: \(projectMdURL.path)")
-      print()
+      // Create validator and validate
+      let validator = ProjectValidator()
+      let result = validator.validate(frontMatter)
 
-      if verbose {
-        print("Parsed metadata:")
-        print("  Type: \(frontMatter.type)")
-        print("  Title: \(frontMatter.title)")
-        print("  Author: \(frontMatter.author)")
+      // Display header
+      print("✓ Validating: \(projectMdURL.path)")
 
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .medium
-        dateFormatter.timeStyle = .none
-        print("  Created: \(dateFormatter.string(from: frontMatter.created))")
+      // Display schema and file type info
+      let schemaVersionStr = result.metadata.schemaVersion == 4 ? "v4.0.0" : "v3.x"
+      print("ℹ Schema version: \(schemaVersionStr)")
+      print("ℹ File type: \(result.metadata.fileType)")
 
-        if let description = frontMatter.description {
-          print("  Description: \(description.prefix(80))\(description.count > 80 ? "..." : "")")
-        }
-        if let season = frontMatter.season {
-          print("  Season: \(season)")
-        }
-        if let episodes = frontMatter.episodes {
-          print("  Episodes: \(episodes)")
-        }
-        if let genre = frontMatter.genre {
-          print("  Genre: \(genre)")
-        }
-        if let tags = frontMatter.tags {
-          print("  Tags: \(tags.joined(separator: ", "))")
-        }
-        if let episodesDir = frontMatter.episodesDir {
-          print("  Episodes Directory: \(episodesDir)")
-        }
-        if let audioDir = frontMatter.audioDir {
-          print("  Audio Directory: \(audioDir)")
-        }
-        if let filePattern = frontMatter.filePattern {
-          print("  File Pattern: \(filePattern)")
-        }
-        if let exportFormat = frontMatter.exportFormat {
-          print("  Export Format: \(exportFormat)")
-        }
-        if let cast = frontMatter.cast, !cast.isEmpty {
-          print("  Cast: \(cast.count) member(s)")
-        }
-        if frontMatter.tts != nil {
-          print("  TTS Configuration: present")
-        }
-        if frontMatter.preGenerateHook != nil {
-          print("  Pre-generate Hook: present")
-        }
-        if frontMatter.postGenerateHook != nil {
-          print("  Post-generate Hook: present")
-        }
+      // Display counts if present
+      if let seasonCount = result.metadata.seasonCount, seasonCount > 0 {
+        let seasonStr =
+          result.metadata.seasonNumbers.map { $0.map(String.init).joined(separator: ", ") } ?? ""
+        print("ℹ Seasons: \(seasonCount) (IDs: \(seasonStr))")
+      }
 
+      if let languageCount = result.metadata.languageCount, languageCount > 0 {
+        let langStr = result.metadata.languageCodes.map { $0.joined(separator: ", ") } ?? ""
+        print("ℹ Languages: \(languageCount) (\(langStr))")
+      }
+
+      if let variantCount = result.metadata.variantCount, variantCount > 0 {
+        print("ℹ Variants: \(variantCount)")
+      }
+
+      // Check validation result
+      if result.isValid {
+        print("✓ VALID PROJECT")
         print()
-        print("Body content: \(body.isEmpty ? "empty" : "\(body.count) characters")")
+
+        // Show warnings if any
+        if !result.warnings.isEmpty {
+          print("⚠ Warnings:")
+          for warning in result.warnings {
+            print("  - \(warning)")
+          }
+          print()
+        }
+
+        // Show verbose metadata if requested
+        if verbose {
+          print("Parsed metadata:")
+          print("  Type: \(frontMatter.type)")
+          print("  Title: \(frontMatter.title)")
+          print("  Author: \(frontMatter.author)")
+
+          let dateFormatter = DateFormatter()
+          dateFormatter.dateStyle = .medium
+          dateFormatter.timeStyle = .none
+          print("  Created: \(dateFormatter.string(from: frontMatter.created))")
+
+          if let description = frontMatter.description {
+            print("  Description: \(description.prefix(80))\(description.count > 80 ? "..." : "")")
+          }
+          if let season = frontMatter.season {
+            print("  Season: \(season)")
+          }
+          if let episodes = frontMatter.episodes {
+            print("  Episodes: \(episodes)")
+          }
+          if let genre = frontMatter.genre {
+            print("  Genre: \(genre)")
+          }
+          if let tags = frontMatter.tags {
+            print("  Tags: \(tags.joined(separator: ", "))")
+          }
+          if let episodesDir = frontMatter.episodesDir {
+            print("  Episodes Directory: \(episodesDir)")
+          }
+          if let audioDir = frontMatter.audioDir {
+            print("  Audio Directory: \(audioDir)")
+          }
+          if let filePattern = frontMatter.filePattern {
+            print("  File Pattern: \(filePattern)")
+          }
+          if let exportFormat = frontMatter.exportFormat {
+            print("  Export Format: \(exportFormat)")
+          }
+          if let cast = frontMatter.cast, !cast.isEmpty {
+            print("  Cast: \(cast.count) member(s)")
+          }
+          if frontMatter.tts != nil {
+            print("  TTS Configuration: present")
+          }
+          if frontMatter.preGenerateHook != nil {
+            print("  Pre-generate Hook: present")
+          }
+          if frontMatter.postGenerateHook != nil {
+            print("  Post-generate Hook: present")
+          }
+
+          print()
+          print("Body content: \(body.isEmpty ? "empty" : "\(body.count) characters")")
+        }
+      } else {
+        // Validation failed
+        print("✗ VALIDATION FAILED:")
+        print()
+
+        // Show all errors
+        for error in result.errors {
+          print("  - \(error)")
+        }
+
+        // Show warnings too
+        if !result.warnings.isEmpty {
+          print()
+          print("⚠ Warnings:")
+          for warning in result.warnings {
+            print("  - \(warning)")
+          }
+        }
+
+        throw ExitCode.validationFailure
       }
 
     } catch let error as ProjectMarkdownParser.ParserError {
-      // Validation failed - show detailed error
-      print("❌ Invalid PROJECT.md: \(projectMdURL.path)")
+      // Parser error - show detailed error
+      print("✗ Validating: \(projectMdURL.path)")
       print()
-      print("Error: \(error.localizedDescription)")
+      print("✗ PARSE ERROR:")
+      print("  - \(error.localizedDescription)")
       throw ExitCode.validationFailure
 
     } catch {
       // Other errors
-      print("❌ Failed to validate PROJECT.md: \(projectMdURL.path)")
+      print("✗ Validating: \(projectMdURL.path)")
       print()
-      print("Error: \(error.localizedDescription)")
+      print("✗ ERROR:")
+      print("  - \(error.localizedDescription)")
       throw ExitCode.failure
     }
   }
@@ -334,6 +402,377 @@ struct InitCommand: AsyncParsableCommand {
   }
 }
 
+// MARK: - Variants Command
+
+struct VariantsCommand: ParsableCommand {
+  static let configuration = CommandConfiguration(
+    commandName: "variants",
+    abstract: "List all language/season variants from a PROJECT.md",
+    discussion: """
+      Lists all variants defined in a master PROJECT.md file (v4.0.0 schema only).
+
+      Shows variant status (published|in_progress|draft|obsolete), episode counts,
+      intro/outro file presence, and file paths.
+
+      Results can be grouped by language or season.
+
+      Examples:
+        proyecto variants                 # List variants in current directory
+        proyecto variants /path/to/dir    # List variants in specific directory
+        proyecto variants /path/to/dir --group language  # Group by language
+        proyecto variants --verbose       # Show detailed metadata
+      """
+  )
+
+  @Argument(
+    help:
+      "Path to directory containing PROJECT.md or path to PROJECT.md file (default: current directory)"
+  )
+  var path: String?
+
+  @Option(
+    name: .long,
+    help: "Group results by 'season' (default) or 'language'"
+  )
+  var group: String = "season"
+
+  @Flag(name: .shortAndLong, help: "Show verbose output with detailed variant info")
+  var verbose: Bool = false
+
+  mutating func run() throws {
+    // Resolve path
+    let inputPath = path ?? FileManager.default.currentDirectoryPath
+    let inputURL = URL(fileURLWithPath: inputPath).standardizedFileURL
+
+    // Determine if path is a directory or file
+    var isDir: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: inputURL.path, isDirectory: &isDir) else {
+      throw ProyectoError.directoryNotFound(inputURL.path)
+    }
+
+    // Get PROJECT.md file URL
+    let projectMdURL: URL
+    if isDir.boolValue {
+      projectMdURL = inputURL.appendingPathComponent("PROJECT.md")
+    } else if inputURL.lastPathComponent == "PROJECT.md" {
+      projectMdURL = inputURL
+    } else {
+      throw ProyectoError.invalidPath(
+        "Path must be a directory containing PROJECT.md or a PROJECT.md file")
+    }
+
+    // Check if PROJECT.md exists
+    guard FileManager.default.fileExists(atPath: projectMdURL.path) else {
+      throw ProyectoError.projectMdNotFound(projectMdURL.path)
+    }
+
+    // Parse the file
+    let parser = ProjectMarkdownParser()
+    do {
+      let (projectFrontMatter, _) = try parser.parse(fileURL: projectMdURL)
+
+      // Verify this is a v4 schema project
+      guard projectFrontMatter.schemaVersion == 4 else {
+        throw ProyectoError.parseError(
+          "variants command is only available for v4.0.0 schema projects (schemaVersion: 4)")
+      }
+
+      // Print project header
+      print("✓ \(projectFrontMatter.title)")
+      print("Author: \(projectFrontMatter.author)")
+      if let desc = projectFrontMatter.description {
+        print("Description: \(desc)")
+      }
+      print("")
+
+      // Get variants and organize
+      let variants = projectFrontMatter.variants ?? []
+
+      if variants.isEmpty {
+        print("No variants found in this PROJECT.md")
+        return
+      }
+
+      // Validate group option
+      let groupBy = group.lowercased()
+      guard ["season", "language"].contains(groupBy) else {
+        throw ProyectoError.parseError(
+          "Invalid --group option '\(group)'. Must be 'season' or 'language'.")
+      }
+
+      if groupBy == "season" {
+        displayVariantsBySeason(variants, verbose: verbose)
+      } else {
+        displayVariantsByLanguage(variants, verbose: verbose)
+      }
+
+    } catch let error as ProjectMarkdownParser.ParserError {
+      throw ProyectoError.parseError(
+        "Failed to parse PROJECT.md: \(error.localizedDescription)")
+    } catch {
+      throw error
+    }
+  }
+
+  private func displayVariantsBySeason(
+    _ variants: [VariantReference],
+    verbose: Bool
+  ) {
+    // Group by season
+    var variantsBySeason: [Int: [VariantReference]] = [:]
+    for variant in variants {
+      if variantsBySeason[variant.season] == nil {
+        variantsBySeason[variant.season] = []
+      }
+      variantsBySeason[variant.season]?.append(variant)
+    }
+
+    // Sort seasons
+    let sortedSeasons = variantsBySeason.keys.sorted()
+
+    for seasonNum in sortedSeasons {
+      let seasonVariants = (variantsBySeason[seasonNum] ?? []).sorted { a, b in
+        a.language < b.language
+      }
+
+      print("Season \(seasonNum):")
+      for variant in seasonVariants {
+        let status = variant.status?.rawValue ?? "—"
+        let intro = variant.introFile.map { "intro: \($0)" } ?? ""
+        let outro = variant.outroFile.map { "outro: \($0)" } ?? ""
+        let extra = [intro, outro].filter { !$0.isEmpty }.joined(separator: ", ")
+        let extraStr = extra.isEmpty ? "" : " (\(extra))"
+
+        print("  \(variant.language): \(status) — \(variant.path)\(extraStr)")
+
+        if verbose {
+          print("    Status: \(status)")
+          print("    Path: \(variant.path)")
+          if let intro = variant.introFile {
+            print("    Intro: \(intro)")
+          }
+          if let outro = variant.outroFile {
+            print("    Outro: \(outro)")
+          }
+        }
+      }
+      print("")
+    }
+  }
+
+  private func displayVariantsByLanguage(
+    _ variants: [VariantReference],
+    verbose: Bool
+  ) {
+    // Group by language
+    var variantsByLanguage: [String: [VariantReference]] = [:]
+    for variant in variants {
+      if variantsByLanguage[variant.language] == nil {
+        variantsByLanguage[variant.language] = []
+      }
+      variantsByLanguage[variant.language]?.append(variant)
+    }
+
+    // Sort languages
+    let sortedLanguages = variantsByLanguage.keys.sorted()
+
+    for language in sortedLanguages {
+      let languageVariants = (variantsByLanguage[language] ?? []).sorted { a, b in
+        a.season < b.season
+      }
+
+      print("Language \(language):")
+      for variant in languageVariants {
+        let status = variant.status?.rawValue ?? "—"
+        let intro = variant.introFile.map { "intro: \($0)" } ?? ""
+        let outro = variant.outroFile.map { "outro: \($0)" } ?? ""
+        let extra = [intro, outro].filter { !$0.isEmpty }.joined(separator: ", ")
+        let extraStr = extra.isEmpty ? "" : " (\(extra))"
+
+        print(
+          "  S\(String(format: "%02d", variant.season)): \(status) — \(variant.path)\(extraStr)")
+
+        if verbose {
+          print("    Status: \(status)")
+          print("    Path: \(variant.path)")
+          if let intro = variant.introFile {
+            print("    Intro: \(intro)")
+          }
+          if let outro = variant.outroFile {
+            print("    Outro: \(outro)")
+          }
+        }
+      }
+      print("")
+    }
+  }
+}
+
+// MARK: - Info Command
+
+struct InfoCommand: ParsableCommand {
+  static let configuration = CommandConfiguration(
+    commandName: "info",
+    abstract: "Show PROJECT.md file type and metadata",
+    discussion: """
+      Displays detailed information about a PROJECT.md file, including:
+        - File type (project, master, variant)
+        - Schema version (v3.x or v4.0.0)
+        - Seasons and languages defined
+        - Master vs variant status
+        - Variant references (if applicable)
+
+      Examples:
+        proyecto info                        # Show info for PROJECT.md in current directory
+        proyecto info /path/to/dir           # Show info for specific directory
+        proyecto info /path/to/PROJECT.md    # Show info for specific file
+        proyecto info --verbose              # Show detailed metadata
+      """
+  )
+
+  @Argument(
+    help:
+      "Path to directory containing PROJECT.md or path to PROJECT.md file (default: current directory)"
+  )
+  var path: String?
+
+  @Flag(name: .shortAndLong, help: "Show verbose detailed metadata")
+  var verbose: Bool = false
+
+  mutating func run() throws {
+    // Resolve path
+    let inputPath = path ?? FileManager.default.currentDirectoryPath
+    let inputURL = URL(fileURLWithPath: inputPath).standardizedFileURL
+
+    // Determine if path is a directory or file
+    var isDir: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: inputURL.path, isDirectory: &isDir) else {
+      throw ProyectoError.directoryNotFound(inputURL.path)
+    }
+
+    // Get PROJECT.md file URL
+    let projectMdURL: URL
+    if isDir.boolValue {
+      projectMdURL = inputURL.appendingPathComponent("PROJECT.md")
+    } else if inputURL.lastPathComponent == "PROJECT.md" {
+      projectMdURL = inputURL
+    } else {
+      throw ProyectoError.invalidPath(
+        "Path must be a directory containing PROJECT.md or a PROJECT.md file")
+    }
+
+    // Check if PROJECT.md exists
+    guard FileManager.default.fileExists(atPath: projectMdURL.path) else {
+      throw ProyectoError.projectMdNotFound(projectMdURL.path)
+    }
+
+    // Parse the file
+    let parser = ProjectMarkdownParser()
+    do {
+      let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
+
+      // Run validation to get metadata
+      let validator = ProjectValidator()
+      let result = validator.validate(frontMatter)
+
+      // Display header
+      print("✓ PROJECT.md Info: \(projectMdURL.path)")
+      print("")
+
+      // Schema version
+      let schemaVersionStr = frontMatter.schemaVersion == 4 ? "v4.0.0" : "v3.x"
+      print("Schema Version: \(schemaVersionStr)")
+
+      // File type
+      print("File Type: \(result.metadata.fileType)")
+
+      // Project type
+      if let projectType = frontMatter.projectType {
+        print("Project Type: \(projectType)")
+      } else {
+        print("Project Type: \(frontMatter.type)")
+      }
+
+      // Master vs variant detection
+      let isMaster = result.metadata.fileType == "master"
+      print("Master/Variant: \(isMaster ? "Master (overview)" : "Variant/Project")")
+
+      print("")
+
+      // Seasons
+      if let seasonCount = result.metadata.seasonCount, seasonCount > 0 {
+        let seasonStr =
+          result.metadata.seasonNumbers.map { $0.map(String.init).joined(separator: ", ") } ?? ""
+        print("Seasons: \(seasonCount) (IDs: \(seasonStr))")
+      } else if let season = frontMatter.season {
+        print("Season: \(season)")
+      }
+
+      // Languages
+      if let languageCount = result.metadata.languageCount, languageCount > 0 {
+        let langStr = result.metadata.languageCodes.map { $0.joined(separator: ", ") } ?? ""
+        print("Languages: \(languageCount) (\(langStr))")
+      }
+
+      // Variants
+      if let variantCount = result.metadata.variantCount, variantCount > 0 {
+        print("Variants: \(variantCount)")
+      }
+
+      // Episodes
+      if let episodes = frontMatter.episodes {
+        print("Episodes: \(episodes)")
+      } else if let seasonCount = result.metadata.seasonCount, seasonCount > 0 {
+        let totalEpisodes = frontMatter.seasons?.reduce(0) { $0 + ($1.episodes ?? 0) } ?? 0
+        print("Total Episodes: \(totalEpisodes)")
+      }
+
+      print("")
+
+      if verbose {
+        print("Detailed Metadata:")
+        print("  Title: \(frontMatter.title)")
+        print("  Author: \(frontMatter.author)")
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        dateFormatter.timeStyle = .none
+        print("  Created: \(dateFormatter.string(from: frontMatter.created))")
+
+        if let description = frontMatter.description {
+          print("  Description: \(description.prefix(80))\(description.count > 80 ? "..." : "")")
+        }
+
+        if let genre = frontMatter.genre {
+          print("  Genre: \(genre)")
+        }
+
+        if let tags = frontMatter.tags, !tags.isEmpty {
+          print("  Tags: \(tags.joined(separator: ", "))")
+        }
+
+        print("")
+        print("Body Content: \(body.isEmpty ? "empty" : "\(body.count) characters")")
+
+        // Show validation results
+        if !result.warnings.isEmpty {
+          print("")
+          print("⚠ Warnings:")
+          for warning in result.warnings {
+            print("  - \(warning)")
+          }
+        }
+      }
+
+    } catch let error as ProjectMarkdownParser.ParserError {
+      throw ProyectoError.parseError(
+        "Failed to parse PROJECT.md: \(error.localizedDescription)")
+    } catch {
+      throw error
+    }
+  }
+}
+
 // MARK: - Errors
 
 enum ProyectoError: LocalizedError {
@@ -342,6 +781,7 @@ enum ProyectoError: LocalizedError {
   case projectMdNotFound(String)
   case parseError(String)
   case llmError(String)
+  case invalidPath(String)
 
   var errorDescription: String? {
     switch self {
@@ -355,6 +795,8 @@ enum ProyectoError: LocalizedError {
       return "Parse error: \(message)"
     case .llmError(let message):
       return "LLM error: \(message)"
+    case .invalidPath(let message):
+      return message
     }
   }
 }

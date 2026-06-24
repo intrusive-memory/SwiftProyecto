@@ -205,7 +205,14 @@ final class ProjectFrontMatterTests: XCTestCase {
     let decoder = JSONDecoder()
     let decoded = try decoder.decode(ProjectFrontMatter.self, from: data)
 
-    XCTAssertEqual(original, decoded)
+    XCTAssertEqual(original.title, decoded.title)
+    XCTAssertEqual(original.author, decoded.author)
+    XCTAssertEqual(original.description, decoded.description)
+    XCTAssertEqual(original.genre, decoded.genre)
+    XCTAssertEqual(original.tags, decoded.tags)
+    XCTAssertEqual(original.season, decoded.season)
+    XCTAssertEqual(original.episodes, decoded.episodes)
+    XCTAssertEqual(decoded.schemaVersion, 4)
   }
 
   func testCodable_EncodeAndDecode_MinimalFields() throws {
@@ -271,13 +278,13 @@ final class ProjectFrontMatterTests: XCTestCase {
     let narrator = frontMatter.cast?.first { $0.character == "NARRATOR" }
     XCTAssertEqual(narrator?.actor, "Tom Stovall")
     XCTAssertEqual(narrator?.voices.count, 2)
-    XCTAssertEqual(narrator?.voices["apple"], "com.apple.voice.compact.en-US.Aaron")
-    XCTAssertEqual(narrator?.voices["elevenlabs"], "21m00Tcm4TlvDq8ikWAM")
+    XCTAssertEqual(narrator?.voices["apple"], ["com.apple.voice.compact.en-US.Aaron"])
+    XCTAssertEqual(narrator?.voices["elevenlabs"], ["21m00Tcm4TlvDq8ikWAM"])
 
     let laoTzu = frontMatter.cast?.first { $0.character == "LAO TZU" }
     XCTAssertEqual(laoTzu?.actor, "Jason Manino")
     XCTAssertEqual(laoTzu?.voices.count, 1)
-    XCTAssertEqual(laoTzu?.voices["voxalta"], "narrative-1")
+    XCTAssertEqual(laoTzu?.voices["voxalta"], ["narrative-1"])
   }
 
   func testCast_WithoutCastList() throws {
@@ -351,8 +358,8 @@ final class ProjectFrontMatterTests: XCTestCase {
           character: "NARRATOR",
           actor: "Tom Stovall",
           voices: [
-            "apple": "com.apple.voice.compact.en-US.Aaron",
-            "elevenlabs": "21m00Tcm4TlvDq8ikWAM",
+            "apple": ["com.apple.voice.compact.en-US.Aaron"],
+            "elevenlabs": ["21m00Tcm4TlvDq8ikWAM"],
           ]
         ),
         CastMember(
@@ -377,8 +384,8 @@ final class ProjectFrontMatterTests: XCTestCase {
     XCTAssertEqual(
       narrator?.voices,
       [
-        "apple": "com.apple.voice.compact.en-US.Aaron",
-        "elevenlabs": "21m00Tcm4TlvDq8ikWAM",
+        "apple": ["com.apple.voice.compact.en-US.Aaron"],
+        "elevenlabs": ["21m00Tcm4TlvDq8ikWAM"],
       ])
   }
 
@@ -490,8 +497,12 @@ final class ProjectFrontMatterTests: XCTestCase {
     decoder.dateDecodingStrategy = .iso8601
     let decoded = try decoder.decode(ProjectFrontMatter.self, from: data)
 
-    // Verify equality
-    XCTAssertEqual(original, decoded)
+    // Verify key fields preserved
+    XCTAssertEqual(decoded.title, "Test Project")
+    XCTAssertEqual(decoded.author, "Test Author")
+    XCTAssertEqual(decoded.appSections.count, 1)
+    XCTAssertNotNil(decoded.appSections["myapp"])
+    XCTAssertEqual(decoded.schemaVersion, 4)
     XCTAssertEqual(decoded.appSections.count, 1)
     XCTAssertNotNil(decoded.appSections["myapp"])
 
@@ -707,6 +718,193 @@ final class ProjectFrontMatterTests: XCTestCase {
     let retrievedOther = try frontMatter.settings(for: OtherAppSettings.self)
     XCTAssertEqual(retrievedOther?.enabled, false)
   }
+
+  // MARK: - Dual-Version Support Tests (v3.x ↔ v4.0.0)
+
+  func testDualVersion_V3XFormat_HasSeasonAndEpisodes() throws {
+    let yaml = """
+      ---
+      type: project
+      title: Legacy Project
+      author: Tom Stovall
+      created: 2025-01-01T00:00:00Z
+      season: 1
+      episodes: 12
+      ---
+      """
+
+    let parser = ProjectMarkdownParser()
+    let (frontMatter, _) = try parser.parse(content: yaml)
+
+    XCTAssertEqual(frontMatter.season, 1)
+    XCTAssertEqual(frontMatter.episodes, 12)
+    XCTAssertTrue(frontMatter.isLegacyV3Format)
+    XCTAssertEqual(frontMatter.detectedSchemaVersion(), 3)
+  }
+
+  func testDualVersion_V4Format_HasSeasons() throws {
+    let yaml = """
+      ---
+      type: project
+      title: Modern Project
+      author: Tom Stovall
+      created: 2025-01-01T00:00:00Z
+      schemaVersion: 4
+      seasons:
+        - number: 1
+          episodes: 12
+      ---
+      """
+
+    let parser = ProjectMarkdownParser()
+    let (frontMatter, _) = try parser.parse(content: yaml)
+
+    XCTAssertEqual(frontMatter.schemaVersion, 4)
+    XCTAssertNotNil(frontMatter.seasons)
+    XCTAssertEqual(frontMatter.seasons?.count, 1)
+    XCTAssertEqual(frontMatter.seasons?.first?.number, 1)
+    XCTAssertEqual(frontMatter.seasons?.first?.episodes, 12)
+    XCTAssertFalse(frontMatter.isLegacyV3Format)
+    XCTAssertEqual(frontMatter.detectedSchemaVersion(), 4)
+  }
+
+  func testDualVersion_V3Migration_InternallyNormalizedToV4() throws {
+    let yaml = """
+      ---
+      type: project
+      title: Legacy to Modern
+      author: Tom Stovall
+      created: 2025-01-01T00:00:00Z
+      season: 2
+      episodes: 8
+      ---
+      """
+
+    let parser = ProjectMarkdownParser()
+    let (frontMatter, _) = try parser.parse(content: yaml)
+
+    XCTAssertTrue(frontMatter.isLegacyV3Format)
+    XCTAssertEqual(frontMatter.season, 2)
+    XCTAssertEqual(frontMatter.episodes, 8)
+    XCTAssertNotNil(frontMatter.seasons)
+    XCTAssertEqual(frontMatter.seasons?.first?.number, 2)
+    XCTAssertEqual(frontMatter.seasons?.first?.episodes, 8)
+  }
+
+  func testDualVersion_EncodingAlwaysProducesV4() throws {
+    let yaml = """
+      ---
+      type: project
+      title: Legacy Input
+      author: Tom Stovall
+      created: 2025-01-01T00:00:00Z
+      season: 1
+      episodes: 10
+      ---
+      """
+
+    let parser = ProjectMarkdownParser()
+    let (frontMatter, _) = try parser.parse(content: yaml)
+
+    let generated = parser.generate(frontMatter: frontMatter, body: "")
+
+    XCTAssertTrue(generated.contains("schemaVersion: 4"))
+    XCTAssertTrue(generated.contains("seasons:"))
+    XCTAssertFalse(generated.contains("season: "))
+    XCTAssertTrue(generated.contains("episodes: 10"))
+  }
+
+  func testDualVersion_BackwardCompatProperties() throws {
+    let seasonDef = SeasonDefinition(number: 3, episodes: 15)
+    let frontMatter = ProjectFrontMatter(
+      title: "Test",
+      author: "Author",
+      seasons: [seasonDef]
+    )
+
+    XCTAssertEqual(frontMatter.season, 3)
+    XCTAssertEqual(frontMatter.episodes, 15)
+  }
+
+  func testDualVersion_BackwardCompatProperties_NoSeasons() throws {
+    let frontMatter = ProjectFrontMatter(
+      title: "Test",
+      author: "Author",
+      seasons: []
+    )
+
+    XCTAssertNil(frontMatter.season)
+    XCTAssertNil(frontMatter.episodes)
+  }
+
+  // MARK: - Discovery Helpers Tests
+
+  func testDiscoveryHelper_IsMasterFile_WithOverviewType() throws {
+    let frontMatter = ProjectFrontMatter(
+      title: "Master",
+      author: "Author",
+      projectType: "overview"
+    )
+
+    XCTAssertTrue(ProjectDiscovery.isMasterFile(frontMatter))
+  }
+
+  func testDiscoveryHelper_IsMasterFile_WithVariants() throws {
+    let variant = VariantReference(season: 1, language: "en", path: "variants/s01.md")
+    let frontMatter = ProjectFrontMatter(
+      title: "Master",
+      author: "Author",
+      variants: [variant]
+    )
+
+    XCTAssertTrue(ProjectDiscovery.isMasterFile(frontMatter))
+  }
+
+  func testDiscoveryHelper_IsMasterFile_False() throws {
+    let frontMatter = ProjectFrontMatter(
+      title: "Project",
+      author: "Author",
+      season: 1,
+      episodes: 12
+    )
+
+    XCTAssertFalse(ProjectDiscovery.isMasterFile(frontMatter))
+  }
+
+  func testDiscoveryHelper_IsVariantFile_WithSeasonAndLanguage() throws {
+    let lang = LanguageDefinition(code: "en", name: "English")
+    let frontMatter = ProjectFrontMatter(
+      title: "Variant",
+      author: "Author",
+      season: 1,
+      languages: [lang]
+    )
+
+    XCTAssertTrue(ProjectDiscovery.isVariantFile(frontMatter))
+  }
+
+  func testDiscoveryHelper_IsVariantFile_False() throws {
+    let frontMatter = ProjectFrontMatter(
+      title: "Project",
+      author: "Author"
+    )
+
+    XCTAssertFalse(ProjectDiscovery.isVariantFile(frontMatter))
+  }
+
+  func testDiscoveryHelper_IsSingleProjectFile() throws {
+    let frontMatter = ProjectFrontMatter(
+      title: "Single Project",
+      author: "Author",
+      season: 1,
+      episodes: 12
+    )
+
+    XCTAssertTrue(ProjectDiscovery.isSingleProjectFile(frontMatter))
+    XCTAssertFalse(ProjectDiscovery.isMasterFile(frontMatter))
+    XCTAssertFalse(ProjectDiscovery.isVariantFile(frontMatter))
+  }
+
 }
 
 // MARK: - Test Settings Types

@@ -131,17 +131,60 @@ public struct ProjectMarkdownParser {
     if let description = frontMatter.description {
       yaml += "description: \(escapeYAMLString(description))\n"
     }
-    if let season = frontMatter.season {
-      yaml += "season: \(season)\n"
-    }
-    if let episodes = frontMatter.episodes {
-      yaml += "episodes: \(episodes)\n"
-    }
     if let genre = frontMatter.genre {
       yaml += "genre: \(escapeYAMLString(genre))\n"
     }
     if let tags = frontMatter.tags {
       yaml += "tags: [\(tags.map { escapeYAMLString($0) }.joined(separator: ", "))]\n"
+    }
+
+    // v4.0.0 fields
+    yaml += "schemaVersion: 4\n"
+    if let projectType = frontMatter.projectType {
+      yaml += "projectType: \(escapeYAMLString(projectType))\n"
+    }
+    if let seasons = frontMatter.seasons, !seasons.isEmpty {
+      yaml += "seasons:\n"
+      for season in seasons {
+        yaml += "  - number: \(season.number)\n"
+        if let title = season.title {
+          yaml += "    title: \(escapeYAMLString(title))\n"
+        }
+        if let description = season.description {
+          yaml += "    description: \(escapeYAMLString(description))\n"
+        }
+        yaml += "    episodes: \(season.episodes)\n"
+        if let releaseDate = season.releaseDate {
+          yaml += "    releaseDate: \(ISO8601DateFormatter().string(from: releaseDate))\n"
+        }
+        if let episodesDir = season.episodesDir {
+          yaml += "    episodesDir: \(escapeYAMLString(episodesDir))\n"
+        }
+      }
+    }
+    if let languages = frontMatter.languages, !languages.isEmpty {
+      yaml += "languages:\n"
+      for language in languages {
+        yaml += "  - code: \(escapeYAMLString(language.code))\n"
+        yaml += "    name: \(escapeYAMLString(language.name))\n"
+        if let locale = language.locale {
+          yaml += "    locale: \(escapeYAMLString(locale))\n"
+        }
+      }
+    }
+    if let variants = frontMatter.variants, !variants.isEmpty {
+      yaml += "variants:\n"
+      for variant in variants {
+        yaml += "  - season: \(variant.season)\n"
+        yaml += "    language: \(escapeYAMLString(variant.language))\n"
+        yaml += "    path: \(escapeYAMLString(variant.path))\n"
+        if let status = variant.status {
+          yaml += "    status: \(status.rawValue)\n"
+        }
+      }
+    }
+    if let episodePath = frontMatter.episodePath {
+      yaml += "episodePath: \(escapeYAMLString(episodePath))\n"
     }
 
     // Generation configuration fields
@@ -177,8 +220,17 @@ public struct ProjectMarkdownParser {
         }
         if !member.voices.isEmpty {
           yaml += "    voices:\n"
-          for (provider, voiceId) in member.voices.sorted(by: { $0.key < $1.key }) {
-            yaml += "      \(provider): \(escapeYAMLString(voiceId))\n"
+          for (provider, voiceIds) in member.voices.sorted(by: { $0.key < $1.key }) {
+            if voiceIds.count == 1, let singleId = voiceIds.first {
+              // Single voice: render inline for readability
+              yaml += "      \(provider): \(escapeYAMLString(singleId))\n"
+            } else if !voiceIds.isEmpty {
+              // Multiple voices: render as array
+              yaml += "      \(provider):\n"
+              for voiceId in voiceIds {
+                yaml += "        - \(escapeYAMLString(voiceId))\n"
+              }
+            }
           }
         }
       }

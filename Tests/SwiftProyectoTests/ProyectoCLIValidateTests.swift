@@ -389,4 +389,343 @@ final class ProyectoCLIValidateTests: XCTestCase {
       "Expected error about invalid date"
     )
   }
+
+  // MARK: - Test Cases - v4.0.0 Schema Files
+
+  func testValidateValid_V4ProjectFile() throws {
+    // Verify binary exists
+    XCTAssertTrue(
+      FileManager.default.fileExists(atPath: proyectoBinary.path),
+      "proyecto binary not found at \(proyectoBinary.path). Run 'make build' first."
+    )
+
+    // Create v4.0.0 project file
+    try createProjectMd(
+      content: """
+        ---
+        type: project
+        title: Modern Project
+        author: Modern Author
+        created: 2025-11-17T10:30:00Z
+        schemaVersion: 4
+        projectType: project
+        seasons:
+          - number: 1
+            episodes: 8
+            title: "Season One"
+          - number: 2
+            episodes: 10
+            title: "Season Two"
+        languages:
+          - code: en
+          - code: es
+        ---
+
+        # Modern Project
+
+        A v4.0.0 format project.
+        """)
+
+    // Run validate
+    let result = runValidate(arguments: [tempDirectory.path])
+
+    // Verify success
+    XCTAssertEqual(result.exitCode, 0, "Expected exit code 0 for valid v4 PROJECT.md")
+    XCTAssertTrue(
+      result.stdout.contains("✓ VALID PROJECT"),
+      "Expected success message"
+    )
+    XCTAssertTrue(
+      result.stdout.contains("Schema version: v4.0.0"),
+      "Expected schema version in output"
+    )
+    XCTAssertTrue(
+      result.stdout.contains("Seasons: 2"),
+      "Expected season count in output"
+    )
+    XCTAssertTrue(
+      result.stdout.contains("Languages: 2"),
+      "Expected language count in output"
+    )
+  }
+
+  func testValidateValid_V4OverviewFile() throws {
+    // Verify binary exists
+    XCTAssertTrue(
+      FileManager.default.fileExists(atPath: proyectoBinary.path),
+      "proyecto binary not found at \(proyectoBinary.path). Run 'make build' first."
+    )
+
+    // Create v4.0.0 overview/master file
+    try createProjectMd(
+      content: """
+        ---
+        type: overview
+        title: Master Series
+        author: Showrunner
+        created: 2025-11-17T10:30:00Z
+        schemaVersion: 4
+        projectType: overview
+        variants:
+          - name: "Season 1"
+            path: "season-1/PROJECT.md"
+          - name: "Season 2"
+            path: "season-2/PROJECT.md"
+        ---
+
+        # Master Series Overview
+
+        Multi-season master file.
+        """)
+
+    // Run validate
+    let result = runValidate(arguments: [tempDirectory.path])
+
+    // Verify success
+    XCTAssertEqual(result.exitCode, 0, "Expected exit code 0 for valid overview PROJECT.md")
+    XCTAssertTrue(
+      result.stdout.contains("✓ VALID PROJECT"),
+      "Expected success message"
+    )
+    XCTAssertTrue(
+      result.stdout.contains("File type: master"),
+      "Expected file type: master in output"
+    )
+    XCTAssertTrue(
+      result.stdout.contains("Variants: 2"),
+      "Expected variant count in output"
+    )
+  }
+
+  func testValidateInvalid_V4InvalidType() throws {
+    // Verify binary exists
+    XCTAssertTrue(
+      FileManager.default.fileExists(atPath: proyectoBinary.path),
+      "proyecto binary not found at \(proyectoBinary.path). Run 'make build' first."
+    )
+
+    // Create v4.0.0 file with invalid type
+    try createProjectMd(
+      content: """
+        ---
+        type: broadcast
+        title: Bad Type Project
+        author: Test Author
+        created: 2025-11-17T10:30:00Z
+        schemaVersion: 4
+        ---
+        """)
+
+    // Run validate
+    let result = runValidate(arguments: [tempDirectory.path])
+
+    // Verify failure
+    XCTAssertNotEqual(result.exitCode, 0, "Expected non-zero exit code for invalid type")
+    XCTAssertTrue(
+      result.stdout.contains("✗ VALIDATION FAILED"),
+      "Expected validation failure message"
+    )
+    XCTAssertTrue(
+      result.stdout.contains("Invalid type"),
+      "Expected error about invalid type"
+    )
+    XCTAssertTrue(
+      result.stdout.contains("must be \"project\" or \"overview\""),
+      "Expected helpful guidance on valid types"
+    )
+  }
+
+  func testValidateInvalid_V4DuplicateSeasons() throws {
+    // Verify binary exists
+    XCTAssertTrue(
+      FileManager.default.fileExists(atPath: proyectoBinary.path),
+      "proyecto binary not found at \(proyectoBinary.path). Run 'make build' first."
+    )
+
+    // Create v4.0.0 file with duplicate season numbers
+    try createProjectMd(
+      content: """
+        ---
+        type: project
+        title: Duplicate Seasons Project
+        author: Test Author
+        created: 2025-11-17T10:30:00Z
+        schemaVersion: 4
+        projectType: project
+        seasons:
+          - number: 1
+            episodes: 8
+          - number: 1
+            episodes: 10
+        ---
+        """)
+
+    // Run validate
+    let result = runValidate(arguments: [tempDirectory.path])
+
+    // Verify failure
+    XCTAssertNotEqual(result.exitCode, 0, "Expected non-zero exit code for duplicate seasons")
+    XCTAssertTrue(
+      result.stdout.contains("✗ VALIDATION FAILED"),
+      "Expected validation failure message"
+    )
+    XCTAssertTrue(
+      result.stdout.contains("Duplicate season numbers"),
+      "Expected error about duplicate seasons"
+    )
+  }
+
+  func testValidateInvalid_V4ZeroEpisodes() throws {
+    // Verify binary exists
+    XCTAssertTrue(
+      FileManager.default.fileExists(atPath: proyectoBinary.path),
+      "proyecto binary not found at \(proyectoBinary.path). Run 'make build' first."
+    )
+
+    // Create v4.0.0 file with zero episodes
+    try createProjectMd(
+      content: """
+        ---
+        type: project
+        title: Zero Episodes Project
+        author: Test Author
+        created: 2025-11-17T10:30:00Z
+        schemaVersion: 4
+        projectType: project
+        seasons:
+          - number: 1
+            episodes: 0
+        ---
+        """)
+
+    // Run validate
+    let result = runValidate(arguments: [tempDirectory.path])
+
+    // Verify failure
+    XCTAssertNotEqual(result.exitCode, 0, "Expected non-zero exit code for zero episodes")
+    XCTAssertTrue(
+      result.stdout.contains("✗ VALIDATION FAILED"),
+      "Expected validation failure message"
+    )
+    XCTAssertTrue(
+      result.stdout.contains("must have episodes > 0"),
+      "Expected error about episode count"
+    )
+  }
+
+  // MARK: - Test Cases - v3.x Schema Files
+
+  func testValidateValid_V3LegacyFile() throws {
+    // Verify binary exists
+    XCTAssertTrue(
+      FileManager.default.fileExists(atPath: proyectoBinary.path),
+      "proyecto binary not found at \(proyectoBinary.path). Run 'make build' first."
+    )
+
+    // Create v3.x legacy file (no schemaVersion field)
+    try createProjectMd(
+      content: """
+        ---
+        type: project
+        title: Legacy Project
+        author: Legacy Author
+        created: 2025-11-17T10:30:00Z
+        season: 1
+        episodes: 5
+        genre: Comedy
+        ---
+
+        # Legacy Project
+
+        A v3.x format file.
+        """)
+
+    // Run validate
+    let result = runValidate(arguments: [tempDirectory.path])
+
+    // Verify success
+    XCTAssertEqual(result.exitCode, 0, "Expected exit code 0 for valid v3 PROJECT.md")
+    XCTAssertTrue(
+      result.stdout.contains("✓ VALID PROJECT"),
+      "Expected success message"
+    )
+    XCTAssertTrue(
+      result.stdout.contains("Schema version: v3.x"),
+      "Expected schema version v3.x in output"
+    )
+  }
+
+  // MARK: - Test Cases - Metadata Display
+
+  func testValidateMetadata_FileTypeDetection() throws {
+    // Verify binary exists
+    XCTAssertTrue(
+      FileManager.default.fileExists(atPath: proyectoBinary.path),
+      "proyecto binary not found at \(proyectoBinary.path). Run 'make build' first."
+    )
+
+    // Create a master file with variants
+    try createProjectMd(
+      content: """
+        ---
+        type: overview
+        title: Multi-Season Master
+        author: Showrunner
+        created: 2025-11-17T10:30:00Z
+        schemaVersion: 4
+        projectType: overview
+        variants:
+          - name: "Variant A"
+            path: "variant-a/PROJECT.md"
+        ---
+        """)
+
+    // Run validate
+    let result = runValidate(arguments: [tempDirectory.path])
+
+    // Verify file type detection
+    XCTAssertTrue(
+      result.stdout.contains("File type: master"),
+      "Expected file type: master for overview with variants"
+    )
+  }
+
+  func testValidateWarning_OverviewWithoutVariants() throws {
+    // Verify binary exists
+    XCTAssertTrue(
+      FileManager.default.fileExists(atPath: proyectoBinary.path),
+      "proyecto binary not found at \(proyectoBinary.path). Run 'make build' first."
+    )
+
+    // Create overview without variants array
+    try createProjectMd(
+      content: """
+        ---
+        type: overview
+        title: Overview Without Variants
+        author: Test Author
+        created: 2025-11-17T10:30:00Z
+        schemaVersion: 4
+        projectType: overview
+        ---
+        """)
+
+    // Run validate
+    let result = runValidate(arguments: [tempDirectory.path])
+
+    // Should pass but with warning
+    XCTAssertEqual(result.exitCode, 0, "Expected exit code 0 for valid file with warnings")
+    XCTAssertTrue(
+      result.stdout.contains("✓ VALID PROJECT"),
+      "Expected success message"
+    )
+    XCTAssertTrue(
+      result.stdout.contains("⚠ Warnings:"),
+      "Expected warning section"
+    )
+    XCTAssertTrue(
+      result.stdout.contains("should define a 'variants' array"),
+      "Expected warning about missing variants"
+    )
+  }
 }

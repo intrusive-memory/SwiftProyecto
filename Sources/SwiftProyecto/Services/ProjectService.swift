@@ -720,4 +720,411 @@ extension ProjectService {
     // Return sorted by character name
     return merged.values.sorted { $0.character < $1.character }
   }
+
+  // MARK: - Directory Scanning and Pattern Recognition
+
+  /// Scans a project directory and recognizes its organizational structure.
+  ///
+  /// This method recursively scans the given directory to detect how episodes are organized,
+  /// identifying:
+  /// - Language codes in directory names (ISO 639-1)
+  /// - Season patterns (season-1, s1, 1, etc.)
+  /// - File types present (*.fountain, *.fdx, *.highland, etc.)
+  /// - Audio output directories
+  /// - Voice configuration files
+  ///
+  /// Based on the scan, it classifies the structure as one of:
+  /// - **languageFirstMultiSeason**: `lang/season/*.fountain`
+  /// - **singleLanguageMultiSeason**: `season/*.fountain`
+  /// - **languageOnly**: `lang/*.fountain`
+  /// - **flat**: `*.fountain`
+  /// - **unknown**: Unrecognized pattern
+  ///
+  /// ## Example
+  ///
+  /// ```swift
+  /// let structure = ProjectService.scanAndRecognize(at: projectURL)
+  /// switch structure.recognizedPattern {
+  /// case .languageFirstMultiSeason(let langs, let seasons):
+  ///   print("Found \(langs.count) languages and \(seasons.count) seasons")
+  /// default:
+  ///   print("Pattern: \(structure.recognizedPattern.description)")
+  /// }
+  /// ```
+  ///
+  /// - Parameter rootURL: The root directory to scan
+  /// - Returns: A ProjectStructure describing the detected organization
+  public nonisolated static func scanAndRecognize(at rootURL: URL) -> ProjectStructure {
+    let fileManager = FileManager.default
+
+    guard fileManager.fileExists(atPath: rootURL.path) else {
+      return ProjectStructure(rootURL: rootURL, recognizedPattern: .unknown)
+    }
+
+    var directoryMap: [String: [Int]] = [:]
+    var filePatterns: Set<String> = []
+    var audioDirectories: Set<String> = []
+    var voiceFiles: Set<String> = []
+
+    // Recursively scan the directory tree
+    scanDirectory(
+      at: rootURL,
+      relativePath: "",
+      fileManager: fileManager,
+      directoryMap: &directoryMap,
+      filePatterns: &filePatterns,
+      audioDirectories: &audioDirectories,
+      voiceFiles: &voiceFiles
+    )
+
+    // Determine the recognized pattern based on scan results
+    let pattern = classifyPattern(
+      directoryMap: directoryMap,
+      filePatterns: Array(filePatterns)
+    )
+
+    return ProjectStructure(
+      rootURL: rootURL,
+      directoryMap: directoryMap,
+      filePatterns: Array(filePatterns).sorted(),
+      audioDirectories: Array(audioDirectories).sorted(),
+      voiceFiles: Array(voiceFiles).sorted(),
+      recognizedPattern: pattern
+    )
+  }
+
+  /// Recursively scans a directory, collecting metadata about structure.
+  ///
+  /// This is a private helper that walks the directory tree and extracts:
+  /// - Languages (directory names matching ISO 639-1 codes)
+  /// - Seasons (directory names with season patterns)
+  /// - File extensions
+  /// - Known audio/config directories
+  private nonisolated static func scanDirectory(
+    at url: URL,
+    relativePath: String,
+    fileManager: FileManager,
+    directoryMap: inout [String: [Int]],
+    filePatterns: inout Set<String>,
+    audioDirectories: inout Set<String>,
+    voiceFiles: inout Set<String>
+  ) {
+    guard
+      let contents = try? fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
+    else {
+      return
+    }
+
+    for item in contents {
+      let fileName = item.lastPathComponent
+      let newRelativePath = relativePath.isEmpty ? fileName : "\(relativePath)/\(fileName)"
+
+      // Check if this is a directory
+      if let isDir = try? item.resourceValues(forKeys: [.isDirectoryKey]).isDirectory, isDir {
+        // Check for audio directory patterns
+        if isAudioDirectory(fileName) {
+          audioDirectories.insert(newRelativePath)
+        }
+
+        // Try to parse as language code or season number
+        if let languageCode = parseLanguageCode(fileName) {
+          // Recursively scan the language directory for seasons
+          scanLanguageDirectory(
+            at: item,
+            languageCode: languageCode,
+            fileManager: fileManager,
+            directoryMap: &directoryMap,
+            filePatterns: &filePatterns,
+            audioDirectories: &audioDirectories,
+            voiceFiles: &voiceFiles
+          )
+        } else if let seasonNumber = parseSeasonNumber(fileName) {
+          // Found a season directory at root level
+          if directoryMap[""] == nil {
+            directoryMap[""] = []
+          }
+          if !directoryMap[""]!.contains(seasonNumber) {
+            directoryMap[""]!.append(seasonNumber)
+          }
+          // Recursively scan the season directory
+          scanDirectory(
+            at: item,
+            relativePath: newRelativePath,
+            fileManager: fileManager,
+            directoryMap: &directoryMap,
+            filePatterns: &filePatterns,
+            audioDirectories: &audioDirectories,
+            voiceFiles: &voiceFiles
+          )
+        } else {
+          // Regular directory, recurse
+          scanDirectory(
+            at: item,
+            relativePath: newRelativePath,
+            fileManager: fileManager,
+            directoryMap: &directoryMap,
+            filePatterns: &filePatterns,
+            audioDirectories: &audioDirectories,
+            voiceFiles: &voiceFiles
+          )
+        }
+      } else {
+        // It's a file - extract extension
+        let ext = item.pathExtension.lowercased()
+        if !ext.isEmpty && isScriptFileType(ext) {
+          filePatterns.insert("*.\(ext)")
+        }
+
+        // Check for voice/config files
+        if isVoiceConfigFile(fileName) {
+          voiceFiles.insert(newRelativePath)
+        }
+      }
+    }
+  }
+
+  /// Scans a language directory looking for seasons.
+  ///
+  /// When we find a directory matching a language code, we look inside for season patterns.
+  private nonisolated static func scanLanguageDirectory(
+    at url: URL,
+    languageCode: String,
+    fileManager: FileManager,
+    directoryMap: inout [String: [Int]],
+    filePatterns: inout Set<String>,
+    audioDirectories: inout Set<String>,
+    voiceFiles: inout Set<String>
+  ) {
+    guard
+      let contents = try? fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
+    else {
+      return
+    }
+
+    var seasonsInLanguage: [Int] = []
+
+    for item in contents {
+      guard
+        let isDir = try? item.resourceValues(forKeys: [URLResourceKey.isDirectoryKey]).isDirectory,
+        isDir
+      else {
+        // File in language directory
+        let fileName = item.lastPathComponent
+        let ext = item.pathExtension.lowercased()
+        if !ext.isEmpty && isScriptFileType(ext) {
+          filePatterns.insert("*.\(ext)")
+        }
+        if isVoiceConfigFile(fileName) {
+          voiceFiles.insert("\(languageCode)/\(fileName)")
+        }
+        continue
+      }
+
+      let dirName = item.lastPathComponent
+
+      if let seasonNumber = parseSeasonNumber(dirName) {
+        if !seasonsInLanguage.contains(seasonNumber) {
+          seasonsInLanguage.append(seasonNumber)
+        }
+        // Recursively scan season directory for files
+        scanDirectory(
+          at: item,
+          relativePath: "\(languageCode)/\(dirName)",
+          fileManager: fileManager,
+          directoryMap: &directoryMap,
+          filePatterns: &filePatterns,
+          audioDirectories: &audioDirectories,
+          voiceFiles: &voiceFiles
+        )
+      } else if isAudioDirectory(dirName) {
+        audioDirectories.insert("\(languageCode)/\(dirName)")
+      } else {
+        // Unknown subdirectory, still scan for files
+        scanDirectory(
+          at: item,
+          relativePath: "\(languageCode)/\(dirName)",
+          fileManager: fileManager,
+          directoryMap: &directoryMap,
+          filePatterns: &filePatterns,
+          audioDirectories: &audioDirectories,
+          voiceFiles: &voiceFiles
+        )
+      }
+    }
+
+    // Always add the language to the map, even if it has no seasons
+    // This allows us to distinguish language-only structures from flat structures
+    if !seasonsInLanguage.isEmpty {
+      directoryMap[languageCode] = seasonsInLanguage.sorted()
+    } else {
+      // Even with no seasons, we track the language with an empty season list
+      directoryMap[languageCode] = []
+    }
+  }
+
+  /// Classifies the directory structure into a RecognitionPattern.
+  ///
+  /// Classification logic:
+  /// 1. If multiple languages with seasons each → languageFirstMultiSeason
+  /// 2. If single language with multiple seasons → singleLanguageMultiSeason
+  /// 3. If multiple languages, no seasons → languageOnly
+  /// 4. If no language/season structure detected → flat
+  private nonisolated static func classifyPattern(
+    directoryMap: [String: [Int]],
+    filePatterns: [String]
+  ) -> RecognitionPattern {
+    // If directory map is empty, structure is flat
+    if directoryMap.isEmpty {
+      return .flat
+    }
+
+    // Extract root-level seasons (stored with empty string key)
+    let rootSeasons = directoryMap[""] ?? []
+
+    // Get all languages (non-empty keys)
+    let languages = directoryMap.keys.filter { !$0.isEmpty }.sorted()
+
+    // Count how many language directories have seasons
+    let languagesWithSeasons = languages.filter { language in
+      let seasons = directoryMap[language] ?? []
+      return !seasons.isEmpty
+    }
+
+    // Classification logic
+    if !languages.isEmpty && !languagesWithSeasons.isEmpty {
+      // We have multiple languages, each with seasons
+      let allSeasons = Set(languagesWithSeasons.flatMap { directoryMap[$0] ?? [] })
+      return .languageFirstMultiSeason(
+        languages: languages,
+        seasons: Array(allSeasons).sorted()
+      )
+    } else if !rootSeasons.isEmpty && languages.isEmpty {
+      // We have seasons at root, no language separation
+      return .singleLanguageMultiSeason(seasons: rootSeasons)
+    } else if !languages.isEmpty && languagesWithSeasons.isEmpty {
+      // We have languages but no season structure within them
+      return .languageOnly(languages: languages)
+    } else {
+      // Can't classify
+      return .unknown
+    }
+  }
+
+  /// Parses a directory name as a language code (ISO 639-1 or similar).
+  ///
+  /// Recognizes:
+  /// - Two-letter codes: "en", "es", "fr", "de", etc.
+  /// - BCP 47 language tags: "en-US", "es-MX", "pt-BR", etc.
+  /// - Three-letter codes: "eng", "spa", "fra", etc.
+  private nonisolated static func parseLanguageCode(_ dirName: String) -> String? {
+    let lowercased = dirName.lowercased()
+
+    // Common ISO 639-1 language codes (2 letters)
+    let iso639_1 = [
+      "aa", "ab", "ae", "af", "ak", "am", "an", "ar", "as", "av", "ay", "az",
+      "ba", "be", "bg", "bh", "bi", "bm", "bn", "bo", "br", "bs",
+      "ca", "ce", "ch", "co", "cr", "cs", "cu", "cv", "cy",
+      "da", "de", "dv", "dz",
+      "ee", "el", "en", "eo", "es", "et", "eu",
+      "fa", "ff", "fi", "fj", "fo", "fr", "fy",
+      "ga", "gd", "gl", "gn", "gu", "gv",
+      "ha", "he", "hi", "ho", "hr", "ht", "hu", "hy", "hz",
+      "ia", "id", "ie", "ig", "ii", "ik", "io", "is", "it", "iu",
+      "ja", "jv",
+      "ka", "kg", "ki", "kj", "kk", "kl", "km", "kn", "ko", "kr", "ks", "ku", "kv", "kw", "ky",
+      "la", "lb", "lg", "li", "ln", "lo", "lt", "lu", "lv",
+      "mg", "mh", "mi", "mk", "ml", "mn", "mr", "ms", "mt", "my",
+      "na", "nb", "nd", "ne", "ng", "nl", "nn", "no", "nr", "nv", "ny",
+      "oc", "oj", "om", "or", "os",
+      "pa", "pi", "pl", "ps", "pt",
+      "qu",
+      "rm", "rn", "ro", "ru", "rw",
+      "sa", "sc", "sd", "se", "sg", "si", "sk", "sl", "sm", "sn", "so", "sq", "sr", "ss", "st",
+      "su", "sv", "sw",
+      "ta", "te", "tg", "th", "ti", "tk", "tl", "tn", "to", "tr", "ts", "tt", "tw", "ty",
+      "ug", "uk", "ur", "uz",
+      "ve", "vi", "vo",
+      "wa", "wo",
+      "xh",
+      "yi", "yo",
+      "za", "zh", "zu",
+    ]
+
+    if iso639_1.contains(lowercased) {
+      return lowercased
+    }
+
+    // Check for BCP 47 language tags (e.g., "en-US", "zh-Hans")
+    if lowercased.count > 2 && lowercased.contains("-") {
+      let parts = lowercased.split(separator: "-").map(String.init)
+      if parts.count >= 2 && iso639_1.contains(parts[0]) {
+        return parts[0]  // Return the language code part
+      }
+    }
+
+    // Check for 3-letter ISO 639-2/3 codes (simplified check)
+    if lowercased.count == 3 && lowercased.allSatisfy({ $0.isLetter }) {
+      return lowercased
+    }
+
+    return nil
+  }
+
+  /// Parses a directory name as a season number.
+  ///
+  /// Recognizes patterns like:
+  /// - "season-1", "season-01", "season1"
+  /// - "s1", "s01"
+  /// - "1", "01" (just numbers, must be 1-2 digits)
+  private nonisolated static func parseSeasonNumber(_ dirName: String) -> Int? {
+    let lowercased = dirName.lowercased()
+
+    // Pattern: "season-N" or "seasonN"
+    if lowercased.hasPrefix("season") {
+      let remainder = String(lowercased.dropFirst(6))  // Remove "season"
+      let numberStr = remainder.hasPrefix("-") ? String(remainder.dropFirst()) : remainder
+      if let number = Int(numberStr), number > 0, number < 1000 {
+        return number
+      }
+    }
+
+    // Pattern: "s" or "s0" prefix
+    if lowercased.hasPrefix("s") {
+      let remainder = String(lowercased.dropFirst())
+      if let number = Int(remainder), number > 0, number < 1000 {
+        return number
+      }
+    }
+
+    // Pattern: just a number (1-3 digits, 1-999)
+    if let number = Int(lowercased), number > 0, number < 1000 {
+      // Only match if it's all digits
+      if dirName.allSatisfy({ $0.isNumber }) {
+        return number
+      }
+    }
+
+    return nil
+  }
+
+  /// Checks if a directory name looks like an audio output directory.
+  private nonisolated static func isAudioDirectory(_ dirName: String) -> Bool {
+    let lowercased = dirName.lowercased()
+    return lowercased == "audio" || lowercased == "audio_output" || lowercased == "output"
+  }
+
+  /// Checks if a file extension is a script file type.
+  private nonisolated static func isScriptFileType(_ ext: String) -> Bool {
+    let scriptExtensions = ["fountain", "fdx", "highland", "md", "txt"]
+    return scriptExtensions.contains(ext.lowercased())
+  }
+
+  /// Checks if a filename looks like a voice/narrator configuration file.
+  private nonisolated static func isVoiceConfigFile(_ fileName: String) -> Bool {
+    let lowercased = fileName.lowercased()
+    return lowercased.hasSuffix("_voices.json")
+      || lowercased.hasSuffix("_voices.yaml")
+      || lowercased.hasSuffix("_voices.yml")
+      || lowercased.hasSuffix("_narrators.json")
+  }
 }

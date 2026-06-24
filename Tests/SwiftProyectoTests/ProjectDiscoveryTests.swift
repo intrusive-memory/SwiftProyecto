@@ -251,8 +251,9 @@ struct ProjectDiscoveryCastReadingTests {
   func readAllCast() throws {
     let cast = [
       CastMember(
-        character: "NARRATOR", actor: "Tom", voices: ["apple": "voice-1", "elevenlabs": "voice-2"]),
-      CastMember(character: "LAO TZU", actor: "Jason", voices: ["apple": "voice-3"]),
+        character: "NARRATOR", actor: "Tom",
+        voices: ["apple": ["voice-1"], "elevenlabs": ["voice-2"]]),
+      CastMember(character: "LAO TZU", actor: "Jason", voices: ["apple": ["voice-3"]]),
     ]
     let (projectDir, cleanUp) = try makeTestProject(cast: cast)
     defer { cleanUp() }
@@ -269,8 +270,8 @@ struct ProjectDiscoveryCastReadingTests {
   @Test("Read cast filtered by provider")
   func readCastFilteredByProvider() throws {
     let cast = [
-      CastMember(character: "NARRATOR", voices: ["apple": "voice-1", "elevenlabs": "voice-2"]),
-      CastMember(character: "LAO TZU", voices: ["elevenlabs": "voice-3"]),
+      CastMember(character: "NARRATOR", voices: ["apple": ["voice-1"], "elevenlabs": ["voice-2"]]),
+      CastMember(character: "LAO TZU", voices: ["elevenlabs": ["voice-3"]]),
     ]
     let (projectDir, cleanUp) = try makeTestProject(cast: cast)
     defer { cleanUp() }
@@ -334,14 +335,14 @@ struct ProjectFrontMatterCastMergingTests {
       CastMember(
         character: "NARRATOR", actor: "Tom", gender: .male,
         voiceDescription: "Deep baritone",
-        voices: ["elevenlabs": "el-voice-1"])
+        voices: ["elevenlabs": ["el-voice-1"]])
     ]
     let frontMatter = ProjectFrontMatter(
       title: "Test", author: "Author", cast: existingCast
     )
 
     let newCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": "apple-voice-1"])
+      CastMember(character: "NARRATOR", voices: ["apple": ["apple-voice-1"]])
     ]
 
     let merged = frontMatter.mergingCast(newCast, forProvider: "apple")
@@ -349,47 +350,47 @@ struct ProjectFrontMatterCastMergingTests {
     #expect(merged.cast?.count == 1)
     let narrator = merged.cast![0]
     // ElevenLabs voice must be preserved
-    #expect(narrator.voices["elevenlabs"] == "el-voice-1")
+    #expect(narrator.voices["elevenlabs"] == ["el-voice-1"])
     // Apple voice must be added
-    #expect(narrator.voices["apple"] == "apple-voice-1")
+    #expect(narrator.voices["apple"] == ["apple-voice-1"])
   }
 
   @Test("Merge cast updates voices for specified provider")
   func mergeUpdatesSpecifiedProvider() {
     let existingCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": "old-apple-voice"])
+      CastMember(character: "NARRATOR", voices: ["apple": ["old-apple-voice"]])
     ]
     let frontMatter = ProjectFrontMatter(
       title: "Test", author: "Author", cast: existingCast
     )
 
     let newCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": "new-apple-voice"])
+      CastMember(character: "NARRATOR", voices: ["apple": ["new-apple-voice"]])
     ]
 
     let merged = frontMatter.mergingCast(newCast, forProvider: "apple")
-    #expect(merged.cast?[0].voices["apple"] == "new-apple-voice")
+    #expect(merged.cast?[0].voices["apple"] == ["new-apple-voice"])
   }
 
   @Test("Merge cast adds new characters not in existing cast")
   func mergeAddsNewCharacters() {
     let existingCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": "voice-1"])
+      CastMember(character: "NARRATOR", voices: ["apple": ["voice-1"]])
     ]
     let frontMatter = ProjectFrontMatter(
       title: "Test", author: "Author", cast: existingCast
     )
 
     let newCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": "voice-1"]),
-      CastMember(character: "LAO TZU", actor: "Jason", voices: ["apple": "voice-2"]),
+      CastMember(character: "NARRATOR", voices: ["apple": ["voice-1"]]),
+      CastMember(character: "LAO TZU", actor: "Jason", voices: ["apple": ["voice-2"]]),
     ]
 
     let merged = frontMatter.mergingCast(newCast, forProvider: "apple")
     #expect(merged.cast?.count == 2)
     #expect(merged.cast?[0].character == "NARRATOR")
     #expect(merged.cast?[1].character == "LAO TZU")
-    #expect(merged.cast?[1].voices["apple"] == "voice-2")
+    #expect(merged.cast?[1].voices["apple"] == ["voice-2"])
   }
 
   @Test("Merge cast preserves character metadata from existing cast")
@@ -398,14 +399,14 @@ struct ProjectFrontMatterCastMergingTests {
       CastMember(
         character: "NARRATOR", actor: "Tom Stovall", gender: .male,
         voiceDescription: "Deep, warm baritone",
-        voices: ["elevenlabs": "el-voice-1"])
+        voices: ["elevenlabs": ["el-voice-1"]])
     ]
     let frontMatter = ProjectFrontMatter(
       title: "Test", author: "Author", cast: existingCast
     )
 
     let newCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": "apple-voice-1"])
+      CastMember(character: "NARRATOR", voices: ["apple": ["apple-voice-1"]])
     ]
 
     let merged = frontMatter.mergingCast(newCast, forProvider: "apple")
@@ -424,7 +425,7 @@ struct ProjectFrontMatterCastMergingTests {
     )
 
     let newCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": "voice-1"])
+      CastMember(character: "NARRATOR", voices: ["apple": ["voice-1"]])
     ]
 
     let merged = frontMatter.mergingCast(newCast, forProvider: "apple")
@@ -435,14 +436,14 @@ struct ProjectFrontMatterCastMergingTests {
   @Test("withCast replaces entire cast")
   func withCastReplaces() {
     let existingCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": "voice-1"]),
-      CastMember(character: "LAO TZU", voices: ["apple": "voice-2"]),
+      CastMember(character: "NARRATOR", voices: ["apple": ["voice-1"]]),
+      CastMember(character: "LAO TZU", voices: ["apple": ["voice-2"]]),
     ]
     let frontMatter = ProjectFrontMatter(
       title: "Test", author: "Author", cast: existingCast
     )
 
-    let newCast = [CastMember(character: "COMMENTATOR", voices: ["apple": "voice-3"])]
+    let newCast = [CastMember(character: "COMMENTATOR", voices: ["apple": ["voice-3"]])]
     let updated = frontMatter.withCast(newCast)
 
     #expect(updated.cast?.count == 1)
@@ -479,7 +480,7 @@ struct ProjectMarkdownParserWriteTests {
     let parser = ProjectMarkdownParser()
     let frontMatter = ProjectFrontMatter(
       title: "Write Test", author: "Test Author",
-      cast: [CastMember(character: "NARRATOR", voices: ["apple": "voice-1"])]
+      cast: [CastMember(character: "NARRATOR", voices: ["apple": ["voice-1"]])]
     )
 
     let url = tempDir.appendingPathComponent("PROJECT.md")
