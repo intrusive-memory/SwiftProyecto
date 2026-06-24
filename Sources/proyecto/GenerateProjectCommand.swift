@@ -128,6 +128,9 @@ struct GenerateProjectCommand: AsyncParsableCommand {
   // MARK: - Main Execution
 
   mutating func run() async throws {
+    // Initialize all LLM backends (ensures they're registered)
+    initializeLLMBackends()
+
     // Validate flag combinations
     if interactive && force {
       throw ValidationError(

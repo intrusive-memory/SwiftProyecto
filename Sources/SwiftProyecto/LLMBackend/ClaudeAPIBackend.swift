@@ -379,7 +379,7 @@ struct CastMemberJSON: Decodable {
 
 /// Register the Claude API backend when the module loads.
 @Sendable
-private func registerClaudeAPIBackend() {
+internal func registerClaudeAPIBackend() {
   let backend = ClaudeAPIBackend()
   BackendRegistry.shared.register(backend)
 }

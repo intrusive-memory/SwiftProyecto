@@ -275,7 +275,11 @@ public struct AppleFoundationModelsBackend: LLMBackendProtocol {
 ///
 /// This ensures the backend is available in the registry without explicit
 /// initialization code.
-private let _registerAppleFoundationModelsBackend: Void = {
+internal func registerAppleFoundationModelsBackend() {
   let backend = AppleFoundationModelsBackend()
   BackendRegistry.shared.register(backend)
+}
+
+private let _registerAppleFoundationModelsBackend: Void = {
+  registerAppleFoundationModelsBackend()
 }()

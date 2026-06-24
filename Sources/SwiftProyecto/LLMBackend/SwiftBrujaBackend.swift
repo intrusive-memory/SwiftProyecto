@@ -297,3 +297,16 @@ public final class SwiftBrujaBackend: @unchecked Sendable, LLMBackendProtocol {
     )
   }
 }
+
+// MARK: - Backend Registration
+
+/// Register the SwiftBruja backend when the module loads.
+internal func registerSwiftBrujaBackend() {
+  let backend = SwiftBrujaBackend()
+  BackendRegistry.shared.register(backend)
+}
+
+// Use a module initializer to register the backend
+nonisolated(unsafe) private let registrationToken = {
+  registerSwiftBrujaBackend()
+}()
