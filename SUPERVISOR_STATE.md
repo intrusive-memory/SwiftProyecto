@@ -188,20 +188,33 @@ last_updated: 2026-06-23T00:00:00Z
   - Commit: 522363c
 
 - **Sortie 7.3**: CLI Integration Tests
-  - State: PENDING → DISPATCHED → RUNNING ⏳
-  - Agent: af7c3e8b (RUNNING NOW)
+  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
+  - Agent: a00cab5e60c7901f4 (COMPLETED ✅)
   - Depends on: Sortie 6.1 → COMPLETED ✅, Sortie 7.2 → COMPLETED ✅
   - Dispatch: 2026-06-24T05:36:00Z
-  - Context fit: 20 turns (budget: 50) ✅
+  - Completion: 2026-06-24T06:14:00Z
+  - Exit Criteria: All verified ✅
+    - ✅ 26 integration tests all passing (100%)
+    - ✅ Backend selection with --llm flag validated
+    - ✅ File safety flags (--dry-run, --interactive, --force) validated
+    - ✅ Schema validation working
+    - ✅ Error handling comprehensive and clear
+    - ✅ Model flag working
+    - ✅ Quiet & verbose flags working
+    - ✅ CLI production-ready
+  - Files: 1 test suite (570 lines)
+  - Commit: 6e47c91
 
 ### Phase 4 — Documentation (Sequential)
-**Status**: NOT_STARTED
+**Status**: RUNNING ▶️
+**Summary**: Final documentation and release preparation for v4.1.0
 **Sub-agents**: Sequential (no builds after Phase 3)
 
 - **Sortie 8.1**: User Guide & AGENTS.md update
-  - State: PENDING
-  - Depends on: Sortie 7.3 → COMPLETED
-  - Agent: Sub-agent
+  - State: PENDING → DISPATCHED → RUNNING ⏳
+  - Agent: a12b3c4d (RUNNING NOW)
+  - Depends on: Sortie 7.3 → COMPLETED ✅
+  - Dispatch: 2026-06-24T06:15:00Z
   - Context fit: 15 turns (budget: 50) ✅
 
 - **Sortie 8.2**: Developer Documentation
