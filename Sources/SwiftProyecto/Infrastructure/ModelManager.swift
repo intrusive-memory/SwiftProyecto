@@ -74,6 +74,21 @@ public actor ModelManager {
     Acervo.isComponentReady(LanguageModel.id)
   }
 
+  /// Checks whether the canonical LanguageModel is fully cached locally.
+  ///
+  /// Unlike ``isModelReady()``, this hydrates the bare descriptor from the CDN
+  /// manifest first (learning the file list and expected sizes) before checking
+  /// local presence. The synchronous ``isModelReady()`` always reports `false`
+  /// for a bare/un-hydrated descriptor even when the files are on disk, so this
+  /// is the correct check for "do I already have it?".
+  ///
+  /// - Returns: True if every declared file is present locally with the correct size.
+  /// - Throws: AcervoError if the component is not registered, or a network error
+  ///   if hydration from the CDN manifest fails.
+  public func isModelCached() async throws -> Bool {
+    try await Acervo.isComponentReadyAsync(LanguageModel.id)
+  }
+
   /// Ensures the canonical LanguageModel is ready for use.
   ///
   /// This method downloads all required files from the CDN if not already cached,

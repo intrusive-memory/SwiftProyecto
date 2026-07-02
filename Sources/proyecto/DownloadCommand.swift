@@ -56,8 +56,11 @@ struct DownloadCommand: AsyncParsableCommand {
     let descriptor = await manager.modelDescriptor() ?? LanguageModel
     let showProgress = !quiet
 
-    // Fast path: already cached and not forcing a re-fetch.
-    if !force, await manager.isModelReady() {
+    // Fast path: already cached and not forcing a re-fetch. Use the hydrating
+    // check — the descriptor is registered bare (no file list until the CDN
+    // manifest is fetched), so the synchronous isModelReady() would always
+    // report "not cached" even when the files are present.
+    if !force, try await manager.isModelCached() {
       if showProgress {
         print("✓ \(descriptor.displayName) already cached (\(descriptor.repoId))")
       }
@@ -65,7 +68,7 @@ struct DownloadCommand: AsyncParsableCommand {
     }
 
     if showProgress {
-      print("Downloading \(descriptor.displayName) from CDN (\(descriptor.repoId))...")
+      print("Ensuring \(descriptor.displayName) is available (\(descriptor.repoId))...")
     }
 
     // ensureModelReady is idempotent: it no-ops when the model is already
