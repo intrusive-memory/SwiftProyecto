@@ -1,3 +1,53 @@
+---
+type: doc
+name: SwiftProyecto TODO
+description: Active backlog and completed-work log for SwiftProyecto.
+---
+
+# TODO: Required `type` property in episode/intro/outro front matter 🚧
+
+**Decision:** `type` (`episode` | `intro` | `outro`) is a **write-time
+guarantee, not an intake requirement.**
+
+- **Intake stays permissive.** Reading/parsing NEVER requires `type` and never
+  errors when it is missing. FountainParser is already fully permissive — leave
+  it that way; do not add an intake validator.
+- **On every write, emit `type`.** Whenever we write a screenplay file we always
+  write a `type` key, and we **infer the value from context and (re)write it** —
+  setting it when absent and correcting it when it disagrees with the inferred
+  type. Inference: the intro bracket writer → `intro`; the outro bracket writer →
+  `outro`; episode generation → `episode`.
+
+This keeps a file's relationship to the whole self-describing and discoverable
+from the file itself, independent of where it sits in `episodesDir`, without
+rejecting hand-authored or third-party files that omit it.
+
+**Path interpretation (settled):** `introFile`/`outroFile` are *project-resolved*
+— relative to the project root (the PROJECT.md location), NOT relative to
+`episodesDir`. The code already resolves this way
+(`GenerateCommand.swift` → `projectDirectory.appendingPathComponent(path)`); the
+docs/comments were corrected to match. Example value: `episodes/intro.fountain`.
+
+**Open work:**
+- [ ] **Write-side normalization (the core change).** Every code path that writes
+      a screenplay file must emit `type`, inferring the value and rewriting it
+      (set if absent, correct if wrong). Inference by writer role: intro → `type:
+      intro`, outro → `type: outro`, episode generation → `type: episode`.
+- [ ] Do **NOT** add intake validation/enforcement. Parsing stays permissive
+      (FountainParser already tolerates missing/arbitrary keys; `.fountain` front
+      matter isn't schema-validated). No "type required" error on read.
+- [ ] **Test our generation prompt against the required `type` property.** The
+      LLM generation path (`Sources/proyecto/IterativeProjectGenerator.swift`)
+      and the intro/outro writers (`Sources/proyecto/GenerateCommand.swift`
+      `generateIntroFile`/`generateOutroFile`) must emit the inferred `type`, with
+      tests asserting the produced front matter carries the correct value.
+- [ ] Fix the placeholder writers: they currently emit `type: fountain` — change
+      to the inferred intro/outro/episode value.
+- [ ] Add fixtures + round-trip tests asserting written files carry the inferred
+      `type` (and that reading a file WITHOUT `type` still succeeds).
+
+---
+
 # SwiftBruja → Apple Foundation Models Refactor ✅
 
 ## Overview

@@ -111,10 +111,10 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
   /// Audio export format (default: "m4a")
   public let exportFormat: String?
 
-  /// Optional path to intro file (relative to episodesDir)
+  /// Optional path to intro file (project-resolved: relative to the project root)
   public let introFile: String?
 
-  /// Optional path to outro file (relative to episodesDir)
+  /// Optional path to outro file (project-resolved: relative to the project root)
   public let outroFile: String?
 
   // MARK: - Cast List
@@ -180,8 +180,8 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
   ///   - audioDir: Relative path for audio output (default: "audio")
   ///   - filePattern: Glob pattern(s) for file discovery
   ///   - exportFormat: Audio export format (default: "m4a")
-  ///   - introFile: Relative path to intro file (relative to episodesDir)
-  ///   - outroFile: Relative path to outro file (relative to episodesDir)
+  ///   - introFile: Path to intro file (project-resolved: relative to the project root)
+  ///   - outroFile: Path to outro file (project-resolved: relative to the project root)
   ///   - cast: Character-to-voice mappings for audio generation
   ///   - preGenerateHook: Shell command to run before generation
   ///   - postGenerateHook: Shell command to run after generation

@@ -558,7 +558,7 @@ These optional fields specify intro/outro audio files to be generated separately
 
 **Behavior**:
 - If specified, intro/outro are generated as distinct audio assets (not combined with episodes by default)
-- Relative paths are interpreted relative to the variant's `episodesDir`
+- `introFile`/`outroFile` are project-resolved: interpreted relative to the project root (the PROJECT.md location), NOT relative to `episodesDir`
 - Apps can choose to prepend intro / append outro during post-production combining
 - Useful for shared intro/outro across all episodes in a season/language (e.g., branding, credits)
 
@@ -653,8 +653,8 @@ seasons:
 | `releaseDate` | ISO 8601 Timestamp | — | Season release or air date |
 | `episodesDir` | String | — | Season-specific episode directory (relative to PROJECT.md) |
 | `filePattern` | String or Array | — | Season-specific file pattern override |
-| `introFile` | String | — | Intro script file path (relative to `episodesDir`) |
-| `outroFile` | String | — | Outro script file path (relative to `episodesDir`) |
+| `introFile` | String | — | Intro script file path (project-resolved: relative to the project root) |
+| `outroFile` | String | — | Outro script file path (project-resolved: relative to the project root) |
 | `cast` | Array of CastMember | — | Season-specific cast (overrides global `cast`) |
 | `tts` | TTSConfig | — | Season-specific TTS configuration override |
 
@@ -1213,9 +1213,9 @@ audioDir: "../../../audio/es/s1"
 filePattern: ["*.fountain", "*.highland"]
 exportFormat: m4a
 
-# Optional intro/outro files (relative to episodesDir)
-introFile: intro.fountain
-outroFile: outro.fountain
+# Optional intro/outro files (project-resolved: relative to the project root)
+introFile: episodes/intro.fountain
+outroFile: episodes/outro.fountain
 
 # Variant cast (overrides master's prompts with language-specific guidance)
 cast:
@@ -1382,7 +1382,7 @@ ProjectFrontMatter(
 - [ ] Warn if `season`/`episodes` without `schemaVersion: 3` (implicit v3.x)
 - [ ] Validate date formats (ISO 8601)
 - [ ] Warn if `introFile`/`outroFile` reference files that don't exist (soft warning, not error)
-- [ ] For variants: validate that `introFile`/`outroFile` paths resolve relative to `episodesDir`
+- [ ] For variants: validate that `introFile`/`outroFile` paths resolve relative to the project root (project-resolved)
 - [ ] Warn if `episodePath` template contains invalid variables (only `<language>`, `<season>`, `<episode>`, `<ext>` allowed)
 - [ ] For variants: verify that variant's file organization aligns with master's `episodePath` template
 
@@ -1555,13 +1555,13 @@ Intro and outro files are optional separate script files that are generated as d
 
 ```yaml
 # In variant PROJECT.md
-introFile: intro.fountain    # Generates audio/es/s1/intro.m4a
-outroFile: outro.fountain    # Generates audio/es/s1/outro.m4a
+introFile: episodes/intro.fountain    # Generates audio/es/s1/intro.m4a
+outroFile: episodes/outro.fountain    # Generates audio/es/s1/outro.m4a
 filePattern: episode_*.fountain  # Regular episodes: episode_1.m4a, episode_2.m4a, ...
 ```
 
 **File locations**:
-- Paths are relative to `episodesDir`
+- `introFile`/`outroFile` paths are project-resolved: relative to the project root (the PROJECT.md location), NOT relative to `episodesDir`
 - Generated audio placed in `audioDir` with same filename (but in target format, e.g., `.m4a`)
 - Separate from episode generation (apps can choose when/how to combine)
 

@@ -68,10 +68,10 @@ public struct SeasonDefinition: Codable, Sendable, Equatable {
   /// Optional file pattern(s) for this season's episodes
   public let filePattern: FilePattern?
 
-  /// Optional path to season intro file
+  /// Optional path to season intro file (project-resolved: relative to the project root)
   public let introFile: String?
 
-  /// Optional path to season outro file
+  /// Optional path to season outro file (project-resolved: relative to the project root)
   public let outroFile: String?
 
   /// Optional cast list for this season (overrides project-level cast)

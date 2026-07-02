@@ -76,15 +76,17 @@ public actor ModelManager {
 
   /// Ensures the canonical LanguageModel is ready for use.
   ///
-  /// This method downloads all required files if not already cached,
-  /// and performs validation before returning.
+  /// This method downloads all required files from the CDN if not already cached,
+  /// and performs validation before returning. If the model is already present and
+  /// verified, `Acervo.ensureComponentReady` returns immediately without downloading.
   ///
+  /// - Parameter progress: Optional callback invoked periodically with download
+  ///   progress. Not called when the model is already cached.
   /// - Throws: AcervoError if download or validation fails.
-  public func ensureModelReady() async throws {
-    try await Acervo.ensureComponentReady(LanguageModel.id) { progress in
-      // Progress handling for model download
-      let _ = progress
-    }
+  public func ensureModelReady(
+    progress: (@Sendable (AcervoDownloadProgress) -> Void)? = nil
+  ) async throws {
+    try await Acervo.ensureComponentReady(LanguageModel.id, progress: progress)
   }
 
   /// Returns the descriptor for the canonical LanguageModel, if registered.
