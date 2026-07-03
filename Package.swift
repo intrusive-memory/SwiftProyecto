@@ -62,6 +62,10 @@ let package = Package(
       "SwiftAcervo",
       remote: "https://github.com/intrusive-memory/SwiftAcervo.git",
       from: "0.19.2"),
+    sibling(
+      "SwiftBruja",
+      remote: "https://github.com/intrusive-memory/SwiftBruja.git",
+      from: "1.8.1"),
     .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMajor(from: "1.7.1")),
   ],
   targets: [
@@ -80,6 +84,8 @@ let package = Package(
       name: "proyecto",
       dependencies: [
         "SwiftProyecto",
+        .product(name: "SwiftAcervo", package: "SwiftAcervo"),
+        .product(name: "SwiftBruja", package: "SwiftBruja"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       swiftSettings: [

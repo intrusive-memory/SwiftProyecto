@@ -6,6 +6,10 @@ BINARY = proyecto
 BIN_DIR = ./bin
 DESTINATION = platform=macOS,arch=arm64
 DERIVED_DATA = $(HOME)/Library/Developer/Xcode/DerivedData
+# mlx-swift (pulled in via SwiftBruja) ships a build-tool plugin (CudaBuild) and
+# swift-syntax macros; skip their interactive trust prompts so headless/CI builds
+# don't stall on validation.
+XCODE_FLAGS = -skipPackagePluginValidation -skipMacroValidation
 
 .PHONY: all build release install clean test lint resolve help
 
@@ -18,11 +22,11 @@ resolve:
 
 # Development build with xcodebuild
 build:
-	xcodebuild build -scheme SwiftProyecto-Package -destination '$(DESTINATION)' CODE_SIGNING_ALLOWED=NO
+	xcodebuild build -scheme SwiftProyecto-Package -destination '$(DESTINATION)' $(XCODE_FLAGS) CODE_SIGNING_ALLOWED=NO
 
 # Release build with xcodebuild + copy to bin
 release: resolve
-	xcodebuild -scheme $(SCHEME) -destination '$(DESTINATION)' -configuration Release build
+	xcodebuild -scheme $(SCHEME) -destination '$(DESTINATION)' -configuration Release $(XCODE_FLAGS) build
 	@mkdir -p $(BIN_DIR)
 	@PRODUCT_DIR=$$(find $(DERIVED_DATA)/SwiftProyecto-*/Build/Products/Release -name $(BINARY) -type f 2>/dev/null | head -1 | xargs dirname); \
 	if [ -n "$$PRODUCT_DIR" ]; then \
@@ -35,7 +39,7 @@ release: resolve
 
 # Debug build with xcodebuild + copy to bin (default)
 install: resolve
-	xcodebuild -scheme $(SCHEME) -destination '$(DESTINATION)' build
+	xcodebuild -scheme $(SCHEME) -destination '$(DESTINATION)' $(XCODE_FLAGS) build
 	@mkdir -p $(BIN_DIR)
 	@PRODUCT_DIR=$$(find $(DERIVED_DATA)/SwiftProyecto-*/Build/Products/Debug -name $(BINARY) -type f 2>/dev/null | head -1 | xargs dirname); \
 	if [ -n "$$PRODUCT_DIR" ]; then \
@@ -48,7 +52,7 @@ install: resolve
 
 # Run tests
 test:
-	xcodebuild test -scheme SwiftProyecto-Package -destination '$(DESTINATION)' CODE_SIGNING_ALLOWED=NO
+	xcodebuild test -scheme SwiftProyecto-Package -destination '$(DESTINATION)' $(XCODE_FLAGS) CODE_SIGNING_ALLOWED=NO
 
 # Format Swift source files with swift-format
 lint:

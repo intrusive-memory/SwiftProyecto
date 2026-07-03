@@ -121,7 +121,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
 
   /// Character-to-voice mappings for audio generation
   /// Maps screenplay characters to actors and TTS voice URIs
-  public let cast: [CastMember]?
+  public var cast: [CastMember]?
 
   // MARK: - Hook Fields
 

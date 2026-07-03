@@ -64,6 +64,9 @@ import Foundation
 /// - Detecting and removing continuation markers
 public final class CastExtractor {
 
+  /// Creates a new cast extractor.
+  public init() {}
+
   /// Extracts unique character names from Fountain script content.
   ///
   /// This method parses a Fountain script string and returns a list of unique
