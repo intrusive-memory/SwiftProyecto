@@ -9,24 +9,24 @@ final class CastExtractorTests: XCTestCase {
 
   func testExtractSingleCharacter() {
     let fountain = """
-    NARRADOR
-    Today we drill the present tense.
-    """
+      NARRADOR
+      Today we drill the present tense.
+      """
     let cast = extractor.extractCast(from: fountain)
     XCTAssertEqual(cast, ["NARRADOR"])
   }
 
   func testExtractMultipleCharacters() {
     let fountain = """
-    NARRADOR
-    Today we drill.
+      NARRADOR
+      Today we drill.
 
-    MAESTRA
-    Io porto i libri.
+      MAESTRA
+      Io porto i libri.
 
-    NARRADOR
-    I carry the books.
-    """
+      NARRADOR
+      I carry the books.
+      """
     let cast = extractor.extractCast(from: fountain)
     XCTAssertEqual(cast.count, 2)
     XCTAssertTrue(cast.contains("NARRADOR"))
@@ -35,51 +35,51 @@ final class CastExtractorTests: XCTestCase {
 
   func testRemoveParenthetical() {
     let fountain = """
-    UNCLE FU
-    The Tao that can be spoken is not eternal.
+      UNCLE FU
+      The Tao that can be spoken is not eternal.
 
-    UNCLE FU (CONT'D)
-    The name that can be named is not eternal.
-    """
+      UNCLE FU (CONT'D)
+      The name that can be named is not eternal.
+      """
     let cast = extractor.extractCast(from: fountain)
     XCTAssertEqual(cast, ["UNCLE FU"])
   }
 
   func testRemoveVoiceModifier() {
     let fountain = """
-    NARRADOR (V.O.)
-    This is a voice-over.
+      NARRADOR (V.O.)
+      This is a voice-over.
 
-    NARRADOR (O.S.)
-    This is off-screen.
-    """
+      NARRADOR (O.S.)
+      This is off-screen.
+      """
     let cast = extractor.extractCast(from: fountain)
     XCTAssertEqual(cast, ["NARRADOR"])
   }
 
   func testFilterSceneHeadings() {
     let fountain = """
-    INT. STUDY - NIGHT
+      INT. STUDY - NIGHT
 
-    A candle burns on a desk.
+      A candle burns on a desk.
 
-    UNCLE FU
-    The Tao.
-    """
+      UNCLE FU
+      The Tao.
+      """
     let cast = extractor.extractCast(from: fountain)
     XCTAssertEqual(cast, ["UNCLE FU"])
   }
 
   func testFilterTransitions() {
     let fountain = """
-    UNCLE FU
-    The Tao.
+      UNCLE FU
+      The Tao.
 
-    CUT TO:
+      CUT TO:
 
-    MAESTRA
-    Io porto.
-    """
+      MAESTRA
+      Io porto.
+      """
     let cast = extractor.extractCast(from: fountain)
     XCTAssertEqual(cast.count, 2)
     XCTAssertFalse(cast.contains("CUT"))
@@ -87,15 +87,15 @@ final class CastExtractorTests: XCTestCase {
 
   func testMultiWordCharacterNames() {
     let fountain = """
-    UNCLE FU
-    Hello.
+      UNCLE FU
+      Hello.
 
-    DOCTOR SMITH
-    How are you?
+      DOCTOR SMITH
+      How are you?
 
-    LADY IN RED
-    I'm fine.
-    """
+      LADY IN RED
+      I'm fine.
+      """
     let cast = extractor.extractCast(from: fountain)
     XCTAssertEqual(cast.count, 3)
     XCTAssertTrue(cast.contains("UNCLE FU"))
@@ -105,38 +105,37 @@ final class CastExtractorTests: XCTestCase {
 
   func testSortsCast() {
     let fountain = """
-    ZEBRA
-    Z.
+      ZEBRA
+      Z.
 
-    APPLE
-    A.
+      APPLE
+      A.
 
-    BANANA
-    B.
-    """
+      BANANA
+      B.
+      """
     let cast = extractor.extractCast(from: fountain)
     XCTAssertEqual(cast, ["APPLE", "BANANA", "ZEBRA"])
   }
 
   func testEmptyFountain() {
     let fountain = """
-    INT. EMPTY ROOM - DAY
+      INT. EMPTY ROOM - DAY
 
-    An empty room.
-    """
+      An empty room.
+      """
     let cast = extractor.extractCast(from: fountain)
     XCTAssertTrue(cast.isEmpty)
   }
 
-
   func testCharacterNamesWithApostrophes() {
     let fountain = """
-    O'BRIEN
-    I'm here.
+      O'BRIEN
+      I'm here.
 
-    JO'S SISTER
-    Welcome.
-    """
+      JO'S SISTER
+      Welcome.
+      """
     let cast = extractor.extractCast(from: fountain)
     XCTAssertEqual(cast.count, 2)
     XCTAssertTrue(cast.contains("O'BRIEN"))
@@ -145,12 +144,12 @@ final class CastExtractorTests: XCTestCase {
 
   func testCharacterNamesWithHyphens() {
     let fountain = """
-    MARY-JANE
-    Hello.
+      MARY-JANE
+      Hello.
 
-    JOHN-SMITH
-    Hi there.
-    """
+      JOHN-SMITH
+      Hi there.
+      """
     let cast = extractor.extractCast(from: fountain)
     XCTAssertEqual(cast.count, 2)
     XCTAssertTrue(cast.contains("MARY-JANE"))
@@ -164,7 +163,8 @@ final class MetadataExtractorTests: XCTestCase {
   let extractor = MetadataExtractor()
 
   func testTitleFromDirWithHyphens() throws {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("lingua-matra-\(UUID().uuidString)")
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+      "lingua-matra-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: tempDir) }
 
@@ -173,7 +173,8 @@ final class MetadataExtractorTests: XCTestCase {
   }
 
   func testTitleFromDirWithUnderscores() throws {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("my_podcast-\(UUID().uuidString)")
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+      "my_podcast-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: tempDir) }
 
@@ -182,7 +183,8 @@ final class MetadataExtractorTests: XCTestCase {
   }
 
   func testTitleFromSimpleDir() throws {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("MyShow-\(UUID().uuidString)")
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+      "MyShow-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: tempDir) }
 
@@ -197,12 +199,16 @@ final class MetadataExtractorTests: XCTestCase {
   }
 
   func testDetectsLanguages() throws {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("test-project-\(UUID().uuidString)")
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+      "test-project-\(UUID().uuidString)")
 
     try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-    try FileManager.default.createDirectory(at: tempDir.appendingPathComponent("en"), withIntermediateDirectories: true)
-    try FileManager.default.createDirectory(at: tempDir.appendingPathComponent("es"), withIntermediateDirectories: true)
-    try FileManager.default.createDirectory(at: tempDir.appendingPathComponent("it"), withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(
+      at: tempDir.appendingPathComponent("en"), withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(
+      at: tempDir.appendingPathComponent("es"), withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(
+      at: tempDir.appendingPathComponent("it"), withIntermediateDirectories: true)
 
     defer { try? FileManager.default.removeItem(at: tempDir) }
 
@@ -214,11 +220,14 @@ final class MetadataExtractorTests: XCTestCase {
   }
 
   func testDetectsSeasons() throws {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("test-season-\(UUID().uuidString)")
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+      "test-season-\(UUID().uuidString)")
 
     try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-    try FileManager.default.createDirectory(at: tempDir.appendingPathComponent("season-1"), withIntermediateDirectories: true)
-    try FileManager.default.createDirectory(at: tempDir.appendingPathComponent("season-2"), withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(
+      at: tempDir.appendingPathComponent("season-1"), withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(
+      at: tempDir.appendingPathComponent("season-2"), withIntermediateDirectories: true)
 
     defer { try? FileManager.default.removeItem(at: tempDir) }
 
@@ -229,12 +238,16 @@ final class MetadataExtractorTests: XCTestCase {
   }
 
   func testMultipleSeasonFormats() throws {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("test-seasons-fmt-\(UUID().uuidString)")
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+      "test-seasons-fmt-\(UUID().uuidString)")
 
     try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-    try FileManager.default.createDirectory(at: tempDir.appendingPathComponent("s1"), withIntermediateDirectories: true)
-    try FileManager.default.createDirectory(at: tempDir.appendingPathComponent("season-2"), withIntermediateDirectories: true)
-    try FileManager.default.createDirectory(at: tempDir.appendingPathComponent("3"), withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(
+      at: tempDir.appendingPathComponent("s1"), withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(
+      at: tempDir.appendingPathComponent("season-2"), withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(
+      at: tempDir.appendingPathComponent("3"), withIntermediateDirectories: true)
 
     defer { try? FileManager.default.removeItem(at: tempDir) }
 
@@ -259,7 +272,8 @@ final class ProjectServiceAnalysisTests: XCTestCase {
   }
 
   func testProjectWithoutScripts() throws {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("empty-project-\(UUID().uuidString)")
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+      "empty-project-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
     defer { try? FileManager.default.removeItem(at: tempDir) }

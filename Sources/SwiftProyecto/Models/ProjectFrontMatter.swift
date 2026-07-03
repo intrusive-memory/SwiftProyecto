@@ -75,6 +75,9 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
   /// Creation date (required)
   public let created: Date
 
+  /// Last update date (optional, defaults to today on generation)
+  public let updated: Date?
+
   /// Optional project description
   public let description: String?
 
@@ -108,17 +111,17 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
   /// Audio export format (default: "m4a")
   public let exportFormat: String?
 
-  /// Optional path to intro file (relative to episodesDir)
+  /// Optional path to intro file (project-resolved: relative to the project root)
   public let introFile: String?
 
-  /// Optional path to outro file (relative to episodesDir)
+  /// Optional path to outro file (project-resolved: relative to the project root)
   public let outroFile: String?
 
   // MARK: - Cast List
 
   /// Character-to-voice mappings for audio generation
   /// Maps screenplay characters to actors and TTS voice URIs
-  public let cast: [CastMember]?
+  public var cast: [CastMember]?
 
   // MARK: - Hook Fields
 
@@ -177,8 +180,8 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
   ///   - audioDir: Relative path for audio output (default: "audio")
   ///   - filePattern: Glob pattern(s) for file discovery
   ///   - exportFormat: Audio export format (default: "m4a")
-  ///   - introFile: Relative path to intro file (relative to episodesDir)
-  ///   - outroFile: Relative path to outro file (relative to episodesDir)
+  ///   - introFile: Path to intro file (project-resolved: relative to the project root)
+  ///   - outroFile: Path to outro file (project-resolved: relative to the project root)
   ///   - cast: Character-to-voice mappings for audio generation
   ///   - preGenerateHook: Shell command to run before generation
   ///   - postGenerateHook: Shell command to run after generation
@@ -195,6 +198,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     title: String,
     author: String,
     created: Date = Date(),
+    updated: Date? = nil,
     description: String? = nil,
     season: Int? = nil,
     episodes: Int? = nil,
@@ -222,6 +226,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     self.title = title
     self.author = author
     self.created = created
+    self.updated = updated
     self.description = description
     self.genre = genre
     self.tags = tags
@@ -259,7 +264,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
   // MARK: - Custom Codable Implementation
 
   private enum KnownCodingKeys: String, CodingKey, CaseIterable {
-    case type, title, author, created, description, season
+    case type, title, author, created, updated, description, season
     case episodes, genre, tags, episodesDir, audioDir
     case filePattern, exportFormat, introFile, outroFile, cast
     case preGenerateHook, postGenerateHook, tts
@@ -287,6 +292,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     try container.encode(title, forKey: .title)
     try container.encode(author, forKey: .author)
     try container.encode(created, forKey: .created)
+    try container.encodeIfPresent(updated, forKey: .updated)
     try container.encodeIfPresent(description, forKey: .description)
     try container.encodeIfPresent(genre, forKey: .genre)
     try container.encodeIfPresent(tags, forKey: .tags)
@@ -324,6 +330,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     title = try container.decode(String.self, forKey: .title)
     author = try container.decode(String.self, forKey: .author)
     created = try container.decode(Date.self, forKey: .created)
+    updated = try container.decodeIfPresent(Date.self, forKey: .updated)
     description = try container.decodeIfPresent(String.self, forKey: .description)
     genre = try container.decodeIfPresent(String.self, forKey: .genre)
     tags = try container.decodeIfPresent([String].self, forKey: .tags)
@@ -468,6 +475,7 @@ extension ProjectFrontMatter {
       title: title,
       author: author,
       created: created,
+      updated: updated,
       description: description,
       genre: genre,
       tags: tags,

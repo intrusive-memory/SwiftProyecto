@@ -121,82 +121,84 @@ public final class ClaudeAPIBackend: LLMBackendProtocol, @unchecked Sendable {
 
   /// Build a few-shot prompt for PROJECT.md generation.
   private func buildPrompt(project: ProjectAnalysis) -> String {
-    let filesList = project.discoveredFiles.isEmpty
+    let filesList =
+      project.discoveredFiles.isEmpty
       ? "No files discovered"
       : project.discoveredFiles.prefix(10).joined(separator: ", ")
 
-    let castList = project.extractedCast.isEmpty
+    let castList =
+      project.extractedCast.isEmpty
       ? "No cast members extracted"
       : project.extractedCast.prefix(10).joined(separator: ", ")
 
     let systemPrompt = """
-    You are an expert podcast/audiobook project metadata generator. Your task is to analyze \
-    project information and generate a JSON object with project metadata for PROJECT.md files.
+      You are an expert podcast/audiobook project metadata generator. Your task is to analyze \
+      project information and generate a JSON object with project metadata for PROJECT.md files.
 
-    You must return ONLY valid JSON (no markdown, no code fences, no explanations).
+      You must return ONLY valid JSON (no markdown, no code fences, no explanations).
 
-    The JSON object must have this structure:
-    {
-      "title": "string (required, project title)",
-      "author": "string (required, project creator/author)",
-      "description": "string (optional, project description)",
-      "type": "string (required, e.g., 'podcast', 'audiobook', 'series')",
-      "episodes": "number or null (optional, total episodes if applicable)",
-      "season": "number or null (optional, current season number)",
-      "genre": "string (optional, project genre)",
-      "tags": ["array", "of", "strings"],
-      "ttsProvider": "string or null (e.g., 'apple', 'google', null)",
-      "cast": [
-        {
-          "name": "string (character name)",
-          "actor": "string or null (performer name)",
-          "voiceProvider": "string or null (e.g., 'apple')",
-          "voiceId": "string or null (voice identifier)",
-          "voiceDescription": "string or null (optional description)"
-        }
-      ]
-    }
+      The JSON object must have this structure:
+      {
+        "title": "string (required, project title)",
+        "author": "string (required, project creator/author)",
+        "description": "string (optional, project description)",
+        "type": "string (required, e.g., 'podcast', 'audiobook', 'series')",
+        "episodes": "number or null (optional, total episodes if applicable)",
+        "season": "number or null (optional, current season number)",
+        "genre": "string (optional, project genre)",
+        "tags": ["array", "of", "strings"],
+        "ttsProvider": "string or null (e.g., 'apple', 'google', null)",
+        "cast": [
+          {
+            "name": "string (character name)",
+            "actor": "string or null (performer name)",
+            "voiceProvider": "string or null (e.g., 'apple')",
+            "voiceId": "string or null (voice identifier)",
+            "voiceDescription": "string or null (optional description)"
+          }
+        ]
+      }
 
-    Return only the JSON object, nothing else.
-    """
+      Return only the JSON object, nothing else.
+      """
 
     let examplePrompt = """
-    Example 1:
-    Project Path: /projects/mystery-pod
-    Discovered Files: episode_001.fountain, episode_002.fountain, episode_003.fountain
-    Extracted Cast: Detective Sterling, Narrator, Mysterious Caller
-    Episode Pattern: episode_\\d{3}
-    Inferred Title: The Mystery Unfolds
-    Detected Languages: en
+      Example 1:
+      Project Path: /projects/mystery-pod
+      Discovered Files: episode_001.fountain, episode_002.fountain, episode_003.fountain
+      Extracted Cast: Detective Sterling, Narrator, Mysterious Caller
+      Episode Pattern: episode_\\d{3}
+      Inferred Title: The Mystery Unfolds
+      Detected Languages: en
 
-    Expected Output:
-    {"title": "The Mystery Unfolds", "author": "Unknown", "description": "A multi-episode mystery podcast", "type": "podcast", "episodes": 3, "season": 1, "genre": "Mystery", "tags": ["mystery", "podcast", "thriller"], "ttsProvider": "apple", "cast": [{"name": "Detective Sterling", "actor": null, "voiceProvider": "apple", "voiceId": null, "voiceDescription": null}, {"name": "Narrator", "actor": null, "voiceProvider": null, "voiceId": null, "voiceDescription": null}, {"name": "Mysterious Caller", "actor": null, "voiceProvider": null, "voiceId": null, "voiceDescription": null}]}
+      Expected Output:
+      {"title": "The Mystery Unfolds", "author": "Unknown", "description": "A multi-episode mystery podcast", "type": "podcast", "episodes": 3, "season": 1, "genre": "Mystery", "tags": ["mystery", "podcast", "thriller"], "ttsProvider": "apple", "cast": [{"name": "Detective Sterling", "actor": null, "voiceProvider": "apple", "voiceId": null, "voiceDescription": null}, {"name": "Narrator", "actor": null, "voiceProvider": null, "voiceId": null, "voiceDescription": null}, {"name": "Mysterious Caller", "actor": null, "voiceProvider": null, "voiceId": null, "voiceDescription": null}]}
 
-    Example 2:
-    Project Path: /projects/lingua-matra
-    Discovered Files: s01e01_spanish.fountain, s01e02_spanish.fountain, s01e01_italian.fountain, s01e02_italian.fountain
-    Extracted Cast: Elena Martinez, Marco Rossi, Francesca Bianchi
-    Episode Pattern: s\\d+e\\d+
-    Inferred Title: Lingua Matra
-    Detected Languages: es, it
+      Example 2:
+      Project Path: /projects/lingua-matra
+      Discovered Files: s01e01_spanish.fountain, s01e02_spanish.fountain, s01e01_italian.fountain, s01e02_italian.fountain
+      Extracted Cast: Elena Martinez, Marco Rossi, Francesca Bianchi
+      Episode Pattern: s\\d+e\\d+
+      Inferred Title: Lingua Matra
+      Detected Languages: es, it
 
-    Expected Output:
-    {"title": "Lingua Matra", "author": "Intrusive Memory", "description": "A multilingual audio series", "type": "series", "episodes": 4, "season": 1, "genre": "Drama", "tags": ["multilingual", "drama", "international"], "ttsProvider": "apple", "cast": [{"name": "Elena Martinez", "actor": null, "voiceProvider": null, "voiceId": null, "voiceDescription": null}, {"name": "Marco Rossi", "actor": null, "voiceProvider": null, "voiceId": null, "voiceDescription": null}, {"name": "Francesca Bianchi", "actor": null, "voiceProvider": null, "voiceId": null, "voiceDescription": null}]}
-    """
+      Expected Output:
+      {"title": "Lingua Matra", "author": "Intrusive Memory", "description": "A multilingual audio series", "type": "series", "episodes": 4, "season": 1, "genre": "Drama", "tags": ["multilingual", "drama", "international"], "ttsProvider": "apple", "cast": [{"name": "Elena Martinez", "actor": null, "voiceProvider": null, "voiceId": null, "voiceDescription": null}, {"name": "Marco Rossi", "actor": null, "voiceProvider": null, "voiceId": null, "voiceDescription": null}, {"name": "Francesca Bianchi", "actor": null, "voiceProvider": null, "voiceId": null, "voiceDescription": null}]}
+      """
 
     let userPrompt = """
-    \(examplePrompt)
+      \(examplePrompt)
 
-    Now analyze this project:
-    Project Path: \(project.projectPath.path)
-    Discovered Files: \(filesList)
-    Extracted Cast: \(castList)
-    Episode Pattern: \(project.episodePattern ?? "unknown")
-    Inferred Title: \(project.inferredTitle ?? "unknown")
-    Detected Languages: \(project.detectedLanguages.isEmpty ? "none" : project.detectedLanguages.joined(separator: ", "))
+      Now analyze this project:
+      Project Path: \(project.projectPath.path)
+      Discovered Files: \(filesList)
+      Extracted Cast: \(castList)
+      Episode Pattern: \(project.episodePattern ?? "unknown")
+      Inferred Title: \(project.inferredTitle ?? "unknown")
+      Detected Languages: \(project.detectedLanguages.isEmpty ? "none" : project.detectedLanguages.joined(separator: ", "))
 
-    Generate the JSON metadata object for this project.
-    """
+      Generate the JSON metadata object for this project.
+      """
 
     return "\(systemPrompt)\n\n\(userPrompt)"
   }
@@ -213,9 +215,9 @@ public final class ClaudeAPIBackend: LLMBackendProtocol, @unchecked Sendable {
       "messages": [
         [
           "role": "user",
-          "content": prompt
+          "content": prompt,
         ]
-      ]
+      ],
     ]
 
     let jsonData = try JSONSerialization.data(withJSONObject: requestBody)
@@ -247,7 +249,9 @@ public final class ClaudeAPIBackend: LLMBackendProtocol, @unchecked Sendable {
   }
 
   /// Parse the Claude API response into ProjectMetadata.
-  private func parseResponse(_ response: APIResponse, project: ProjectAnalysis) throws -> ProjectMetadata {
+  private func parseResponse(_ response: APIResponse, project: ProjectAnalysis) throws
+    -> ProjectMetadata
+  {
     guard let content = response.content.first else {
       throw LLMBackendError.generationFailed(reason: "No content in API response")
     }
@@ -276,7 +280,8 @@ public final class ClaudeAPIBackend: LLMBackendProtocol, @unchecked Sendable {
       return parsedJSON.toProjectMetadata()
     } catch let decodingError as DecodingError {
       throw LLMBackendError.generationFailed(
-        reason: "Failed to parse JSON response: \(decodingError.localizedDescription)\nRaw JSON: \(jsonToParse)"
+        reason:
+          "Failed to parse JSON response: \(decodingError.localizedDescription)\nRaw JSON: \(jsonToParse)"
       )
     }
   }
@@ -288,7 +293,9 @@ public final class ClaudeAPIBackend: LLMBackendProtocol, @unchecked Sendable {
     let totalTokens = inputTokens + outputTokens
 
     // Print to stderr for observability without interfering with stdout
-    fputs("✓ Claude API tokens: input=\(inputTokens), output=\(outputTokens), total=\(totalTokens)\n", stderr)
+    fputs(
+      "✓ Claude API tokens: input=\(inputTokens), output=\(outputTokens), total=\(totalTokens)\n",
+      stderr)
 
     // Warn if token usage is high
     if totalTokens > 5000 {

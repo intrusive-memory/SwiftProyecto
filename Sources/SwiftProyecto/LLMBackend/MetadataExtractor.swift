@@ -119,12 +119,16 @@ public final class MetadataExtractor {
 
     // Strip trailing UUID patterns (from test directories)
     // Pattern: -xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    if let range = name.range(of: "-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", options: .regularExpression) {
+    if let range = name.range(
+      of: "-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      options: .regularExpression)
+    {
       name.removeSubrange(range)
     }
 
     // Replace underscores and hyphens with spaces
-    let withSpaces = name
+    let withSpaces =
+      name
       .replacingOccurrences(of: "_", with: " ")
       .replacingOccurrences(of: "-", with: " ")
 
@@ -159,7 +163,9 @@ public final class MetadataExtractor {
     seasons: inout [Int],
     ttsProviders: inout [String]
   ) {
-    guard let contents = try? fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: nil) else {
+    guard
+      let contents = try? fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
+    else {
       return
     }
 

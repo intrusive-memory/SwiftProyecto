@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import SwiftProyecto
 
 final class ClaudeAPIBackendTests: XCTestCase {
@@ -86,13 +87,13 @@ final class ClaudeAPIBackendTests: XCTestCase {
 
   func testParseValidMinimalJSON() {
     let jsonString = """
-    {
-      "title": "Test Project",
-      "author": "Test Author",
-      "type": "podcast",
-      "tags": []
-    }
-    """
+      {
+        "title": "Test Project",
+        "author": "Test Author",
+        "type": "podcast",
+        "tags": []
+      }
+      """
 
     guard let jsonData = jsonString.data(using: .utf8) else {
       XCTFail("Could not encode JSON")
@@ -119,34 +120,34 @@ final class ClaudeAPIBackendTests: XCTestCase {
 
   func testParseValidFullJSON() {
     let jsonString = """
-    {
-      "title": "My Podcast",
-      "author": "Jane Doe",
-      "description": "An interesting podcast",
-      "type": "podcast",
-      "episodes": 24,
-      "season": 1,
-      "genre": "Technology",
-      "tags": ["tech", "education", "interview"],
-      "ttsProvider": "apple",
-      "cast": [
-        {
-          "name": "Host",
-          "actor": "Jane Doe",
-          "voiceProvider": "apple",
-          "voiceId": "com.apple.speech.synthesis.voice.Jane",
-          "voiceDescription": "Professional host voice"
-        },
-        {
-          "name": "Guest",
-          "actor": null,
-          "voiceProvider": null,
-          "voiceId": null,
-          "voiceDescription": null
-        }
-      ]
-    }
-    """
+      {
+        "title": "My Podcast",
+        "author": "Jane Doe",
+        "description": "An interesting podcast",
+        "type": "podcast",
+        "episodes": 24,
+        "season": 1,
+        "genre": "Technology",
+        "tags": ["tech", "education", "interview"],
+        "ttsProvider": "apple",
+        "cast": [
+          {
+            "name": "Host",
+            "actor": "Jane Doe",
+            "voiceProvider": "apple",
+            "voiceId": "com.apple.speech.synthesis.voice.Jane",
+            "voiceDescription": "Professional host voice"
+          },
+          {
+            "name": "Guest",
+            "actor": null,
+            "voiceProvider": null,
+            "voiceId": null,
+            "voiceDescription": null
+          }
+        ]
+      }
+      """
 
     guard let jsonData = jsonString.data(using: .utf8) else {
       XCTFail("Could not encode JSON")
@@ -183,12 +184,12 @@ final class ClaudeAPIBackendTests: XCTestCase {
 
   func testParseJSONWithMissingOptionalFields() {
     let jsonString = """
-    {
-      "title": "Minimal Project",
-      "author": "Author",
-      "type": "series"
-    }
-    """
+      {
+        "title": "Minimal Project",
+        "author": "Author",
+        "type": "series"
+      }
+      """
 
     guard let jsonData = jsonString.data(using: .utf8) else {
       XCTFail("Could not encode JSON")
@@ -216,19 +217,19 @@ final class ClaudeAPIBackendTests: XCTestCase {
 
   func testParseJSONWithNullValues() {
     let jsonString = """
-    {
-      "title": "Project",
-      "author": "Author",
-      "description": null,
-      "type": "podcast",
-      "episodes": null,
-      "season": null,
-      "genre": null,
-      "tags": null,
-      "ttsProvider": null,
-      "cast": null
-    }
-    """
+      {
+        "title": "Project",
+        "author": "Author",
+        "description": null,
+        "type": "podcast",
+        "episodes": null,
+        "season": null,
+        "genre": null,
+        "tags": null,
+        "ttsProvider": null,
+        "cast": null
+      }
+      """
 
     guard let jsonData = jsonString.data(using: .utf8) else {
       XCTFail("Could not encode JSON")
@@ -256,15 +257,15 @@ final class ClaudeAPIBackendTests: XCTestCase {
 
   func testParseJSONWithExtraFields() {
     let jsonString = """
-    {
-      "title": "Project",
-      "author": "Author",
-      "type": "podcast",
-      "tags": [],
-      "extraField": "should be ignored",
-      "anotherField": 123
-    }
-    """
+      {
+        "title": "Project",
+        "author": "Author",
+        "type": "podcast",
+        "tags": [],
+        "extraField": "should be ignored",
+        "anotherField": 123
+      }
+      """
 
     guard let jsonData = jsonString.data(using: .utf8) else {
       XCTFail("Could not encode JSON")
@@ -288,32 +289,32 @@ final class ClaudeAPIBackendTests: XCTestCase {
 
   func testParseJSONWithComplexCastStructure() {
     let jsonString = """
-    {
-      "title": "Complex Cast Project",
-      "author": "Author",
-      "type": "podcast",
-      "tags": [],
-      "cast": [
-        {
-          "name": "Character One",
-          "actor": "Actor Name",
-          "voiceProvider": "apple",
-          "voiceId": "voice-id-1",
-          "voiceDescription": "Deep male voice"
-        },
-        {
-          "name": "Character Two",
-          "actor": "Another Actor",
-          "voiceProvider": "google",
-          "voiceId": "voice-id-2",
-          "voiceDescription": null
-        },
-        {
-          "name": "Character Three"
-        }
-      ]
-    }
-    """
+      {
+        "title": "Complex Cast Project",
+        "author": "Author",
+        "type": "podcast",
+        "tags": [],
+        "cast": [
+          {
+            "name": "Character One",
+            "actor": "Actor Name",
+            "voiceProvider": "apple",
+            "voiceId": "voice-id-1",
+            "voiceDescription": "Deep male voice"
+          },
+          {
+            "name": "Character Two",
+            "actor": "Another Actor",
+            "voiceProvider": "google",
+            "voiceId": "voice-id-2",
+            "voiceDescription": null
+          },
+          {
+            "name": "Character Three"
+          }
+        ]
+      }
+      """
 
     guard let jsonData = jsonString.data(using: .utf8) else {
       XCTFail("Could not encode JSON")
@@ -343,7 +344,7 @@ final class ClaudeAPIBackendTests: XCTestCase {
     let models = [
       "claude-3-5-sonnet-20241022",
       "claude-3-opus-20240229",
-      "claude-3-haiku-20240307"
+      "claude-3-haiku-20240307",
     ]
 
     for modelName in models {
@@ -361,7 +362,7 @@ final class ClaudeAPIBackendTests: XCTestCase {
       discoveredFiles: [
         "s01e01_spanish.fountain",
         "s01e02_spanish.fountain",
-        "s01e01_italian.fountain"
+        "s01e01_italian.fountain",
       ],
       extractedCast: ["Elena Martinez", "Marco Rossi", "Francesca Bianchi"],
       episodePattern: "s\\d+e\\d+",
@@ -408,7 +409,7 @@ final class ClaudeAPIBackendTests: XCTestCase {
   func testProjectMetadataCreation() {
     let cast = [
       CastMemberData(name: "Character A"),
-      CastMemberData(name: "Character B")
+      CastMemberData(name: "Character B"),
     ]
 
     let metadata = ProjectMetadata(
@@ -441,14 +442,14 @@ final class ClaudeAPIBackendTests: XCTestCase {
 
   func testParseJSONWithEmptyArrays() {
     let jsonString = """
-    {
-      "title": "Empty Arrays Project",
-      "author": "Author",
-      "type": "podcast",
-      "tags": [],
-      "cast": []
-    }
-    """
+      {
+        "title": "Empty Arrays Project",
+        "author": "Author",
+        "type": "podcast",
+        "tags": [],
+        "cast": []
+      }
+      """
 
     guard let jsonData = jsonString.data(using: .utf8) else {
       XCTFail("Could not encode JSON")
@@ -470,15 +471,15 @@ final class ClaudeAPIBackendTests: XCTestCase {
 
   func testParseJSONWithSpecialCharacters() {
     let jsonString = """
-    {
-      "title": "Café au Lait: A Story",
-      "author": "José García",
-      "description": "Contains \\"quotes\\" and\\nescapes",
-      "type": "podcast",
-      "tags": ["café", "español", "français"],
-      "cast": []
-    }
-    """
+      {
+        "title": "Café au Lait: A Story",
+        "author": "José García",
+        "description": "Contains \\"quotes\\" and\\nescapes",
+        "type": "podcast",
+        "tags": ["café", "español", "français"],
+        "cast": []
+      }
+      """
 
     guard let jsonData = jsonString.data(using: .utf8) else {
       XCTFail("Could not encode JSON")
@@ -501,15 +502,15 @@ final class ClaudeAPIBackendTests: XCTestCase {
 
   func testParseJSONWithLargeNumbers() {
     let jsonString = """
-    {
-      "title": "Large Project",
-      "author": "Author",
-      "type": "podcast",
-      "episodes": 1000,
-      "season": 99,
-      "tags": []
-    }
-    """
+      {
+        "title": "Large Project",
+        "author": "Author",
+        "type": "podcast",
+        "episodes": 1000,
+        "season": 99,
+        "tags": []
+      }
+      """
 
     guard let jsonData = jsonString.data(using: .utf8) else {
       XCTFail("Could not encode JSON")
@@ -554,4 +555,3 @@ final class ClaudeAPIBackendTests: XCTestCase {
     // isAvailable is determined by environment, not instance initialization
   }
 }
-

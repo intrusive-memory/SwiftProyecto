@@ -127,6 +127,9 @@ public struct ProjectMarkdownParser {
     yaml += "title: \(escapeYAMLString(frontMatter.title))\n"
     yaml += "author: \(escapeYAMLString(frontMatter.author))\n"
     yaml += "created: \(ISO8601DateFormatter().string(from: frontMatter.created))\n"
+    if let updated = frontMatter.updated {
+      yaml += "updated: \(ISO8601DateFormatter().string(from: updated))\n"
+    }
 
     if let description = frontMatter.description {
       yaml += "description: \(escapeYAMLString(description))\n"

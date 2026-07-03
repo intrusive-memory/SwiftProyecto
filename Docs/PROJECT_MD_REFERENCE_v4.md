@@ -184,8 +184,8 @@ episodePath: "episodes/season-{season}/episode-{number:03d}.{language}.fountain"
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `introFile` | String | Path to project-wide intro file (overridden by `seasons[].introFile`) |
-| `outroFile` | String | Path to project-wide outro file (overridden by `seasons[].outroFile`) |
+| `introFile` | String | Path to project-wide intro file, **project-resolved: relative to the project root** (NOT relative to `episodesDir`). Overridden by `seasons[].introFile`. |
+| `outroFile` | String | Path to project-wide outro file, **project-resolved: relative to the project root** (NOT relative to `episodesDir`). Overridden by `seasons[].outroFile`. |
 
 ### Workflow Hooks (Optional)
 

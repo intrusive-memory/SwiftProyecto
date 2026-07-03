@@ -33,7 +33,8 @@ final class CLIGenerateProjectTests: XCTestCase {
 
     // Create test project directory
     testProjectDirectory = tempDirectory.appendingPathComponent("test_project")
-    try? FileManager.default.createDirectory(at: testProjectDirectory, withIntermediateDirectories: true)
+    try? FileManager.default.createDirectory(
+      at: testProjectDirectory, withIntermediateDirectories: true)
 
     // Set up test project structure
     setupTestProject()
@@ -133,7 +134,8 @@ final class CLIGenerateProjectTests: XCTestCase {
 
     XCTAssertTrue(exists && isDir.boolValue, "Episodes directory should exist")
 
-    let contents = try? FileManager.default.contentsOfDirectory(at: episodesDir, includingPropertiesForKeys: nil)
+    let contents = try? FileManager.default.contentsOfDirectory(
+      at: episodesDir, includingPropertiesForKeys: nil)
     XCTAssertGreaterThan(contents?.count ?? 0, 0, "Episodes directory should contain files")
   }
 
@@ -207,7 +209,8 @@ final class CLIGenerateProjectTests: XCTestCase {
     )
 
     // Create it
-    try? "---\ntype: project\ntitle: Test\n---".write(to: projectMdPath, atomically: true, encoding: .utf8)
+    try? "---\ntype: project\ntitle: Test\n---".write(
+      to: projectMdPath, atomically: true, encoding: .utf8)
 
     // Now should exist
     XCTAssertTrue(
