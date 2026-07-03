@@ -111,7 +111,8 @@ public final class ProjectGeneratorService: @unchecked Sendable {
         return try await backend.generate(project: project)
       } catch {
         // Claude is the last resort, propagate the error
-        throw LLMBackendError.generationFailed(reason: "Claude API backend failed: \(error.localizedDescription)")
+        throw LLMBackendError.generationFailed(
+          reason: "Claude API backend failed: \(error.localizedDescription)")
       }
     }
 
@@ -139,7 +140,8 @@ public final class ProjectGeneratorService: @unchecked Sendable {
   public func generateFrom(projectPath: URL) async throws -> ProjectMetadata {
     // Analyze the project directory
     guard let analysis = ProjectService.analyzeForGeneration(at: projectPath) else {
-      throw LLMBackendError.invalidInput(reason: "Cannot analyze project directory at \(projectPath.path)")
+      throw LLMBackendError.invalidInput(
+        reason: "Cannot analyze project directory at \(projectPath.path)")
     }
 
     // Generate metadata using fallback chain

@@ -5,14 +5,15 @@
 //  Copyright (c) 2025 Intrusive Memory
 //
 
-#if canImport(Darwin)
-  import Darwin
-#endif
 import ArgumentParser
 import Foundation
 import SwiftAcervo
 import SwiftBruja
 import SwiftProyecto
+
+#if canImport(Darwin)
+  import Darwin
+#endif
 
 /// Extract speaking roles from one or more screenplays using the local model.
 ///
@@ -65,7 +66,8 @@ struct RolesCommand: AsyncParsableCommand {
       """
   )
 
-  @Argument(help: "Screenplay file, directory, or glob to scan (default: *.fountain under --project-dir)")
+  @Argument(
+    help: "Screenplay file, directory, or glob to scan (default: *.fountain under --project-dir)")
   var input: String?
 
   @Option(name: .long, help: "Directory containing PROJECT.md (default: current directory)")

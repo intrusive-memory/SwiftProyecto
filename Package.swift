@@ -61,7 +61,7 @@ let package = Package(
     sibling(
       "SwiftAcervo",
       remote: "https://github.com/intrusive-memory/SwiftAcervo.git",
-      from: "0.19.2"),
+      from: "0.23.0"),
     sibling(
       "SwiftBruja",
       remote: "https://github.com/intrusive-memory/SwiftBruja.git",

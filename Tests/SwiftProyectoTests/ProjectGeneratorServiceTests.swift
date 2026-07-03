@@ -405,7 +405,9 @@ final class ProjectGeneratorServiceTests: XCTestCase {
     let analysis = makeTestAnalysis()
 
     // Run multiple concurrent calls
-    let results = try await withThrowingTaskGroup(of: ProjectMetadata.self, returning: [ProjectMetadata].self) { group in
+    let results = try await withThrowingTaskGroup(
+      of: ProjectMetadata.self, returning: [ProjectMetadata].self
+    ) { group in
       for _ in 0..<5 {
         group.addTask {
           try await service.generate(project: analysis)

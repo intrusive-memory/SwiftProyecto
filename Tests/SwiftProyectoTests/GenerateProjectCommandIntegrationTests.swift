@@ -9,8 +9,9 @@
 //
 
 import Foundation
-@testable import SwiftProyecto
 import XCTest
+
+@testable import SwiftProyecto
 
 /// Integration tests for CLI backend selection, file safety, schema validation, error handling.
 ///

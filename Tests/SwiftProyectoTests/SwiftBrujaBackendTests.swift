@@ -64,7 +64,8 @@ final class SwiftBrujaBackendTests: XCTestCase {
     defer { unsetenv("TEST_SWIFT_BRUJA_AVAILABLE") }
 
     let backend = SwiftBrujaBackend()
-    XCTAssertTrue(backend.isAvailable, "Backend should be available when TEST_SWIFT_BRUJA_AVAILABLE=true")
+    XCTAssertTrue(
+      backend.isAvailable, "Backend should be available when TEST_SWIFT_BRUJA_AVAILABLE=true")
   }
 
   // MARK: - Test 4: Availability Detection - Disable via Environment Variable
@@ -75,7 +76,8 @@ final class SwiftBrujaBackendTests: XCTestCase {
     defer { unsetenv("TEST_SWIFT_BRUJA_AVAILABLE") }
 
     let backend = SwiftBrujaBackend()
-    XCTAssertFalse(backend.isAvailable, "Backend should be unavailable when TEST_SWIFT_BRUJA_AVAILABLE=false")
+    XCTAssertFalse(
+      backend.isAvailable, "Backend should be unavailable when TEST_SWIFT_BRUJA_AVAILABLE=false")
   }
 
   // MARK: - Test 5: Generation Fails When Backend Unavailable
@@ -471,7 +473,9 @@ final class SwiftBrujaBackendTests: XCTestCase {
     let analysis = makeTestAnalysis()
 
     // Run multiple concurrent calls
-    let results = try await withThrowingTaskGroup(of: ProjectMetadata.self, returning: [ProjectMetadata].self) { group in
+    let results = try await withThrowingTaskGroup(
+      of: ProjectMetadata.self, returning: [ProjectMetadata].self
+    ) { group in
       for _ in 0..<5 {
         group.addTask {
           try await backend.generate(project: analysis)

@@ -1183,7 +1183,9 @@ extension ProjectService {
     var extractedCast: [String] = []
     var processedFiles = Set<String>()
 
-    if let contents = try? fileManager.contentsOfDirectory(at: projectPath, includingPropertiesForKeys: nil) {
+    if let contents = try? fileManager.contentsOfDirectory(
+      at: projectPath, includingPropertiesForKeys: nil)
+    {
       scanForFountainFiles(
         at: projectPath,
         in: contents,
@@ -1236,7 +1238,9 @@ extension ProjectService {
 
       if let isDir = try? item.resourceValues(forKeys: [.isDirectoryKey]).isDirectory, isDir {
         // Recurse into subdirectories
-        if let subContents = try? fileManager.contentsOfDirectory(at: item, includingPropertiesForKeys: nil) {
+        if let subContents = try? fileManager.contentsOfDirectory(
+          at: item, includingPropertiesForKeys: nil)
+        {
           scanForFountainFiles(
             at: rootURL,
             in: subContents,

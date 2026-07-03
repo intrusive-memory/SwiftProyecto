@@ -211,51 +211,52 @@ public final class SwiftBrujaBackend: @unchecked Sendable, LLMBackendProtocol {
   /// - Returns: Formatted query string for SwiftBruja
   private func constructQuery(from project: ProjectAnalysis) -> String {
     let fileList = project.discoveredFiles.prefix(10).joined(separator: ", ")
-    let filesNote = project.discoveredFiles.count > 10
+    let filesNote =
+      project.discoveredFiles.count > 10
       ? ", ... and \(project.discoveredFiles.count - 10) more"
       : ""
 
     let query = """
-    Analyze the following content project and generate PROJECT.md metadata:
+      Analyze the following content project and generate PROJECT.md metadata:
 
-    Project Path: \(project.projectPath.path)
-    Discovered Files: \(project.discoveredFiles.count) files
-      \(fileList)\(filesNote)
-    Extracted Cast: \(project.extractedCast.isEmpty ? "None detected" : project.extractedCast.joined(separator: ", "))
-    Episode Pattern: \(project.episodePattern ?? "None detected")
-    Inferred Title: \(project.inferredTitle ?? "None inferred")
-    Detected Languages: \(project.detectedLanguages.isEmpty ? "None" : project.detectedLanguages.joined(separator: ", "))
+      Project Path: \(project.projectPath.path)
+      Discovered Files: \(project.discoveredFiles.count) files
+        \(fileList)\(filesNote)
+      Extracted Cast: \(project.extractedCast.isEmpty ? "None detected" : project.extractedCast.joined(separator: ", "))
+      Episode Pattern: \(project.episodePattern ?? "None detected")
+      Inferred Title: \(project.inferredTitle ?? "None inferred")
+      Detected Languages: \(project.detectedLanguages.isEmpty ? "None" : project.detectedLanguages.joined(separator: ", "))
 
-    Generate structured metadata including:
-    - Project title, author, and description
-    - Project type and genre
-    - Episode count and season number (if applicable)
-    - Tags for categorization
-    - TTS provider recommendations
-    - Cast member list with voice provider details (if available)
+      Generate structured metadata including:
+      - Project title, author, and description
+      - Project type and genre
+      - Episode count and season number (if applicable)
+      - Tags for categorization
+      - TTS provider recommendations
+      - Cast member list with voice provider details (if available)
 
-    Output a JSON object with these fields:
-    {
-      "title": "Project Title",
-      "author": "Author Name",
-      "description": "Project Description",
-      "type": "project",
-      "episodes": 10,
-      "season": 1,
-      "genre": "Genre",
-      "tags": ["tag1", "tag2"],
-      "ttsProvider": "provider",
-      "cast": [
-        {
-          "name": "Character Name",
-          "actor": "Actor Name",
-          "voiceProvider": "provider",
-          "voiceId": "voice-id",
-          "voiceDescription": "Description"
-        }
-      ]
-    }
-    """
+      Output a JSON object with these fields:
+      {
+        "title": "Project Title",
+        "author": "Author Name",
+        "description": "Project Description",
+        "type": "project",
+        "episodes": 10,
+        "season": 1,
+        "genre": "Genre",
+        "tags": ["tag1", "tag2"],
+        "ttsProvider": "provider",
+        "cast": [
+          {
+            "name": "Character Name",
+            "actor": "Actor Name",
+            "voiceProvider": "provider",
+            "voiceId": "voice-id",
+            "voiceDescription": "Description"
+          }
+        ]
+      }
+      """
     return query
   }
 
@@ -273,7 +274,9 @@ public final class SwiftBrujaBackend: @unchecked Sendable, LLMBackendProtocol {
   ///   - project: Original project analysis
   /// - Returns: Generated metadata
   /// - Throws: `LLMBackendError.generationFailed` if query fails
-  private func querySwiftBruja(query: String, project: ProjectAnalysis) async throws -> ProjectMetadata {
+  private func querySwiftBruja(query: String, project: ProjectAnalysis) async throws
+    -> ProjectMetadata
+  {
     // TODO: Implement actual SwiftBruja API call
     // For now, construct reasonable defaults from the project analysis
 

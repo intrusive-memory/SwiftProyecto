@@ -181,7 +181,7 @@ final class AppleFoundationModelsBackendTests: XCTestCase {
       discoveredFiles: [
         "episode1.fountain",
         "episode2.fountain",
-        "episode3.fountain"
+        "episode3.fountain",
       ],
       extractedCast: ["Alice", "Bob", "Charlie"],
       episodePattern: "episode_\\d+",
