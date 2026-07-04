@@ -41,6 +41,17 @@ final class ProyectoCLIValidateTests: XCTestCase {
 
   /// Find the proyecto binary in the build products directory.
   private func findProyectoBinary() -> URL {
+    // Preferred: the `proyecto` executable built by the same scheme lives in the
+    // SAME build-products directory as this test bundle. Resolving it relative to
+    // the test bundle guarantees we exercise THIS build's binary and never a
+    // stale one from another checkout/worktree (a `find ... | head -1` over all
+    // DerivedData dirs is nondeterministic when multiple checkouts exist).
+    let testBundleDir = Bundle(for: type(of: self)).bundleURL.deletingLastPathComponent()
+    let colocated = testBundleDir.appendingPathComponent("proyecto")
+    if FileManager.default.fileExists(atPath: colocated.path) {
+      return colocated
+    }
+
     // Check common build locations
     let possiblePaths = [
       // Xcode DerivedData (most common during development)
@@ -148,7 +159,7 @@ final class ProyectoCLIValidateTests: XCTestCase {
 
     // Verify success
     XCTAssertEqual(result.exitCode, 0, "Expected exit code 0 for valid PROJECT.md")
-    XCTAssertTrue(result.stdout.contains("✅ Valid PROJECT.md"), "Expected success message")
+    XCTAssertTrue(result.stdout.contains("✓ VALID PROJECT"), "Expected success message")
     XCTAssertTrue(result.stdout.contains(tempDirectory.path), "Expected file path in output")
   }
 
@@ -188,7 +199,7 @@ final class ProyectoCLIValidateTests: XCTestCase {
 
     // Verify success
     XCTAssertEqual(result.exitCode, 0, "Expected exit code 0 for valid PROJECT.md")
-    XCTAssertTrue(result.stdout.contains("✅ Valid PROJECT.md"), "Expected success message")
+    XCTAssertTrue(result.stdout.contains("✓ VALID PROJECT"), "Expected success message")
   }
 
   func testValidateValid_WithVerboseFlag() throws {
@@ -217,7 +228,7 @@ final class ProyectoCLIValidateTests: XCTestCase {
 
     // Verify success and verbose output
     XCTAssertEqual(result.exitCode, 0, "Expected exit code 0 for valid PROJECT.md")
-    XCTAssertTrue(result.stdout.contains("✅ Valid PROJECT.md"), "Expected success message")
+    XCTAssertTrue(result.stdout.contains("✓ VALID PROJECT"), "Expected success message")
     XCTAssertTrue(result.stdout.contains("Parsed metadata:"), "Expected verbose header")
     XCTAssertTrue(result.stdout.contains("Type: project"), "Expected type in verbose output")
     XCTAssertTrue(result.stdout.contains("Title: Test Project"), "Expected title in verbose output")
@@ -252,7 +263,7 @@ final class ProyectoCLIValidateTests: XCTestCase {
 
     // Verify success
     XCTAssertEqual(result.exitCode, 0, "Expected exit code 0 for valid PROJECT.md")
-    XCTAssertTrue(result.stdout.contains("✅ Valid PROJECT.md"), "Expected success message")
+    XCTAssertTrue(result.stdout.contains("✓ VALID PROJECT"), "Expected success message")
   }
 
   // MARK: - Test Cases - Invalid PROJECT.md
@@ -279,7 +290,7 @@ final class ProyectoCLIValidateTests: XCTestCase {
 
     // Verify failure
     XCTAssertNotEqual(result.exitCode, 0, "Expected non-zero exit code for invalid PROJECT.md")
-    XCTAssertTrue(result.stdout.contains("❌ Invalid PROJECT.md"), "Expected error message")
+    XCTAssertTrue(result.stdout.contains("✗ PARSE ERROR"), "Expected error message")
     XCTAssertTrue(
       result.stdout.contains("Missing required field: author"),
       "Expected specific error about missing field")
@@ -308,7 +319,7 @@ final class ProyectoCLIValidateTests: XCTestCase {
 
     // Verify failure
     XCTAssertNotEqual(result.exitCode, 0, "Expected non-zero exit code for malformed YAML")
-    XCTAssertTrue(result.stdout.contains("❌ Invalid PROJECT.md"), "Expected error message")
+    XCTAssertTrue(result.stdout.contains("✗ PARSE ERROR"), "Expected error message")
     XCTAssertTrue(result.stdout.contains("Invalid YAML"), "Expected YAML error message")
   }
 
@@ -332,7 +343,7 @@ final class ProyectoCLIValidateTests: XCTestCase {
 
     // Verify failure
     XCTAssertNotEqual(result.exitCode, 0, "Expected non-zero exit code for missing frontmatter")
-    XCTAssertTrue(result.stdout.contains("❌ Invalid PROJECT.md"), "Expected error message")
+    XCTAssertTrue(result.stdout.contains("✗ PARSE ERROR"), "Expected error message")
     XCTAssertTrue(
       result.stdout.contains("No YAML front matter found"),
       "Expected error about missing frontmatter"
@@ -383,7 +394,7 @@ final class ProyectoCLIValidateTests: XCTestCase {
 
     // Verify failure
     XCTAssertNotEqual(result.exitCode, 0, "Expected non-zero exit code for invalid date format")
-    XCTAssertTrue(result.stdout.contains("❌ Invalid PROJECT.md"), "Expected error message")
+    XCTAssertTrue(result.stdout.contains("✗ PARSE ERROR"), "Expected error message")
     XCTAssertTrue(
       result.stdout.contains("Invalid YAML") || result.stdout.contains("date"),
       "Expected error about invalid date"
@@ -418,7 +429,9 @@ final class ProyectoCLIValidateTests: XCTestCase {
             title: "Season Two"
         languages:
           - code: en
+            name: English
           - code: es
+            name: Spanish
         ---
 
         # Modern Project
@@ -467,10 +480,12 @@ final class ProyectoCLIValidateTests: XCTestCase {
         schemaVersion: 4
         projectType: overview
         variants:
-          - name: "Season 1"
-            path: "season-1/PROJECT.md"
-          - name: "Season 2"
-            path: "season-2/PROJECT.md"
+          - season: 1
+            language: en
+            path: "season-1/PROJECT_en.md"
+          - season: 2
+            language: en
+            path: "season-2/PROJECT_en.md"
         ---
 
         # Master Series Overview
@@ -675,7 +690,8 @@ final class ProyectoCLIValidateTests: XCTestCase {
         schemaVersion: 4
         projectType: overview
         variants:
-          - name: "Variant A"
+          - season: 1
+            language: en
             path: "variant-a/PROJECT.md"
         ---
         """)
