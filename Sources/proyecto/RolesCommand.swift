@@ -102,7 +102,8 @@ struct RolesCommand: AsyncParsableCommand {
       // Running on macOS 27+, no warning needed
     } else {
       if showProgress {
-        print("""
+        print(
+          """
           ⚠ Warning: macOS 26 uses a 3-billion-parameter on-device model. \
           For more accurate role extraction, upgrade to macOS 27 or later, \
           which includes improved models and a 20-billion-parameter option.
