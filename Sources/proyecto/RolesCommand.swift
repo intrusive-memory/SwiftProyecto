@@ -14,7 +14,7 @@ import SwiftProyecto
   import Darwin
 #endif
 
-/// Extract speaking roles from one or more screenplays using the local model.
+/// Extract speaking roles from one or more screenplays using the on-device model.
 ///
 /// Ingests a single screenplay, a directory of screenplays, or a filespec glob,
 /// runs an on-device Foundation Models query (Apple's system language model, via
@@ -22,16 +22,26 @@ import SwiftProyecto
 /// project-wide deduplicated list of speaking roles, and stores it in the `cast:`
 /// list of the project's `PROJECT.md` front matter.
 ///
-/// Existing cast entries (with their actor/voice/gender assignments) are
-/// preserved; only newly-discovered roles are appended.
+/// ## Supported Screenplay Formats
+///
+/// Automatically detects and parses:
+/// - **Fountain** (`.fountain`) — Plain text screenplay format
+/// - **Final Draft** (`.fdx`) — XML-based screenplay format
+/// - **Highland** (`.highland`) — Highland screenplay app format
+///
+/// Format is auto-detected from file extension. Existing cast entries (with their
+/// actor/voice/gender assignments) are preserved; only newly-discovered roles
+/// are appended.
 ///
 /// ## Examples
 ///
 /// ```
-/// proyecto roles                          # discover *.fountain under PROJECT.md dir
-/// proyecto roles episode.fountain         # a single screenplay
-/// proyecto roles 'episodes/*.fountain'    # a glob (quote it so the shell doesn't expand)
-/// proyecto roles ./scripts --dry-run      # a directory, preview without writing
+/// proyecto roles                            # discover all formats under PROJECT.md dir
+/// proyecto roles episode.fountain           # a single Fountain file
+/// proyecto roles episode.fdx                # a single Final Draft file
+/// proyecto roles episode.highland           # a single Highland file
+/// proyecto roles 'episodes/*.fdx'           # a glob (quote it so shell doesn't expand)
+/// proyecto roles ./scripts --dry-run        # a directory, preview without writing
 /// ```
 struct RolesCommand: AsyncParsableCommand {
   static let configuration = CommandConfiguration(
@@ -43,16 +53,20 @@ struct RolesCommand: AsyncParsableCommand {
       each, and compiles a project-wide cast list stored under `cast:` in
       PROJECT.md.
 
+      Screenplay formats:
+        Supports Fountain (.fountain), Final Draft (.fdx), and Highland (.highland) formats.
+        Format is auto-detected from file extension.
+
       Model:
         Uses Apple's on-device Foundation Models system model with guided
         generation. Requires Apple Intelligence to be enabled; nothing is
         downloaded and no data leaves the device.
 
       Input resolution (the optional argument):
-        - omitted        -> discover *.fountain recursively under --project-dir
+        - omitted        -> discover *.fountain, *.fdx, *.highland recursively under --project-dir
         - a file         -> that single screenplay
-        - a directory    -> *.fountain found recursively within it
-        - a glob         -> every matching file (quote it: 'episodes/*.fountain')
+        - a directory    -> all screenplay formats found recursively within it
+        - a glob         -> every matching file (quote it: 'episodes/*.fdx')
 
       Merge behavior:
         Existing cast members keep their actor/voice/gender assignments; only
@@ -60,14 +74,14 @@ struct RolesCommand: AsyncParsableCommand {
 
       Examples:
         proyecto roles
-        proyecto roles episode.fountain
-        proyecto roles 'episodes/*.fountain' --dry-run
+        proyecto roles episode.fdx
+        proyecto roles 'episodes/*.highland' --dry-run
         proyecto roles ./scripts --project-dir .
       """
   )
 
   @Argument(
-    help: "Screenplay file, directory, or glob to scan (default: *.fountain under --project-dir)")
+    help: "Screenplay file (.fountain, .fdx, .highland), directory, or glob to scan (default: all formats under --project-dir)")
   var input: String?
 
   @Option(name: .long, help: "Directory containing PROJECT.md (default: current directory)")
@@ -153,12 +167,30 @@ struct RolesCommand: AsyncParsableCommand {
         print("[\(index + 1)/\(scripts.count)] \(label): querying model...")
       }
 
+      // Extract candidates from the screenplay, auto-detecting format.
+      let candidates: [String]
+      do {
+        candidates = try extractor.extractCast(from: script)
+      } catch let error as CastExtractionError {
+        // Format-specific errors (unsupported format, parsing failed for non-Fountain)
+        if showProgress {
+          print("  ⚠ skipped (\(error.localizedDescription))")
+        }
+        continue
+      } catch {
+        // Unexpected errors
+        if showProgress {
+          print("  ⚠ skipped (extraction error: \(error.localizedDescription))")
+        }
+        continue
+      }
+
+      // Read screenplay content for model prompt
       guard let text = try? String(contentsOf: script, encoding: .utf8) else {
         if showProgress { print("  ⚠ skipped (not readable as UTF-8 text)") }
         continue
       }
 
-      let candidates = extractor.extractCast(from: text)
       let roles: [String]
       do {
         // A fresh session per screenplay keeps each extraction independent and
@@ -174,7 +206,7 @@ struct RolesCommand: AsyncParsableCommand {
         // Fall back to the deterministic extractor so one bad script doesn't
         // sink the whole run — but be loud about it.
         if showProgress {
-          print("  ⚠ model query failed (\(error.localizedDescription)); using regex extraction")
+          print("  ⚠ model query failed (\(error.localizedDescription)); using candidate extraction")
         }
         roles = candidates
       }
@@ -278,8 +310,8 @@ struct RolesCommand: AsyncParsableCommand {
     let fm = FileManager.default
 
     guard let input else {
-      // No input: discover *.fountain recursively under the project directory.
-      return Self.discoverFountain(in: projectDir)
+      // No input: discover *.fountain, *.fdx, *.highland recursively under the project directory.
+      return Self.discoverScreenplays(in: projectDir)
     }
 
     // A glob pattern?
@@ -296,13 +328,23 @@ struct RolesCommand: AsyncParsableCommand {
       throw RolesError.inputNotFound(input)
     }
     if isDir.boolValue {
-      return Self.discoverFountain(in: URL(fileURLWithPath: input).standardizedFileURL)
+      return Self.discoverScreenplays(in: URL(fileURLWithPath: input).standardizedFileURL)
     }
     return [URL(fileURLWithPath: input).standardizedFileURL]
   }
 
-  /// Recursively find `.fountain` files under a directory, sorted by path.
-  private static func discoverFountain(in directory: URL) -> [URL] {
+  /// Recursively find all screenplay files under a directory.
+  ///
+  /// Discovers files with supported screenplay formats:
+  /// - `.fountain` (Fountain format)
+  /// - `.fdx` (Final Draft XML format)
+  /// - `.highland` (Highland screenplay format)
+  ///
+  /// Results are sorted by path for deterministic ordering.
+  ///
+  /// - Parameter directory: The directory to search recursively
+  /// - Returns: Sorted array of screenplay file URLs found
+  private static func discoverScreenplays(in directory: URL) -> [URL] {
     let fm = FileManager.default
     guard
       let enumerator = fm.enumerator(
@@ -311,8 +353,9 @@ struct RolesCommand: AsyncParsableCommand {
         options: [.skipsHiddenFiles])
     else { return [] }
 
+    let screenplayExtensions = ["fountain", "fdx", "highland"]
     var results: [URL] = []
-    for case let url as URL in enumerator where url.pathExtension.lowercased() == "fountain" {
+    for case let url as URL in enumerator where screenplayExtensions.contains(url.pathExtension.lowercased()) {
       results.append(url.standardizedFileURL)
     }
     return results.sorted { $0.path < $1.path }
