@@ -96,16 +96,16 @@ struct RolesCommand: AsyncParsableCommand {
     let showProgress = !quiet
     let fm = FileManager.default
 
-    // Warn on macOS 26: Foundation Models shipped with an underpowered core model.
-    // macOS 27 includes a larger, more accurate 3m model. Results on 26 will be less accurate.
+    // Warn on macOS 26: Foundation Models on 26 uses a 3B on-device model.
+    // macOS 27 offers both improved 3B and 20B sparse models for better accuracy.
     if #available(macOS 27, *) {
       // Running on macOS 27+, no warning needed
     } else {
       if showProgress {
         print("""
-          ⚠ Warning: You are running on macOS 26, which ships with an underpowered \
-          Foundation Model. For more accurate results, upgrade to macOS 27 or later, \
-          which includes a larger 3m model optimized for this task.
+          ⚠ Warning: macOS 26 uses a 3-billion-parameter on-device model. \
+          For more accurate role extraction, upgrade to macOS 27 or later, \
+          which includes improved models and a 20-billion-parameter option.
           """)
       }
     }
