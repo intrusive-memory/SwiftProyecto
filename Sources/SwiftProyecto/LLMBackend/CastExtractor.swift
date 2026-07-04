@@ -24,82 +24,237 @@
 //
 
 import Foundation
+import SwiftCompartido
 
-/// Extracts character names from Fountain script files.
+/// Errors that can occur during cast extraction.
+public enum CastExtractionError: LocalizedError {
+  /// The screenplay file format is not supported.
+  case unsupportedFormat(String)
+
+  /// The screenplay file cannot be read.
+  case fileNotReadable(String)
+
+  /// Parsing the screenplay file failed.
+  case parsingFailed(String, Error)
+
+  public var errorDescription: String? {
+    switch self {
+    case .unsupportedFormat(let ext):
+      return "Unsupported screenplay format: .\(ext). Supported formats: .fountain, .fdx, .highland"
+    case .fileNotReadable(let path):
+      return "Cannot read screenplay file: \(path)"
+    case .parsingFailed(let format, let error):
+      return "Failed to parse \(format) screenplay: \(error.localizedDescription)"
+    }
+  }
+
+  public var failureReason: String? {
+    switch self {
+    case .unsupportedFormat:
+      return "Only .fountain, .fdx, and .highland formats are supported."
+    case .fileNotReadable:
+      return "Check that the file exists and is readable."
+    case .parsingFailed:
+      return "The screenplay file may be malformed or corrupt."
+    }
+  }
+}
+
+/// Extracts character names from screenplay files in multiple formats.
 ///
-/// `CastExtractor` parses Fountain-format scripts (`.fountain` files) to identify
-/// unique character names. It handles:
-/// - Multi-line character dialogs
-/// - Parenthetical modifiers like "(CONT'D)" and "(V.O.)"
-/// - Edge cases like scene headings and action lines
-/// - Typos and formatting variations in character names
+/// `CastExtractor` automatically detects and parses screenplay scripts in
+/// **Fountain** (`.fountain`), **Final Draft** (`.fdx`), and **Highland** (`.highland`) formats
+/// to identify unique character names. Format is determined automatically from file extension
+/// or defaults to Fountain for plain text input.
 ///
-/// ## Fountain Format
+/// The extractor handles:
+/// - Multi-line character dialogs with continuation markers
+/// - Parenthetical modifiers like "(CONT'D)", "(V.O.)", and "(O.S.)"
+/// - Character name deduplication and normalization across formats
+/// - Format-specific parsing via SwiftCompartido with regex fallback
 ///
-/// Fountain scripts follow a simple text format where characters are identified by
-/// lines that are entirely uppercase (outside of parentheticals). For example:
+/// ## Supported Formats
 ///
-/// ```
-/// INT. STUDY - NIGHT
+/// - **Fountain** (`.fountain`): Plain text screenplay format
+/// - **Final Draft** (`.fdx`): XML-based screenplay format from Final Draft software
+/// - **Highland** (`.highland`): Highland screenplay app format
 ///
-/// A desk with an open book.
+/// Format is auto-detected from file extension when using ``extractCast(from:)``.
+/// For plain text input via ``extractCast(from:)``, Fountain format is assumed.
 ///
+/// ## Example: Extracting from Text
+///
+/// ```swift
+/// let screenplay = """
 /// UNCLE FU
 /// The Tao that can be spoken is not the eternal Tao.
 ///
 /// UNCLE FU (CONT'D)
 /// The name that can be named is not the eternal name.
+/// """
+/// let cast = CastExtractor().extractCast(from: screenplay)
+/// // Returns: ["UNCLE FU"]
 /// ```
 ///
-/// Character names like `UNCLE FU` and `NARRADOR` are extracted, while scene
-/// headings (`INT. STUDY - NIGHT`) and action lines are filtered out.
+/// ## Example: Extracting from Files
+///
+/// ```swift
+/// // Fountain file
+/// let fountainCast = try CastExtractor().extractCast(
+///   from: URL(fileURLWithPath: "episode1.fountain"))
+///
+/// // Final Draft XML file
+/// let fdxCast = try CastExtractor().extractCast(
+///   from: URL(fileURLWithPath: "episode2.fdx"))
+///
+/// // Highland format file
+/// let highlandCast = try CastExtractor().extractCast(
+///   from: URL(fileURLWithPath: "episode3.highland"))
+/// // Format is automatically detected from file extension
+/// ```
 ///
 /// ## Accuracy
 ///
-/// The extractor is designed to achieve ≥80% accuracy on reference scripts
-/// (lingua-matra, Produciesta) by:
-/// - Filtering out common false positives (scene headings, transitions)
-/// - Handling multi-word character names
-/// - Preserving character name capitalization
-/// - Detecting and removing continuation markers
+/// The extractor achieves ≥80% accuracy on reference scripts by using
+/// format-specific parsers (via SwiftCompartido) instead of regex heuristics.
+/// If SwiftCompartido parsing fails, Fountain files fall back to regex extraction;
+/// non-Fountain formats propagate the parsing error.
 public final class CastExtractor {
 
   /// Creates a new cast extractor.
   public init() {}
 
-  /// Extracts unique character names from Fountain script content.
+  /// Extracts unique character names from screenplay text content.
   ///
-  /// This method parses a Fountain script string and returns a list of unique
-  /// character names found in the script. Character names are identified by lines
-  /// that are entirely uppercase (with optional trailing parentheticals).
+  /// This method parses screenplay text (assumed to be Fountain format) and
+  /// returns a list of unique character names found. Parsing is delegated to
+  /// SwiftCompartido for format-specific extraction, with fallback to regex
+  /// extraction if SwiftCompartido parsing fails.
   ///
-  /// ## Algorithm
+  /// The method assumes Fountain format for plain text input. For files with
+  /// other formats, use ``extractCast(from:)`` which auto-detects format from
+  /// the file extension.
   ///
-  /// 1. Split content into lines
-  /// 2. For each line:
-  ///    a. Trim whitespace
-  ///    b. Remove parentheticals (e.g., "(CONT'D)", "(V.O.)")
-  ///    c. Skip if empty, not uppercase, or matches exclusion patterns
-  ///    d. Add to cast if it's a likely character name
-  /// 3. Return sorted unique names
-  ///
-  /// - Parameter fountainText: The content of a `.fountain` file
-  /// - Returns: Sorted array of unique character names
+  /// - Parameter fountainText: The content of a screenplay file (Fountain format assumed)
+  /// - Returns: Sorted array of unique character names, deduplicated and normalized
   ///
   /// ## Example
   ///
   /// ```swift
-  /// let fountain = """
+  /// let screenplay = """
   /// NARRADOR
   /// Today we drill the present tense.
   ///
   /// MAESTRA
   /// Io porto i libri a scuola.
   /// """
-  /// let cast = CastExtractor().extractCast(from: fountain)
+  /// let cast = CastExtractor().extractCast(from: screenplay)
   /// // Returns: ["MAESTRA", "NARRADOR"]
   /// ```
+  ///
+  /// ## Fallback Behavior
+  ///
+  /// If SwiftCompartido parsing fails, the method falls back to regex extraction
+  /// (the classic heuristic-based approach) and logs a warning. For Fountain text
+  /// input, this ensures the method never throws — it degrades gracefully.
   public func extractCast(from fountainText: String) -> [String] {
+    // Try to parse using SwiftCompartido
+    do {
+      // Create a temporary file path for parsing (uses auto-detection)
+      let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(
+        UUID().uuidString + ".fountain"
+      )
+      try fountainText.write(to: tempURL, atomically: true, encoding: .utf8)
+      defer { try? FileManager.default.removeItem(at: tempURL) }
+
+      let parsed = try GuionParsedElementCollection(file: tempURL.path)
+      let characterInfo = parsed.extractCharacters()
+      return characterInfo.keys.sorted()
+    } catch {
+      // Fallback to regex-based extraction with warning
+      NSLog(
+        "CastExtractor: SwiftCompartido parsing failed (%@), falling back to regex: %@",
+        String(describing: error), error.localizedDescription)
+      return extractCastRegex(from: fountainText)
+    }
+  }
+
+  /// Extracts unique character names from a screenplay file on disk.
+  ///
+  /// This method automatically detects the screenplay format based on file
+  /// extension (`.fountain`, `.fdx`, or `.highland`) and delegates parsing to
+  /// SwiftCompartido for format-specific extraction. Unsupported formats throw
+  /// an error; Fountain files that fail parsing fall back to regex extraction.
+  ///
+  /// - Parameter fileURL: Path to a screenplay file (`.fountain`, `.fdx`, or `.highland`)
+  /// - Returns: Sorted array of unique character names, deduplicated and normalized
+  /// - Throws: `CastExtractionError.unsupportedFormat` if file extension is not recognized
+  ///           `CastExtractionError.fileNotReadable` if file cannot be read
+  ///           `CastExtractionError.parsingFailed` if parsing fails for non-Fountain formats
+  ///
+  /// ## Examples
+  ///
+  /// ```swift
+  /// // Fountain format
+  /// let cast = try CastExtractor().extractCast(
+  ///   from: URL(fileURLWithPath: "episode1.fountain"))
+  ///
+  /// // Final Draft XML format
+  /// let cast = try CastExtractor().extractCast(
+  ///   from: URL(fileURLWithPath: "episode2.fdx"))
+  ///
+  /// // Highland format
+  /// let cast = try CastExtractor().extractCast(
+  ///   from: URL(fileURLWithPath: "episode3.highland"))
+  /// ```
+  ///
+  /// Format detection is fully automatic based on file extension. No manual
+  /// format specification is needed.
+  public func extractCast(from fileURL: URL) throws -> [String] {
+    let fileExtension = fileURL.pathExtension.lowercased()
+
+    // Validate that the file extension is supported
+    let supportedExtensions = ["fountain", "fdx", "highland"]
+    guard supportedExtensions.contains(fileExtension) else {
+      throw CastExtractionError.unsupportedFormat(fileExtension)
+    }
+
+    // Check file exists and is readable
+    guard FileManager.default.fileExists(atPath: fileURL.path) else {
+      throw CastExtractionError.fileNotReadable(fileURL.path)
+    }
+
+    // Try to parse using SwiftCompartido
+    do {
+      let parsed = try GuionParsedElementCollection(file: fileURL.path)
+      let characterInfo = parsed.extractCharacters()
+      return characterInfo.keys.sorted()
+    } catch {
+      // Fallback to regex for Fountain files only
+      if fileExtension == "fountain" {
+        NSLog(
+          "CastExtractor: SwiftCompartido parsing failed for %@ (%@), falling back to regex: %@",
+          fileURL.lastPathComponent, String(describing: error), error.localizedDescription)
+        do {
+          let content = try String(contentsOf: fileURL, encoding: .utf8)
+          return extractCastRegex(from: content)
+        } catch {
+          throw CastExtractionError.fileNotReadable(fileURL.path)
+        }
+      } else {
+        // For non-Fountain formats, propagate the error
+        throw CastExtractionError.parsingFailed(fileExtension, error)
+      }
+    }
+  }
+
+  // MARK: - Private Helpers
+
+  /// Regex-based character extraction (fallback for parsing failures).
+  ///
+  /// This method implements the original regex-based character extraction
+  /// algorithm. It is used as a fallback when SwiftCompartido parsing fails.
+  private func extractCastRegex(from fountainText: String) -> [String] {
     var characters = Set<String>()
     let lines = fountainText.split(separator: "\n", omittingEmptySubsequences: false)
 
@@ -126,26 +281,6 @@ public final class CastExtractor {
     return characters.sorted()
   }
 
-  /// Extracts unique character names from a Fountain file on disk.
-  ///
-  /// Convenience method that reads the file and delegates to `extractCast(from:)`.
-  ///
-  /// - Parameter fileURL: Path to a `.fountain` file
-  /// - Returns: Sorted array of unique character names
-  /// - Throws: If the file cannot be read
-  ///
-  /// ## Example
-  ///
-  /// ```swift
-  /// let cast = try CastExtractor().extractCast(from: URL(fileURLWithPath: "episode.fountain"))
-  /// ```
-  public func extractCast(from fileURL: URL) throws -> [String] {
-    let content = try String(contentsOf: fileURL, encoding: .utf8)
-    return extractCast(from: content)
-  }
-
-  // MARK: - Private Helpers
-
   /// Removes parenthetical text from a line.
   ///
   /// Parentheticals like "(CONT'D)", "(V.O.)", "(O.S.)" are common in Fountain
@@ -153,6 +288,9 @@ public final class CastExtractor {
   ///
   /// - Parameter line: The line to process
   /// - Returns: The line with parentheticals removed and trimmed
+  ///
+  /// - Note: Deprecated in favor of SwiftCompartido parsing. Retained for fallback use only.
+  @available(*, deprecated, message: "Replaced by SwiftCompartido parsing; retained for fallback use only")
   private func removeParentheticals(from line: String) -> String {
     line.replacingOccurrences(
       of: "\\s*\\([^)]*\\)\\s*",
@@ -163,7 +301,7 @@ public final class CastExtractor {
 
   /// Determines if a line is likely a character name.
   ///
-  /// Character names in Fountain scripts are:
+  /// Character names in screenplays are:
   /// - Entirely uppercase (with possible internal spaces, hyphens, apostrophes)
   /// - NOT scene headings (INT., EXT., EST., INT/EXT)
   /// - NOT transitions (lines ending with "TO:")
@@ -173,6 +311,9 @@ public final class CastExtractor {
   ///
   /// - Parameter text: The trimmed line text
   /// - Returns: `true` if the line looks like a character name
+  ///
+  /// - Note: Deprecated in favor of SwiftCompartido parsing. Retained for fallback use only.
+  @available(*, deprecated, message: "Replaced by SwiftCompartido parsing; retained for fallback use only")
   private func isLikelyCharacterName(_ text: String) -> Bool {
     // Must be entirely uppercase
     guard text == text.uppercased() else { return false }

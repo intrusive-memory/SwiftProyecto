@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<FinalDraft DocumentType="Script" Template="No" Version="4">
+  <Content>
+    <Paragraph Type="Scene Heading">
+      <Text>INT. OFFICE - DAY</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <Text>ALICE sits at her desk, reviewing documents.</Text>
+    </Paragraph>
+    <Paragraph Type="Character">
+      <Text>ALICE</Text>
+    </Paragraph>
+    <Paragraph Type="Dialogue">
+      <Text>Bob, can you help me with this analysis?</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <Text>BOB enters from the hallway.</Text>
+    </Paragraph>
+    <Paragraph Type="Character">
+      <Text>BOB</Text>
+    </Paragraph>
+    <Paragraph Type="Dialogue">
+      <Text>Of course. What do you need?</Text>
+    </Paragraph>
+    <Paragraph Type="Character">
+      <Text>ALICE</Text>
+    </Paragraph>
+    <Paragraph Type="Dialogue">
+      <Text>Just these numbers. I want to make sure we have them right.</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <Text>NARRATOR (V.O.) begins speaking.</Text>
+    </Paragraph>
+    <Paragraph Type="Character">
+      <Text>NARRATOR (V.O.)</Text>
+    </Paragraph>
+    <Paragraph Type="Dialogue">
+      <Text>And so their work continued into the evening.</Text>
+    </Paragraph>
+  </Content>
+</FinalDraft>

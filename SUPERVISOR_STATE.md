@@ -1,248 +1,144 @@
 ---
 type: supervisor-state
-mission_name: v4.1.0-llm-project-generation
-operation_name: Operation MetaWing 🎖️
-starting_point_commit: 36f5c62
-mission_branch: mission/v4-1-0-llm-project-generation/01
-state: completed
-current_phase: Post-Mission Rituals
-started_at: 2026-06-23T00:00:00Z
-last_updated: 2026-06-24T07:27:00Z
-completed_at: 2026-06-24T07:45:00Z
+mission_name: compartido-cast-extraction
+operation_name: Operation Format Detente 🎖️
+starting_point_commit: 9ec2732e8879b1b3aad628629f1d3a4a8bdf993a
+mission_branch: mission/compartido-cast-extraction/01
+state: RUNNING
+current_phase: Phase 1 — API Investigation & Dependency Setup
+started_at: 2026-07-04T00:00:00Z
+last_updated: 2026-07-04T00:00:00Z
 ---
 
-# SUPERVISOR_STATE — SwiftProyecto v4.1.0 LLM Project Generation
+# SUPERVISOR_STATE — SwiftProyecto Compartido-Based Cast Extraction
 
-## Mission Metadata
+## Mission Briefing
 
-| Field | Value |
-|-------|-------|
-| **Mission Name** | v4.1.0-llm-project-generation |
-| **Operation Name** | Operation MetaWing 🎖️ |
-| **Starting Point Commit** | 36f5c62 |
-| **Mission Branch** | mission/v4-1-0-llm-project-generation/01 |
-| **State** | RUNNING |
-| **Current Phase** | Phase 1 — Foundation |
-| **Started At** | 2026-06-23 |
+**Mission**: Refactor SwiftProyecto's cast extraction from regex-only Fountain parsing to format-agnostic screenplay parsing via SwiftCompartido.
+
+**Operation**: Operation Format Detente 🎖️
+
+**Objective**: Enable CastExtractor to transparently support `.fountain`, `.fdx`, and `.highland` screenplay formats by delegating parsing to SwiftCompartido.
+
+**Timeline**: Work Units 1–5, distributed across 11 sorties with parallel dispatch where dependencies allow.
+
+---
+
+## Work Units & Sorties
+
+### Work Unit 1: API Investigation & Dependency Setup
+**Status**: COMPLETED ✅  
+**Objective**: Resolve blocking questions, investigate SwiftCompartido API, and add dependency.
+
+#### Sorties (All Complete)
+
+| Sortie | Objective | State | Model | Agent ID | Notes |
+|--------|-----------|-------|-------|----------|-------|
+| **1a** | Investigate SwiftCompartido API & Version | COMPLETED | haiku | sortie-1a-api | v7.2.1, extractCharacters() → CharacterList confirmed |
+| **1b** | Audit Existing Tests for Refactoring Impact | COMPLETED | haiku | sortie-1b-audit | 17 tests identified, 6-10 require verification, medium confidence |
+| **1c** | Add SwiftCompartido Dependency to Package.swift | COMPLETED | haiku | sortie-1c-dep | Added to Package.swift (lines 65-68, 84, 96) with sibling pattern |
+
+---
+
+---
+
+## Work Unit 2: Core Refactoring
+**Status**: COMPLETED ✅  
+**Objective**: Refactor CastExtractor to use SwiftCompartido parsers, keeping public API unchanged.
+
+#### Sorties (Both Complete)
+
+| Sortie | Objective | State | Model | Agent ID | Notes |
+|--------|-----------|-------|-------|----------|-------|
+| **2a** | Refactor CastExtractor to use SwiftCompartido | COMPLETED | sonnet | abadeed241491364c | API integration, fallback logic, docs updated |
+| **2b** | Add unit tests for error handling & multi-format | COMPLETED | haiku | adba30ffc646898ce | 18 tests total: 11 existing + 7 new |
 
 ---
 
 ## Phase Progress
 
-### Phase 1 — Foundation (Sequential)
-**Status**: COMPLETED ✅
-**Supervising Agent**: Primary agent (builds included)
-**Summary**: LLMBackendProtocol, BackendRegistry, OS detection, and ProjectGeneratorService all implemented with comprehensive test coverage (36 tests passing)
+### Sortie 1a: Investigate SwiftCompartido API & Version
+**Status**: COMPLETED ✅  
+**Objective**: Determine SwiftCompartido's version, API surface, and character extraction method.
 
-- **Sortie 1.1**: LLMBackendProtocol + BackendRegistry, OS detection
-  - State: DISPATCHED → RUNNING → COMPLETED ✅
-  - Agent ID: ad3badcdf2c1882ad
-  - Entry criteria: Clean working tree ✅
-  - Exit criteria: All 6 verified ✅
-    - ✅ Compiles without errors
-    - ✅ LLMBackendProtocol implemented with all methods
-    - ✅ BackendRegistry singleton (thread-safe, availability-aware)
-    - ✅ OS version detection (macOSVersion, isMacOSVersionAtLeast)
-    - ✅ Unit tests pass: 19 tests, >80% coverage
-    - ✅ No regressions in existing tests
-  - Priority: 39.5
-  - Context fit: 20 turns (budget: 50) ✅
-  - Dispatched: 2026-06-23T00:00:00Z
-  - Completed: 2026-06-23T02:16:00Z
-  - Files Created: 3 source + 1 test (4 total)
+**Exit Criteria** (All Met):
+- ✅ Version identified: **v7.2.1**
+- ✅ Confirmed: API uses `GuionParsedElementCollection.extractCharacters()` → returns `CharacterList` ([String: CharacterInfo])
+- ✅ Confirmed: Parser routing auto-detects `.fountain`, `.fdx`, `.highland`, plus Markdown, TextBundle, PDF, document formats
+- ✅ Documented: Error hierarchy with 6 parser-specific error types (FountainScriptError, FDXParserError, PDFScreenplayParserError, PandocParserError, HighlandError, FountainTextBundleError)
+- ✅ Documented: All three formats have test fixtures and integration tests in SwiftCompartido
 
-- **Sortie 1.2**: ProjectGeneratorService, fallback chain
-  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
-  - Agent ID: ad936ea330e4205a0
-  - Depends on: Sortie 1.1 → COMPLETED ✅
-  - Entry criteria: Protocol & Registry available ✅
-  - Exit criteria: All 4 verified ✅
-    - ✅ Compiles without errors
-    - ✅ ProjectGeneratorService implemented with fallback chain
-    - ✅ Fallback chain works: SwiftBruja → FM → Claude
-    - ✅ Unit tests pass: 17 tests, all passing
-  - Priority: 36.5
-  - Context fit: 15 turns (budget: 50) ✅
-  - Dispatched: 2026-06-23T02:16:00Z
-  - Completed: 2026-06-23T02:19:00Z
-  - Files Created: 1 source + 1 test (2 total)
-  - Commit: ca35777
+**Key Findings**:
+- Character extraction handles name normalization: whitespace trimmed, extensions removed `(V.O.)`, `(O.S.)`, `(CONT'D)`, dual dialogue markers removed, converted to uppercase
+- Characters are deduplicated by dictionary key structure
+- Version pin recommendation: `.upToNextMajor(from: "7.2.1")`
 
-### Phase 2 — Backends (4-Way Parallel)
-**Status**: COMPLETED ✅
-**Sub-agents**: A, B, C, D (all complete)
-**Summary**: All 3 LLM backends + directory analysis implemented. Total: 98 tests passing, 0 failures
+**Output**: `SORTIE_1a_API_INVESTIGATION.md`
 
-- **Sortie 2.1**: Claude API Backend
-  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
-  - Agent: ac027680c3de7c766
-  - Depends on: Sortie 1.2 → COMPLETED ✅
-  - Dispatched: 2026-06-23T02:19:30Z
-  - Completed: 2026-06-23T02:43:00Z
-  - Context fit: 25 turns (budget: 50) ✅
-  - Exit Criteria: All verified ✅
-    - ✅ Compiles without errors
-    - ✅ Few-shot prompts work (10+ edge cases tested)
-    - ✅ JSON parsing robust (nested structures, optional fields)
-    - ✅ Token usage ≤5000 (logged: typical 2000-3500)
-    - ✅ 24 tests passing
-    - ✅ No regressions
-  - Files: 1 source + 1 test (2 total)
+---
 
-- **Sortie 3.1**: Foundation Models Backend
-  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
-  - Agent: a15435e501718dbbf
-  - Depends on: Sortie 1.2 → COMPLETED ✅
-  - Dispatched: 2026-06-23T02:19:30Z
-  - Completed: 2026-06-23T02:41:00Z
-  - Context fit: 22 turns (budget: 50) ✅
-  - Exit Criteria: All verified ✅
-    - ✅ Compiles with #available guards
-    - ✅ macOS 27+ platform gating working
-    - ✅ Graceful fallback on macOS 26
-    - ✅ 20 tests passing
-    - ✅ No regressions
-  - Files: 1 source + 1 test (2 total)
+### Sortie 1b: Audit Existing Tests for Refactoring Impact
+**Status**: COMPLETED ✅  
+**Objective**: Identify tests that will break or require updates due to refactoring.
 
-- **Sortie 4.1**: SwiftBruja Backend (Optional)
-  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
-  - Agent: a150eee2938d66bb2
-  - Depends on: Sortie 1.2 → COMPLETED ✅
-  - Dispatched: 2026-06-23T02:19:30Z
-  - Completed: 2026-06-23T02:35:00Z
-  - Context fit: 18 turns (budget: 50) ✅
-  - Exit Criteria: All verified ✅
-    - ✅ Soft dependency pattern working
-    - ✅ OQ-7 resolved (query format documented)
-    - ✅ 23 tests passing
-    - ✅ No regressions
-  - Files: 1 source + 1 test (2 total)
+**Exit Criteria** (All Met):
+- ✅ 4 test files examined (DirectoryAnalysisTests, ProjectServiceCastListTests, CastMemberTests, ProjectGenerationIntegrationTest)
+- ✅ 17 CastExtractor-dependent tests identified
+- ✅ Impact assessment: 11 tests no change required, 6 require verification, 3-4 likely require updates
+- ✅ Confidence assessment: **Medium** — refactoring should be backward-compatible but SwiftCompartido may handle edge cases differently
+- ✅ Critical risks documented: parenthetical handling, apostrophes in names, multi-word names
 
-- **Sortie 5.1**: Directory Analysis & Preprocessing
-  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
-  - Agent: a5bd80f505f8214b0
-  - Depends on: Sortie 1.2 → COMPLETED ✅
-  - Dispatched: 2026-06-23T02:19:30Z
-  - Completed: 2026-06-23T02:56:00Z
-  - Context fit: 24 turns (budget: 50) ✅
-  - Exit Criteria: All verified ✅
-    - ✅ CastExtractor (Fountain parsing, ≥80% accuracy)
-    - ✅ MetadataExtractor (title, patterns, TTS providers)
-    - ✅ ProjectService.analyzeForGeneration()
-    - ✅ 31 tests passing
-    - ✅ Validated against lingua-matra & Produciesta
-  - Files: Multiple source + 1 test (5 total)
+**Key Risks**:
+1. 🟡 Parenthetical handling (affects 3 tests) — verify SwiftCompartido strips `(CONT'D)`, `(V.O.)`, `(O.S.)`
+2. 🟡 Apostrophes in character names (affects 1 test) — e.g., `O'BRIEN`
+3. 🟢 Multi-word names / hyphens (low risk) — SwiftCompartido should handle better than regex
 
-### Phase 3 — Integration (Sequential)
-**Status**: BLOCKED ❌
-**Supervising Agent**: Primary agent (builds included)
-**Summary**: CLI integration incomplete. Sortie 7.2 (CRITICAL GATE) REJECTED due to missing backend selection implementation in GenerateProjectCommand.
-**Blocker**: Sortie 6.1 patch needed to implement `--llm` flag backend selection
+**Mitigation Strategy**: Run full test suite after Sortie 2a completion; update failing tests based on SwiftCompartido's actual behavior.
 
-- **Sortie 6.1**: CLI Integration
-  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅ (PATCHED)
-  - Agent: aa7a942175dab2853
-  - Depends on: Sortie 1.2 → COMPLETED ✅, Sortie 2.1 + 5.1 → COMPLETED ✅
-  - Dispatched: 2026-06-23T02:56:30Z
-  - Completed: 2026-06-23T03:08:00Z
-  - Patched: 2026-06-23T03:25:00Z
-  - Context fit: 28 turns (budget: 50) ✅
-  - Exit Criteria: All verified ✅
-    - ✅ `proyecto generate-project` command implemented
-    - ✅ All flags working: --dry-run, --interactive, --force, --llm, --model
-    - ✅ **FIXED**: Backend selection (--llm) now properly validates backends
-    - ✅ File safety (backups, validation, no overwrites)
-    - ✅ 8 integration tests passing
-    - ✅ No regressions (48 other tests passing)
-  - Original Commit: 5709b81
-  - Patch Commit: cfc8462
+**Output**: `SORTIE_1b_TEST_AUDIT.md`
 
-- **Sortie 7.1**: Unit & Integration Tests
-  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
-  - Agent: ab6846bc8b1e9a830
-  - Depends on: Sortie 6.1 → COMPLETED ✅
-  - Dispatched: 2026-06-23T03:08:30Z
-  - Completed: 2026-06-23T03:16:00Z
-  - Context fit: 30 turns (budget: 50) ✅
-  - Exit Criteria: All verified ✅
-    - ✅ All 142 new tests passing (0 failures)
-    - ✅ Backend abstraction, backends, CLI, directory analysis all validated
-    - ✅ No regressions in existing tests
-    - ✅ Coverage ≥80% maintained
-  - Files: Multiple tests (7 test suites)
+---
 
-- **Sortie 7.2**: **CRITICAL** Multi-Backend Comparison on lingua-matra
-  - State: DISPATCHED → RUNNING → FAILED → RETRYING → COMPLETED ✅
-  - First Agent: a7fc03cee1becda97 (FAILED)
-  - Retry Agent: aeaf5d4a302a6f129 (COMPLETED ✅)
-  - Depends on: Sortie 6.1 → COMPLETED ✅ (PATCHED), Sortie 7.1 → COMPLETED ✅
-  - First Dispatch: 2026-06-23T03:16:30Z
-  - First Failure: 2026-06-23T03:24:00Z
-  - **ROOT CAUSE FIXED**: Backend registration chain (linker optimization in Release builds)
-  - Retry Dispatch: 2026-06-23T03:25:30Z
-  - Retry Completion: 2026-06-24T05:35:00Z
-  - **Verdict**: CONDITIONAL ACCEPT ✅
-  - Backend Status:
-    - ✅ Foundation Models: Generates valid v4.x PROJECT.md
-    - ⚠️ Claude API: Unavailable (no API key) — documented
-    - ⚠️ SwiftBruja: Unavailable (soft dependency) — documented
-  - Commit: 522363c
+### Sortie 1c: Add SwiftCompartido Dependency to Package.swift
+**Status**: COMPLETED ✅  
+**Objective**: Integrate SwiftCompartido as a dependency following the sibling pattern.
 
-- **Sortie 7.3**: CLI Integration Tests
-  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
-  - Agent: a00cab5e60c7901f4 (COMPLETED ✅)
-  - Depends on: Sortie 6.1 → COMPLETED ✅, Sortie 7.2 → COMPLETED ✅
-  - Dispatch: 2026-06-24T05:36:00Z
-  - Completion: 2026-06-24T06:14:00Z
-  - Exit Criteria: All verified ✅
-    - ✅ 26 integration tests all passing (100%)
-    - ✅ Backend selection with --llm flag validated
-    - ✅ File safety flags (--dry-run, --interactive, --force) validated
-    - ✅ Schema validation working
-    - ✅ Error handling comprehensive and clear
-    - ✅ Model flag working
-    - ✅ Quiet & verbose flags working
-    - ✅ CLI production-ready
-  - Files: 1 test suite (570 lines)
-  - Commit: 6e47c91
+**Exit Criteria** (All Met):
+- ✅ Dependency added to Package.swift (lines 65-68) with version `.upToNextMajor(from: "7.2.1")`
+- ✅ Products added to SwiftProyecto target (line 84)
+- ✅ Products added to proyecto executable target (line 96)
+- ✅ Follows sibling pattern with fallback to remote URL (matches SwiftAcervo precedent)
+- ✅ Not added to test target (not needed per design)
 
-### Phase 4 — Documentation (Sequential)
-**Status**: COMPLETED ✅
-**Summary**: Final documentation and release preparation for v4.1.0 — All sorties complete
-**Sub-agents**: Sequential (no builds after Phase 3)
-**Completion**: 2026-06-24T07:27:00Z
+**Implementation Details**:
+```swift
+sibling(
+  "SwiftCompartido",
+  remote: "https://github.com/intrusive-memory/SwiftCompartido.git",
+  from: "7.2.1")
+```
 
-- **Sortie 8.1**: User Guide & AGENTS.md update
-  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
-  - Agent: a15518488758e80ff (COMPLETED ✅)
-  - Depends on: Sortie 7.3 → COMPLETED ✅
-  - Dispatch: 2026-06-24T06:15:00Z
-  - Completion: 2026-06-24T06:51:00Z
-  - Exit Criteria: All verified ✅
-    - ✅ User guide section with examples and error handling
-    - ✅ Technical description for agents with code examples
-    - ✅ All 7 flags documented and tested
-    - ✅ All 3 backends documented and tested
-    - ✅ README.md v4.1.0 release notes added
-    - ✅ Quality: No broken links, professional tone, examples tested
-  - Files: AGENTS.md (+450 lines), README.md (+35 lines)
-  - Commit: 8b5d294
+**Output**: Modified Package.swift in repository (ready for build verification)
 
-- **Sortie 8.2**: Developer Documentation (Internal APIs, Testing)
-  - State: PENDING → DISPATCHED → RUNNING → COMPLETED ✅
-  - Agent: ad494c8a166ebb9a6 (COMPLETED ✅)
-  - Depends on: Sortie 8.1 → COMPLETED ✅
-  - Dispatch: 2026-06-24T06:52:00Z
-  - Completion: 2026-06-24T07:27:00Z
-  - Exit Criteria: All verified ✅
-    - ✅ Internal API reference (5 major APIs documented)
-    - ✅ Architecture & design decisions explained
-    - ✅ Testing guide with unit/integration patterns
-    - ✅ Contributing guide for future development
-    - ✅ 4 Architecture Decision Records (ADRs)
-    - ✅ Code examples tested and realistic
-  - Files: Created `Docs/LLMBackend-Architecture.md` (2,179 lines)
-  - Commit: 9c8f3b2
+---
+
+### Subsequent Work Units (Queued)
+
+**Work Unit 2 — Core Refactoring** (Depends on: 1c completion)
+- Sortie 2a: Refactor CastExtractor (sonnet model)
+- Sortie 2b: Error Handling & Fallback Testing (haiku)
+
+**Work Unit 3 — Integration** (Depends on: 2a completion)
+- Sortie 3a: Update RolesCommand (haiku)
+
+**Work Unit 4 — Testing & Fixtures** (Depends on: 3a, 4a completion)
+- Sortie 4a: Create Test Fixtures (haiku)
+- Sortie 4b: Integration Tests (haiku)
+- Sortie 4c: Compatibility Check (haiku)
+
+**Work Unit 5 — Documentation** (Depends on: 3a completion)
+- Sortie 5a: Inline Documentation (haiku)
+- Sortie 5b: AGENTS.md (haiku)
 
 ---
 
@@ -250,43 +146,107 @@ completed_at: 2026-06-24T07:45:00Z
 
 | Sortie | Attempt | Max | Status |
 |--------|---------|-----|--------|
-| 1.1 | 0 | 3 | PENDING |
-| 1.2 | 0 | 3 | PENDING |
-| 2.1 | 0 | 3 | PENDING |
-| 3.1 | 0 | 3 | PENDING |
-| 4.1 | 0 | 3 | PENDING |
-| 5.1 | 0 | 3 | PENDING |
-| 6.1 | 0 | 3 | PENDING |
-| 7.1 | 0 | 3 | PENDING |
-| 7.2 | 0 | 3 | PENDING |
-| 7.3 | 0 | 3 | PENDING |
-| 8.1 | 0 | 3 | PENDING |
-| 8.2 | 0 | 3 | PENDING |
+| 1a | 1 | 3 | COMPLETED |
+| 1b | 1 | 3 | COMPLETED |
+| 1c | 1 | 3 | COMPLETED |
+| 2a | 1 | 3 | COMPLETED |
+| 2b | 1 | 3 | COMPLETED |
+| 3a | 1 | 3 | COMPLETED |
+| 4a | 1 | 3 | COMPLETED |
+| 4b | 1 | 3 | COMPLETED |
+| 4c | 1 | 3 | COMPLETED |
+| 5a | 1 | 3 | COMPLETED |
+| 5b | 1 | 3 | COMPLETED |
 
 ---
 
 ## Decisions Log
 
-**2026-06-23 00:00:00Z — Mission Start**
-- Starting point commit recorded: 36f5c62
-- Mission branch created: mission/v4-1-0-llm-project-generation/01
-- Phase 1 ready to dispatch
-- Sortie 1.1 entry criteria satisfied: clean working tree on development branch ✅
+**2026-07-04 00:00:00Z — Mission Start: Operation Format Detente**
+- Starting point commit recorded: 9ec2732e8879b1b3aad628629f1d3a4a8bdf993a
+- Mission branch created: mission/compartido-cast-extraction/01
+- Operation Name: Operation Format Detente 🎖️ (generated via THE RITUAL)
+- Work Unit 1 ready to dispatch
+- Sorties 1a, 1b, 1c dispatched in parallel (no inter-sortie dependencies)
 
-**2026-06-23 02:16:00Z — Sortie 1.1 Complete**
-- All 6 exit criteria verified ✅
-- LLMBackendProtocol with full interface (generate, isAvailable, backendName)
-- BackendRegistry singleton (thread-safe, availability-aware)
-- OS Detection (macOSVersion, isMacOSVersionAtLeast)
-- 19 unit tests passing, >80% coverage
-- No regressions in existing tests
-- 4 new files created and committed
-- Sortie 1.2 (ProjectGeneratorService) dispatched to supervising agent (Haiku)
-- Agent ID: ad936ea330e4205a0
+**2026-07-04 [RESUME] — Work Unit 1 Complete: Findings Aggregated**
+- ✅ Sortie 1a complete: SwiftCompartido v7.2.1, extractCharacters() API confirmed stable
+- ✅ Sortie 1b complete: Test audit shows medium confidence, 6-10 tests require verification
+- ✅ Sortie 1c complete: SwiftCompartido added to Package.swift with sibling pattern
+
+**2026-07-04 [RESUME] — Work Unit 4 Complete: Full Test Verification**
+- ✅ Sortie 4a complete: Test fixtures created (sample.fdx, sample.highland, FIXTURE_REFERENCE.md)
+- ✅ Sortie 4b complete: 10 integration tests added, all 48 tests passing
+- ✅ Sortie 4c complete: Full test suite verification — **861 total tests passing, zero failures**
+  - 813 XCTest tests ✅
+  - 48 Swift Testing tests ✅
+  - Zero regressions detected
+  - All core suites verified (CastExtractor, ProjectService, Integration)
+- **Dispatching Sorties 5a, 5b** (final documentation updates)
 
 ---
 
-## Next Action
+## Work Unit 3: Integration
+**Status**: COMPLETED ✅  
+**Objective**: Update RolesCommand to use format-agnostic cast extraction.
 
-→ Monitor Sortie 1.2 (ProjectGeneratorService + fallback chain)
-→ Once 1.2 complete: Launch Phase 2 (4-way parallel backends: 2.1, 3.1, 4.1, 5.1)
+#### Sorties (Complete)
+
+| Sortie | Objective | State | Model | Agent ID | Notes |
+|--------|-----------|-------|-------|----------|-------|
+| **3a** | Update RolesCommand for multi-format support | COMPLETED | haiku | a2b25779b65da9fae | Screenplay discovery (.fountain, .fdx, .highland), file-based extraction |
+
+---
+
+---
+
+## Work Unit 4: Testing & Fixtures
+**Status**: COMPLETED ✅  
+**Objective**: Create test fixtures and comprehensive test coverage for all screenplay formats.
+
+#### Sorties (All Complete)
+
+| Sortie | Objective | State | Model | Agent ID | Notes |
+|--------|-----------|-------|-------|----------|-------|
+| **4a** | Create test fixtures (.fdx, .highland) | COMPLETED | haiku | a59460693ee6f29ab | sample.fdx, sample.highland, FIXTURE_REFERENCE.md ✅ |
+| **4b** | Integration tests for RolesCommand | COMPLETED | haiku | a5205c7c8e9c0a0a3 | 10 integration tests, all 48 tests passing ✅ |
+| **4c** | Existing test compatibility check | COMPLETED | haiku | ad7b2f84c3c959ba2 | Full test suite verified, zero failures ✅ |
+
+---
+
+---
+
+## Work Unit 5: Documentation
+**Status**: COMPLETED ✅  
+**Objective**: Update project documentation to reflect multi-format support.
+
+#### Sorties (All Complete)
+
+| Sortie | Objective | State | Model | Agent ID | Notes |
+|--------|-----------|-------|-------|----------|-------|
+| **5a** | Update inline documentation & code comments | COMPLETED | haiku | aebd8995d17eb7304 | CastExtractor, RolesCommand updated ✅ |
+| **5b** | Update AGENTS.md documentation | COMPLETED | haiku | aacf11ec19d2f6f52 | Screenplay format support, SwiftCompartido integration ✅ |
+
+---
+
+---
+
+## MISSION STATUS: ALL SORTIES COMPLETE ✅
+
+**11/11 Sorties Completed Successfully**
+- All code changes implemented and tested
+- All 861 tests passing (zero failures)
+- Documentation complete
+- Build verified clean
+
+---
+
+## Post-Mission Workflow
+
+**Ready for mission completion rituals:**
+
+1. `/mission-supervisor test-cleanup EXECUTION_PLAN.md` — Prune any added tests that can't run in CI (conservative)
+2. `/mission-supervisor brief EXECUTION_PLAN.md` — Post-mission review; render ROLLBACK | KEEP | PARTIAL_SALVAGE verdict
+3. `/mission-supervisor clean EXECUTION_PLAN.md` — Archive mission artifacts via /organize-agent-docs
+
+**Current State**: All sorties verified, build clean, ready for post-mission review
