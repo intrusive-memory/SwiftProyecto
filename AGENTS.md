@@ -97,11 +97,12 @@ SwiftProyecto is a Swift package providing **extensible, agentic discovery of co
 - ✅ Stores rendering settings and utilities in front matter
 - ✅ Enables single-pass project comprehension (not multi-pass inference)
 - ✅ Parses and generates PROJECT.md with YAML front matter
+- ✅ Extracts cast lists from screenplay files (all supported formats via SwiftCompartido)
 
 **What SwiftProyecto Does NOT Do**:
-- ❌ Parse content files (use SwiftCompartido or other parsers)
+- ❌ Parse full screenplay content (dialogue, action, structure) — apps use SwiftCompartido directly
 - ❌ Render or generate content (provides metadata to renderers)
-- ❌ Store content models (apps handle integration)
+- ❌ Store screenplay document models (apps handle integration via SwiftCompartido)
 - ❌ Display UI (provides data only)
 
 **Platforms**: iOS 26.0+, macOS 26.0+
@@ -541,7 +542,7 @@ Backend is not available on this system
 Error: Failed to generate metadata: <backend error details>
 ```
 **Solutions:**
-- Verify directory is a valid project (has .fountain files, README, etc.)
+- Verify directory is a valid project (has screenplay files: .fountain, .fdx, .highland, README, etc.)
 - Check backend logs: `--verbose --dry-run` for details
 - Try a different backend: `--llm claude`
 - Check network connectivity (Claude API backend only)
@@ -612,10 +613,10 @@ done
 Before generation, the command analyzes the project directory:
 
 **Cast Extraction:**
-- Discovers `.fountain` script files
-- Extracts all-uppercase character lines
-- Removes parentheticals: `(V.O.)`, `(O.S.)`, `(CONT'D)`
-- Deduplicates across all files
+- Discovers screenplay files (`.fountain`, `.fdx`, `.highland`)
+- Extracts character names using format-specific parsers (SwiftCompartido)
+- Removes parentheticals and non-character lines
+- Deduplicates across all files and formats
 - Returns sorted list
 
 **Episode Pattern Detection:**
@@ -945,7 +946,7 @@ EOF
 - **Project Management**: `createProject(at:title:author:...)`, `openProject(at:)`
 - **Bookmark Management**: `getSecureURL(for:in:)`, `refreshBookmark(for:in:)`, `createFileBookmark(for:in:)`
 - **PROJECT.md**: Reads/writes project metadata files
-- **Cast List Discovery**: `discoverCastList(for:)` - Automatically extracts CHARACTER elements from .fountain files
+- **Cast List Discovery**: `discoverCastList(for:)` - Automatically extracts characters from all screenplay formats (.fountain, .fdx, .highland)
 - **Cast List Merging**: `mergeCastLists(discovered:existing:)` - Merges discovered characters with existing cast, preserving user edits
 
 **ModelContainerFactory** - SwiftData container creation
@@ -1238,20 +1239,110 @@ let projectMdURL = folderURL.appendingPathComponent("PROJECT.md")
 let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
 ```
 
+## Screenplay Format Support
+
+SwiftProyecto's cast extraction supports three screenplay formats:
+
+- **Fountain** (`.fountain`): Plain-text screenplay format
+- **Final Draft** (`.fdx`): XML-based screenplay format (Final Draft 8+)
+- **Highland** (`.highland`): ZIP-based screenplay format (TextBundle)
+
+### Format Detection
+
+File format is automatically detected from file extension. The underlying parsing is delegated to **SwiftCompartido**, a robust, format-agnostic screenplay parser library that handles format-specific parsing, character extraction, and scene analysis.
+
+### CastExtractor API
+
+The `CastExtractor` class provides two methods for character extraction:
+
+1. **From text** (`extractCast(from fountainText:)`) — assumes Fountain format, suitable for in-memory text
+2. **From file** (`extractCast(from fileURL:)`) — auto-detects format by extension
+
+Both methods return a sorted, deduplicated array of character names (uppercase).
+
+```swift
+import SwiftProyecto
+import SwiftCompartido
+
+let extractor = CastExtractor()
+
+// Extract from Fountain text
+let cast = try extractor.extractCast(from: fountainText)
+// Returns: ["NARRATOR", "LAO TZU", "CONFUCIUS"]
+
+// Extract from file (auto-detects format)
+let cast = try extractor.extractCast(from: URL(fileURLWithPath: "screenplay.fdx"))
+// Same result regardless of format
+```
+
+### Error Handling
+
+- **Unsupported format** — throws `CastExtractionError.unsupportedFormat` for unknown extensions
+- **Parse failure** — Fountain files fall back to regex extraction; other formats throw error
+- **Empty cast** — Returns empty array (not an error)
+
+### RolesCommand
+
+The `proyecto roles` command discovers and extracts characters from all three screenplay formats recursively:
+
+```bash
+# Discover .fountain, .fdx, .highland files and extract characters
+proyecto roles                      
+
+# Process FDX files matching glob pattern
+proyecto roles episodes/*.fdx       
+
+# Process single Highland file
+proyecto roles screenplay.highland  
+
+# Verbose output showing format detection
+proyecto roles --verbose            
+```
+
+**Output Format**:
+```
+Project: My Screenplay Series
+Total characters: 42
+
+Format Summary:
+  .fountain files: 12 (324 characters extracted)
+  .fdx files: 8 (287 characters extracted)
+  .highland files: 5 (156 characters extracted)
+
+Characters (deduplicated, sorted):
+  1. ADVISOR
+  2. ASTROLOGIST
+  3. BAKER
+  ...
+```
+
+### Dependency
+
+Cast extraction relies on **SwiftCompartido** (v7.2.1+), which provides:
+- Robust parsing for all three screenplay formats
+- Consistent character extraction across formats
+- Format auto-detection by file extension
+- Comprehensive error handling
+- Support for character alternatives and variations
+
+---
+
 ### Cast List Discovery Pattern
 
-SwiftProyecto can automatically discover characters from .fountain files and generate cast list entries:
+SwiftProyecto can automatically discover characters from screenplay files (all supported formats) and generate cast list entries:
 
 ```swift
 import SwiftProyecto
 
-// 1. Discover characters from all .fountain files in project
+// 1. Discover characters from all screenplay files in project
+// (supports .fountain, .fdx, .highland formats)
 let projectService = ProjectService(modelContext: context)
 let project = try await projectService.openProject(at: folderURL)
 
 let discoveredCast = try await projectService.discoverCastList(for: project)
 // Returns: [CastMember(character: "NARRATOR"), CastMember(character: "LAO TZU")]
 // All actor and voices fields are nil/empty - user fills these in manually
+// Format auto-detected for each file discovered
 
 // 2. Merge with existing cast list (preserves user edits)
 let parser = ProjectMarkdownParser()
@@ -1264,7 +1355,7 @@ let mergedCast = projectService.mergeCastLists(
 )
 // Existing actor/voice assignments are preserved
 // New characters are added with empty actor/voices
-// Old characters not in .fountain files are preserved
+// Old characters not in any screenplay files are preserved
 
 // 3. Update PROJECT.md with merged cast
 let updatedFrontMatter = ProjectFrontMatter(
@@ -1283,17 +1374,18 @@ try updatedMarkdown.write(
 ```
 
 **Character Extraction Rules**:
-- Extracts all-uppercase lines from .fountain files
-- Removes parentheticals like `(V.O.)`, `(CONT'D)`, `(O.S.)`
-- Ignores transitions (lines ending with `TO:`)
-- Ignores scene headings (`INT.`, `EXT.`, `EST.`)
-- Deduplicates across all files in project
-- Returns sorted by character name
+- Supports all three screenplay formats (.fountain, .fdx, .highland)
+- Format-specific parsing delegated to SwiftCompartido
+- Removes parentheticals like `(V.O.)`, `(CONT'D)`, `(O.S.)` (format-aware)
+- Ignores non-character lines (transitions, scene headings, action)
+- Deduplicates across all files and formats in project
+- Returns sorted by character name (uppercase)
+- Handles character alternatives and variations consistently
 
 **Merge Strategy**:
 - Characters in both lists: Keep existing actor/voices (preserves user edits)
 - Characters only in discovered: Add as new (empty actor/voices)
-- Characters only in existing: Keep (user may have manually added)
+- Characters only in existing: Keep (user may have manually added characters not in screenplay files)
 
 **Voice URI Format**: `<providerId>://<voiceId>?lang=<languageCode>`
 
@@ -1421,7 +1513,7 @@ for (index, args) in allArgs.enumerated() {
 
 ## Dependencies
 
-**Current (v3.6.0)**:
+**Current (v4.2.0+)**:
 - **UNIVERSAL** (5.3.0+): Zero-dependency YAML/JSON/XML parser for PROJECT.md parsing
   - Spec-compliant YAML parsing with quoted strings, colons, complex arrays, ISO8601 dates
   - Used by ProjectMarkdownParser
@@ -1433,13 +1525,19 @@ for (index, args) in allArgs.enumerated() {
   - Zero-network inference after model download
   - Part of macOS 26.0+, iOS 26.0+ platform SDK (no separate dependency)
   - Used by `proyecto init` for iterative PROJECT.md generation
+- **SwiftCompartido** (7.2.1+): Format-agnostic screenplay parsing
+  - Supports Fountain (.fountain), Final Draft (.fdx), and Highland (.highland) formats
+  - Character extraction and screenplay analysis
+  - Used by CastExtractor and `proyecto roles` command
 - **swift-argument-parser** (1.7.1+): CLI argument parsing for the `proyecto` executable
 
 **Removed** (v3.6.0):
 - ~~SwiftBruja~~ - Replaced with Foundation Models
 - ~~MLX dependency~~ - Foundation Models provides native support
-- ~~SwiftCompartido~~ - Apps integrate directly (removed in v2.0)
 - ~~GRMustache.swift~~ - Template rendering removed in v2.0
+
+**Restored** (v4.2.0+):
+- **SwiftCompartido** - Re-added for format-agnostic screenplay parsing (previously removed in v2.0)
 
 ---
 
@@ -1621,6 +1719,52 @@ proyecto download --quiet
 - **Capability**: 128K context window, excellent instruction following, minimal hallucination
 
 **Note**: The model is downloaded from SwiftAcervo CDN (Cloudflare R2) for reliable validation and checksumming.
+
+#### `proyecto roles`
+
+Discovers and extracts character lists from screenplay files in a project. Supports all three screenplay formats (.fountain, .fdx, .highland) with format auto-detection.
+
+```bash
+# Extract characters from all screenplay files in current directory
+proyecto roles
+
+# Extract from specific directory
+proyecto roles /path/to/project
+
+# Process specific files or patterns
+proyecto roles episodes/*.fdx
+proyecto roles screenplay.highland
+
+# Show per-format breakdown
+proyecto roles --verbose
+
+# Quiet mode (minimal output)
+proyecto roles --quiet
+```
+
+**Options:**
+- `directory` (argument): Project directory or file pattern (default: current directory)
+- `--verbose, -v`: Show format-specific extraction details
+- `--quiet, -q`: Suppress progress output
+
+**Output:**
+```
+Project: My Screenplay Series
+Total characters: 42
+
+Format Summary:
+  .fountain files: 12
+  .fdx files: 8
+  .highland files: 5
+
+Characters (sorted):
+  1. ADVISOR
+  2. ASTROLOGIST
+  3. BAKER
+  ...
+```
+
+**Related**: See [Screenplay Format Support](#screenplay-format-support) section for detailed format specifications and integration examples.
 
 ### Iterative LLM Architecture (v3.6.0+)
 
