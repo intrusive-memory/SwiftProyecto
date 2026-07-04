@@ -7,8 +7,7 @@
 
 import ArgumentParser
 import Foundation
-import SwiftAcervo
-import SwiftBruja
+import FoundationModels
 import SwiftProyecto
 
 #if canImport(Darwin)
@@ -18,10 +17,10 @@ import SwiftProyecto
 /// Extract speaking roles from one or more screenplays using the local model.
 ///
 /// Ingests a single screenplay, a directory of screenplays, or a filespec glob,
-/// runs a local LLM query (the canonical Qwen model, downloaded on demand via
-/// SwiftAcervo) against each script **sequentially**, compiles a project-wide
-/// deduplicated list of speaking roles, and stores it in the `cast:` list of the
-/// project's `PROJECT.md` front matter.
+/// runs an on-device Foundation Models query (Apple's system language model, via
+/// guided generation) against each script **sequentially**, compiles a
+/// project-wide deduplicated list of speaking roles, and stores it in the `cast:`
+/// list of the project's `PROJECT.md` front matter.
 ///
 /// Existing cast entries (with their actor/voice/gender assignments) are
 /// preserved; only newly-discovered roles are appended.
@@ -45,8 +44,9 @@ struct RolesCommand: AsyncParsableCommand {
       PROJECT.md.
 
       Model:
-        Uses the canonical model (mlx-community/Qwen2.5-7B-Instruct-4bit),
-        downloading it from the CDN on first use if it is not already cached.
+        Uses Apple's on-device Foundation Models system model with guided
+        generation. Requires Apple Intelligence to be enabled; nothing is
+        downloaded and no data leaves the device.
 
       Input resolution (the optional argument):
         - omitted        -> discover *.fountain recursively under --project-dir
@@ -73,17 +73,22 @@ struct RolesCommand: AsyncParsableCommand {
   @Option(name: .long, help: "Directory containing PROJECT.md (default: current directory)")
   var projectDir: String?
 
-  @Option(name: .long, help: "Model repo id to query (default: canonical Qwen2.5-7B-Instruct-4bit)")
-  var model: String?
-
   @Flag(name: .long, help: "Print the compiled roles without writing PROJECT.md")
   var dryRun: Bool = false
 
   @Flag(name: .shortAndLong, help: "Suppress progress output")
   var quiet: Bool = false
 
-  // Structured result the model is asked to return per screenplay.
-  private struct RoleList: Codable {
+  /// Structured result the on-device model is guided to return per screenplay.
+  ///
+  /// Marked `@Generable` so Foundation Models fills in a well-formed `roles`
+  /// array via constrained sampling — there is no raw JSON string to hand-parse.
+  @Generable(description: "The speaking roles found in a single screenplay")
+  struct RoleList {
+    @Guide(
+      description:
+        "Every distinct speaking character's name in uppercase, deduplicated, excluding scene headings and transitions"
+    )
     let roles: [String]
   }
 
@@ -113,21 +118,12 @@ struct RolesCommand: AsyncParsableCommand {
       print("Found \(scripts.count) screenplay\(scripts.count == 1 ? "" : "s") to scan")
     }
 
-    // Ensure the canonical model is available (download on miss). A custom
-    // --model is assumed to already be present locally; SwiftBruja errors clearly
-    // if it is not.
-    let modelId = model ?? LanguageModel.repoId
-    if modelId == LanguageModel.repoId {
-      let manager = ModelManager()
-      if !(try await manager.isModelCached()) {
-        if showProgress { print("Downloading \(modelId) from CDN...") }
-        try await manager.ensureModelReady { progress in
-          guard showProgress else { return }
-          let pct = Int((progress.overallProgress * 100).rounded())
-          FileHandle.standardError.write(Data("\r  [\(pct)%] \(progress.fileName)\u{1B}[K".utf8))
-        }
-        if showProgress { FileHandle.standardError.write(Data("\n".utf8)) }
-      }
+    // Role extraction runs entirely on-device via Apple's Foundation Models
+    // system model with guided generation — no model download, no MLX, no
+    // network. Fail fast if Apple Intelligence is unavailable so the user fixes
+    // the configuration instead of silently getting only the regex pre-pass.
+    guard SystemLanguageModel.default.isAvailable else {
+      throw RolesError.appleIntelligenceUnavailable
     }
 
     // Process each screenplay sequentially, accumulating a project-wide list.
@@ -150,14 +146,15 @@ struct RolesCommand: AsyncParsableCommand {
       let candidates = extractor.extractCast(from: text)
       let roles: [String]
       do {
-        let result = try await Bruja.query(
-          Self.userPrompt(script: text, candidates: candidates),
-          as: RoleList.self,
-          model: modelId,
-          temperature: 0.2,
-          system: Self.systemPrompt
+        // A fresh session per screenplay keeps each extraction independent and
+        // avoids accumulating prior scripts in the context window.
+        let session = LanguageModelSession(instructions: Self.systemPrompt)
+        let response = try await session.respond(
+          to: Self.userPrompt(script: text, candidates: candidates),
+          generating: RoleList.self,
+          options: GenerationOptions(temperature: 0.2)
         )
-        roles = result.roles
+        roles = response.content.roles
       } catch {
         // Fall back to the deterministic extractor so one bad script doesn't
         // sink the whole run — but be loud about it.
@@ -253,7 +250,7 @@ struct RolesCommand: AsyncParsableCommand {
       A regex pre-pass detected these candidate character cues (may include false
       positives or miss some): \(candidateBlock)
 
-      Return JSON of the form {"roles": ["NAME", "NAME", ...]}.
+      List every distinct speaking role you find.
 
       SCREENPLAY:
       \(excerpt)
@@ -333,6 +330,7 @@ enum RolesError: LocalizedError {
   case inputNotFound(String)
   case noRoles
   case projectMdMissing(String)
+  case appleIntelligenceUnavailable
 
   var errorDescription: String? {
     switch self {
@@ -344,6 +342,13 @@ enum RolesError: LocalizedError {
       return "No speaking roles were extracted from the provided screenplays."
     case .projectMdMissing(let path):
       return "PROJECT.md not found at \(path). Run 'proyecto init' first to create it."
+    case .appleIntelligenceUnavailable:
+      return """
+        Apple Intelligence is not available on this device. 'proyecto roles' uses \
+        the on-device Foundation Model to identify speaking roles, so you must \
+        have Apple Intelligence enabled on a supported Apple silicon Mac \
+        (System Settings ▸ Apple Intelligence & Siri).
+        """
     }
   }
 }

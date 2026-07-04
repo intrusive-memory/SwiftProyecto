@@ -62,10 +62,13 @@ let package = Package(
       "SwiftAcervo",
       remote: "https://github.com/intrusive-memory/SwiftAcervo.git",
       from: "0.23.0"),
-    sibling(
-      "SwiftBruja",
-      remote: "https://github.com/intrusive-memory/SwiftBruja.git",
-      from: "1.8.1"),
+    // NOTE: SwiftBruja is deliberately NOT a dependency. `proyecto roles` runs
+    // its casting/role extraction on-device via Apple's Foundation Models
+    // (guided generation), so the library and CLI stay free of SwiftBruja's
+    // MLX + swift-transformers stack. Pulling SwiftBruja in here drags a second
+    // `Tokenizers` target into every downstream consumer's graph (colliding
+    // with mlx-audio-swift's swift-tokenizers) and breaks library consumers
+    // like SwiftEchada. Keep it out.
     .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMajor(from: "1.7.1")),
   ],
   targets: [
@@ -85,7 +88,6 @@ let package = Package(
       dependencies: [
         "SwiftProyecto",
         .product(name: "SwiftAcervo", package: "SwiftAcervo"),
-        .product(name: "SwiftBruja", package: "SwiftBruja"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       swiftSettings: [
