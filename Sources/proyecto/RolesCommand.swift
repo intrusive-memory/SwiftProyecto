@@ -96,6 +96,20 @@ struct RolesCommand: AsyncParsableCommand {
     let showProgress = !quiet
     let fm = FileManager.default
 
+    // Warn on macOS 26: Foundation Models shipped with an underpowered core model.
+    // macOS 27 includes a larger, more accurate 3m model. Results on 26 will be less accurate.
+    if #available(macOS 27, *) {
+      // Running on macOS 27+, no warning needed
+    } else {
+      if showProgress {
+        print("""
+          ⚠ Warning: You are running on macOS 26, which ships with an underpowered \
+          Foundation Model. For more accurate results, upgrade to macOS 27 or later, \
+          which includes a larger 3m model optimized for this task.
+          """)
+      }
+    }
+
     // Resolve where PROJECT.md lives.
     let projectDirURL: URL = {
       if let projectDir { return URL(fileURLWithPath: projectDir).standardizedFileURL }
