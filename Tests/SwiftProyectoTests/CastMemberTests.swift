@@ -1406,4 +1406,81 @@ final class CastMemberTests: XCTestCase {
       + (merged.voices["google"] ?? []).count
     XCTAssertEqual(totalVoices, 9)  // No information lost
   }
+
+  // MARK: - Unknown-Key Passthrough (SwiftEchada#44)
+
+  func testDecode_CapturesUnknownKey() throws {
+    // A user-authored `bio` key is not one of the known CodingKeys.
+    let json = """
+      {
+        "character": "LAO TZU",
+        "actor": "Tom Stovall",
+        "bio": "A wandering sage of the Warring States period."
+      }
+      """.data(using: .utf8)!
+
+    let member = try JSONDecoder().decode(CastMember.self, from: json)
+
+    XCTAssertEqual(member.character, "LAO TZU")
+    XCTAssertEqual(member.actor, "Tom Stovall")
+    // The unknown key is captured rather than silently dropped.
+    XCTAssertEqual(
+      try member.extraKeys["bio"]?.decode(String.self),
+      "A wandering sage of the Warring States period."
+    )
+  }
+
+  func testRoundTrip_PreservesUnknownKeyAndKnownFields() throws {
+    let json = """
+      {
+        "character": "NARRATOR",
+        "actor": "Tom Stovall",
+        "gender": "M",
+        "voicePrompt": "Deep, warm baritone",
+        "language": "en",
+        "voices": { "apple": ["voice-1"] },
+        "bio": "The steady voice guiding every episode."
+      }
+      """.data(using: .utf8)!
+
+    // decode -> encode -> decode must preserve everything verbatim.
+    let decoded = try JSONDecoder().decode(CastMember.self, from: json)
+    let reEncoded = try JSONEncoder().encode(decoded)
+    let roundTripped = try JSONDecoder().decode(CastMember.self, from: reEncoded)
+
+    // Known fields survive.
+    XCTAssertEqual(roundTripped.character, "NARRATOR")
+    XCTAssertEqual(roundTripped.actor, "Tom Stovall")
+    XCTAssertEqual(roundTripped.gender, .male)
+    XCTAssertEqual(roundTripped.voiceDescription, "Deep, warm baritone")
+    XCTAssertEqual(roundTripped.language, "en")
+    XCTAssertEqual(roundTripped.voices["apple"], ["voice-1"])
+    // Unknown key survives verbatim.
+    XCTAssertEqual(
+      try roundTripped.extraKeys["bio"]?.decode(String.self),
+      "The steady voice guiding every episode."
+    )
+  }
+
+  func testEncode_DoesNotEmitExtraKeysWhenEmpty() throws {
+    let member = CastMember(character: "NARRATOR")
+    let data = try JSONEncoder().encode(member)
+    let json = String(data: data, encoding: .utf8) ?? ""
+
+    // No spurious keys introduced for a member without extras.
+    XCTAssertFalse(json.contains("bio"))
+    XCTAssertTrue(json.contains("\"character\""))
+  }
+
+  func testEquality_UnaffectedByExtraKeys() throws {
+    // Equality/hash remain character-only; extras must not change identity.
+    let plain = CastMember(character: "NARRATOR")
+    let withExtra = CastMember(
+      character: "NARRATOR",
+      extraKeys: ["bio": try AnyCodable("A note")]
+    )
+
+    XCTAssertEqual(plain, withExtra)
+    XCTAssertEqual(plain.hashValue, withExtra.hashValue)
+  }
 }
