@@ -1,3 +1,7 @@
+---
+type: reference
+---
+
 # PROJECT.md Front Matter Schema Reference
 
 Quick-reference guide for the YAML front matter syntax used in PROJECT.md files.
@@ -56,7 +60,7 @@ The front matter is delimited by `---` markers and contains YAML key-value pairs
 |-------|------|---------|-------------|
 | `episodesDir` | String | `"episodes"` | Directory containing episode files |
 | `audioDir` | String | `"audio"` | Output directory for generated audio |
-| `filePattern` | String or Array | `"*.fountain"` | File pattern(s) to match (e.g., `*.fountain` or `["*.fountain", "*.md"]`) |
+| `filePattern` | String or Array | `["*.fountain", "*.fdx", "*.highland"]` | File pattern(s) to match screenplay files (default matches all SwiftCompartido-readable formats: Fountain, Final Draft, Highland) |
 | `exportFormat` | String | `"m4a"` | Audio export format (e.g., `"m4a"`, `"mp3"`, `"wav"`) |
 
 ### Workflow Hooks (Optional)
