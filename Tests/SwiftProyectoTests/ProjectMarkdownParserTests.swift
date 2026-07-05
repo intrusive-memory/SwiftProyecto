@@ -1191,6 +1191,60 @@ final class ProjectMarkdownParserTests: XCTestCase {
     XCTAssertEqual(frontMatter5.title, "My Project")
     XCTAssertEqual(frontMatter5.author, "Author")
   }
+
+  // MARK: - Unknown Per-Member Key Passthrough (SwiftEchada#44)
+
+  func testRoundTrip_PreservesUnknownCastMemberKey() throws {
+    // A user maintains a `bio:` note on a cast member that SwiftEchada does not
+    // know about. Parsing then re-generating PROJECT.md must not destroy it.
+    let content = """
+      ---
+      type: project
+      title: My Series
+      author: Jane Showrunner
+      created: 2025-11-17T10:30:00Z
+      cast:
+        - character: NARRATOR
+          actor: Tom Stovall
+          gender: M
+          voicePrompt: Deep, warm baritone
+          bio: The steady voice guiding every episode.
+          voices:
+            apple: com.apple.voice.premium.en-US.Aaron
+      ---
+
+      # Notes
+      """
+
+    // First parse captures the unknown key.
+    let (frontMatter, body) = try parser.parse(content: content)
+    let member = try XCTUnwrap(frontMatter.cast?.first)
+    XCTAssertEqual(member.character, "NARRATOR")
+    XCTAssertEqual(
+      try member.extraKeys["bio"]?.decode(String.self),
+      "The steady voice guiding every episode."
+    )
+
+    // Generate PROJECT.md back out (the real write-back path) and re-parse.
+    let regenerated = parser.generate(frontMatter: frontMatter, body: body)
+    XCTAssertTrue(regenerated.contains("bio:"), "Regenerated YAML should still contain the bio key")
+
+    let (roundTripped, _) = try parser.parse(content: regenerated)
+    let roundTrippedMember = try XCTUnwrap(roundTripped.cast?.first)
+
+    // Known fields survive.
+    XCTAssertEqual(roundTrippedMember.character, "NARRATOR")
+    XCTAssertEqual(roundTrippedMember.actor, "Tom Stovall")
+    XCTAssertEqual(roundTrippedMember.gender, .male)
+    XCTAssertEqual(roundTrippedMember.voiceDescription, "Deep, warm baritone")
+    XCTAssertEqual(
+      roundTrippedMember.voices["apple"], ["com.apple.voice.premium.en-US.Aaron"])
+    // Unknown key survives verbatim.
+    XCTAssertEqual(
+      try roundTrippedMember.extraKeys["bio"]?.decode(String.self),
+      "The steady voice guiding every episode."
+    )
+  }
 }
 
 // MARK: - Test Settings Types

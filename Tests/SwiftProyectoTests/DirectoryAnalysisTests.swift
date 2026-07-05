@@ -768,7 +768,8 @@ final class RolesCommandIntegrationTests: XCTestCase {
 
     // Should throw CastExtractionError.unsupportedFormat
     XCTAssertThrowsError(
-      try castExtractor.extractCast(from: unsupportedFile)) { error in
+      try castExtractor.extractCast(from: unsupportedFile)
+    ) { error in
       guard let extractionError = error as? CastExtractionError else {
         XCTFail("Expected CastExtractionError, got \(type(of: error))")
         return
@@ -908,8 +909,10 @@ final class RolesCommandIntegrationTests: XCTestCase {
 
     let screenplayExtensions = ["fountain", "fdx", "highland"]
     var results: [URL] = []
-    for case let url as URL in enumerator where screenplayExtensions.contains(
-      url.pathExtension.lowercased()) {
+    for case let url as URL in enumerator
+    where screenplayExtensions.contains(
+      url.pathExtension.lowercased())
+    {
       results.append(url.standardizedFileURL)
     }
     return results.sorted { $0.path < $1.path }

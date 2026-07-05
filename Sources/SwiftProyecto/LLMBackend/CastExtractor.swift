@@ -290,7 +290,9 @@ public final class CastExtractor {
   /// - Returns: The line with parentheticals removed and trimmed
   ///
   /// - Note: Deprecated in favor of SwiftCompartido parsing. Retained for fallback use only.
-  @available(*, deprecated, message: "Replaced by SwiftCompartido parsing; retained for fallback use only")
+  @available(
+    *, deprecated, message: "Replaced by SwiftCompartido parsing; retained for fallback use only"
+  )
   private func removeParentheticals(from line: String) -> String {
     line.replacingOccurrences(
       of: "\\s*\\([^)]*\\)\\s*",
@@ -313,7 +315,9 @@ public final class CastExtractor {
   /// - Returns: `true` if the line looks like a character name
   ///
   /// - Note: Deprecated in favor of SwiftCompartido parsing. Retained for fallback use only.
-  @available(*, deprecated, message: "Replaced by SwiftCompartido parsing; retained for fallback use only")
+  @available(
+    *, deprecated, message: "Replaced by SwiftCompartido parsing; retained for fallback use only"
+  )
   private func isLikelyCharacterName(_ text: String) -> Bool {
     // Must be entirely uppercase
     guard text == text.uppercased() else { return false }

@@ -81,7 +81,9 @@ struct RolesCommand: AsyncParsableCommand {
   )
 
   @Argument(
-    help: "Screenplay file (.fountain, .fdx, .highland), directory, or glob to scan (default: all formats under --project-dir)")
+    help:
+      "Screenplay file (.fountain, .fdx, .highland), directory, or glob to scan (default: all formats under --project-dir)"
+  )
   var input: String?
 
   @Option(name: .long, help: "Directory containing PROJECT.md (default: current directory)")
@@ -206,7 +208,8 @@ struct RolesCommand: AsyncParsableCommand {
         // Fall back to the deterministic extractor so one bad script doesn't
         // sink the whole run — but be loud about it.
         if showProgress {
-          print("  ⚠ model query failed (\(error.localizedDescription)); using candidate extraction")
+          print(
+            "  ⚠ model query failed (\(error.localizedDescription)); using candidate extraction")
         }
         roles = candidates
       }
@@ -355,7 +358,8 @@ struct RolesCommand: AsyncParsableCommand {
 
     let screenplayExtensions = ["fountain", "fdx", "highland"]
     var results: [URL] = []
-    for case let url as URL in enumerator where screenplayExtensions.contains(url.pathExtension.lowercased()) {
+    for case let url as URL in enumerator
+    where screenplayExtensions.contains(url.pathExtension.lowercased()) {
       results.append(url.standardizedFileURL)
     }
     return results.sorted { $0.path < $1.path }
