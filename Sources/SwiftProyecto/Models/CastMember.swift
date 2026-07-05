@@ -150,6 +150,18 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
   /// Example: `MAESTRA → "es-MX"`, `NARRATOR → "en"`.
   public var language: String?
 
+  /// Storage for unknown, user-maintained per-member keys.
+  ///
+  /// Any key present under a cast member in PROJECT.md that is not one of the
+  /// known fields above (e.g. a user-authored `bio:` note) is captured here on
+  /// decode and re-emitted verbatim on encode. This mirrors
+  /// ``ProjectFrontMatter/appSections`` and guarantees zero information loss on
+  /// PROJECT.md round-trips — extra keys are preserved rather than silently
+  /// destroyed on write-back.
+  ///
+  /// Internal access allows extensions to read and modify within the module.
+  internal var extraKeys: [String: AnyCodable] = [:]
+
   /// Unique identifier based on character name
   public var id: String { character }
 
@@ -160,7 +172,8 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     gender: Gender? = nil,
     voiceDescription: String? = nil,
     voices: [String: [String]] = [:],
-    language: String? = nil
+    language: String? = nil,
+    extraKeys: [String: AnyCodable] = [:]
   ) {
     self.character = character
     self.actor = actor
@@ -168,6 +181,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     self.voiceDescription = voiceDescription
     self.voices = voices
     self.language = language
+    self.extraKeys = extraKeys
   }
 
   // MARK: - Convenience
@@ -334,7 +348,8 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
       gender: other.gender ?? gender,  // Other overrides if present
       voiceDescription: other.voiceDescription ?? voiceDescription,  // Other overrides if present
       voices: other.voices.isEmpty ? voices : other.voices,  // Other's voices override if present
-      language: other.language ?? language  // Other overrides if present
+      language: other.language ?? language,  // Other overrides if present
+      extraKeys: extraKeys.merging(other.extraKeys) { _, new in new }  // Other overrides; all keys preserved
     )
   }
 
@@ -346,7 +361,8 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
       gender: other.gender ?? gender,  // Other overrides if present
       voiceDescription: other.voiceDescription ?? voiceDescription,  // Other overrides if present
       voices: other.voices.isEmpty ? voices : other.voices,  // Other's voices override if present
-      language: other.language ?? language  // Other overrides if present
+      language: other.language ?? language,  // Other overrides if present
+      extraKeys: extraKeys.merging(other.extraKeys) { _, new in new }  // Other overrides; all keys preserved
     )
   }
 
@@ -386,7 +402,8 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
       gender: gender ?? other.gender,  // Self's value preferred
       voiceDescription: voiceDescription ?? other.voiceDescription,  // Self's value preferred
       voices: mergedVoices,  // Combined voices
-      language: language ?? other.language  // Self's value preferred
+      language: language ?? other.language,  // Self's value preferred
+      extraKeys: other.extraKeys.merging(extraKeys) { _, mine in mine }  // Self preferred; all keys preserved
     )
   }
 
@@ -404,7 +421,7 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
 
   // MARK: - Codable
 
-  enum CodingKeys: String, CodingKey {
+  enum CodingKeys: String, CodingKey, CaseIterable {
     case character
     case actor
     case gender
@@ -412,6 +429,25 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     case voiceDescription
     case voices
     case language
+  }
+
+  /// Dynamic key used to enumerate and re-emit unknown per-member keys.
+  ///
+  /// Mirrors the equivalent helper in ``ProjectFrontMatter`` so that unknown
+  /// keys under a cast member survive a decode/encode round-trip.
+  private struct DynamicCodingKey: CodingKey {
+    var stringValue: String
+    var intValue: Int?
+
+    init(stringValue: String) {
+      self.stringValue = stringValue
+      self.intValue = nil
+    }
+
+    init?(intValue: Int) {
+      self.stringValue = "\(intValue)"
+      self.intValue = intValue
+    }
   }
 
   public init(from decoder: Decoder) throws {
@@ -446,6 +482,16 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     voices = decodedVoices
 
     language = try container.decodeIfPresent(String.self, forKey: .language)
+
+    // Capture any remaining, unknown keys so user-maintained content (e.g. a
+    // `bio:` note) is preserved rather than destroyed on the next write-back.
+    let knownKeys = Set(CodingKeys.allCases.map { $0.stringValue })
+    let dynamicContainer = try decoder.container(keyedBy: DynamicCodingKey.self)
+    var capturedExtras: [String: AnyCodable] = [:]
+    for key in dynamicContainer.allKeys where !knownKeys.contains(key.stringValue) {
+      capturedExtras[key.stringValue] = try dynamicContainer.decode(AnyCodable.self, forKey: key)
+    }
+    extraKeys = capturedExtras
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -457,5 +503,13 @@ public struct CastMember: Codable, Sendable, Equatable, Hashable, Identifiable {
     // Always encode voices as [String: [String]] (new format)
     try container.encode(voices, forKey: .voices)
     try container.encodeIfPresent(language, forKey: .language)
+
+    // Re-emit any preserved unknown keys so round-trips are lossless.
+    if !extraKeys.isEmpty {
+      var dynamicContainer = encoder.container(keyedBy: DynamicCodingKey.self)
+      for (key, value) in extraKeys {
+        try dynamicContainer.encode(value, forKey: DynamicCodingKey(stringValue: key))
+      }
+    }
   }
 }

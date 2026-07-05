@@ -236,6 +236,11 @@ public struct ProjectMarkdownParser {
             }
           }
         }
+        // Re-emit any unknown, user-maintained per-member keys (e.g. `bio:`) so
+        // they survive PROJECT.md write-back rather than being silently dropped.
+        for (key, value) in member.extraKeys.sorted(by: { $0.key < $1.key }) {
+          yaml += try! generateCastMemberExtraYAML(key: key, value: value)
+        }
       }
     }
 
@@ -298,6 +303,25 @@ public struct ProjectMarkdownParser {
     var yaml = "\(key):\n"
     yaml += generateYAMLValue(jsonObject, indent: 1)
     return yaml
+  }
+
+  /// Generate YAML for an unknown per-member key nested under a cast member.
+  ///
+  /// Cast member fields are indented four spaces (indent level 2), so scalars
+  /// render inline (`    bio: "..."`) and nested collections descend from there.
+  private func generateCastMemberExtraYAML(key: String, value: AnyCodable) throws -> String {
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    let data = try encoder.encode(value)
+    let jsonObject = try JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])
+
+    if jsonObject is [String: Any] || jsonObject is [Any] {
+      var yaml = "    \(key):\n"
+      yaml += generateYAMLValue(jsonObject, indent: 3)
+      return yaml
+    } else {
+      return "    \(key): \(formatYAMLPrimitive(jsonObject))\n"
+    }
   }
 
   /// Recursively generate YAML for a value with proper indentation.
