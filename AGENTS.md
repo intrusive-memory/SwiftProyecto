@@ -9,7 +9,7 @@ updated: 2026-07-12
 
 This file provides comprehensive documentation for AI agents working with the SwiftProyecto codebase.
 
-**Current Version**: 4.3.3 (July 2026)
+**Current Version**: 4.3.3-dev (development, July 2026)
 
 **Latest Changes (v4.0.0)**:
 - **Multi-Season Schema**: `seasons[]` array replaces single `season` field for multi-season projects
