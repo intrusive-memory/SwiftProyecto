@@ -20,8 +20,10 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/marcprux/universal.git", .upToNextMajor(from: "5.3.0")),
-    .package(url: "https://github.com/intrusive-memory/SwiftAcervo.git", .upToNextMajor(from: "0.23.0")),
-    .package(url: "https://github.com/intrusive-memory/SwiftCompartido.git", .upToNextMajor(from: "7.2.1")),
+    .package(
+      url: "https://github.com/intrusive-memory/SwiftAcervo.git", .upToNextMajor(from: "0.24.1")),
+    .package(
+      url: "https://github.com/intrusive-memory/SwiftCompartido.git", .upToNextMajor(from: "7.2.2")),
     // NOTE: SwiftBruja is deliberately NOT a dependency. `proyecto roles` runs
     // its casting/role extraction on-device via Apple's Foundation Models
     // (guided generation), so the library and CLI stay free of SwiftBruja's
