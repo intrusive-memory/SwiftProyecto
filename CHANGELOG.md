@@ -1,3 +1,7 @@
+---
+type: doc
+---
+
 # Changelog
 
 All notable changes to SwiftProyecto will be documented in this file.
@@ -6,6 +10,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+---
+
+## [4.3.3] - 2026-07-12
+
+### Changed
+
+- **Bumped `SwiftCompartido` dependency floor to 7.2.2** - Pulls in the Fountain parser fix ([SwiftCompartido#71](https://github.com/intrusive-memory/SwiftCompartido/issues/71)) so `CastExtractor` no longer reports emphasis-wrapped direction lines (e.g. `**END OF SCENE.**`) as characters.
+- Bumped `SwiftAcervo` dependency floor to 0.24.1.
 
 ---
 
