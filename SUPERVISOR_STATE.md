@@ -54,8 +54,8 @@ state: in_progress
 
 ### WU1: Core Data Models
 - **Work Unit State**: RUNNING
-- **Sorties**: S1.1 ✅ COMPLETED, S1.2 (pending), S1.3, S1.4
-- **Current Sortie**: 2 of 4
+- **Sorties**: S1.1 ✅ COMPLETED, S1.2 ✅ COMPLETED, S1.3 (pending), S1.4
+- **Current Sortie**: 3 of 4
 - **Priority**: CRITICAL (foundation for all other work)
 
 ### WU2: File Discovery Service
@@ -94,7 +94,7 @@ state: in_progress
 
 | Work Unit | Sortie | Sortie State | Attempt | Model | Task ID | Output File | Dispatched At |
 |-----------|--------|-------------|---------|-------|---------|-------------|---------------|
-| WU1: Core Data Models | S1.2 | DISPATCHED | 1/3 | sonnet | a8a386a1c99e073fc | /private/tmp/claude-501/.../tasks/a8a386a1c99e073fc.output | 2026-07-17T00:00:00Z |
+| WU1: Core Data Models | S1.3 | DISPATCHED | 1/3 | sonnet | a17494174aa631ab5 | /private/tmp/claude-501/.../tasks/a17494174aa631ab5.output | 2026-07-17T00:00:00Z |
 
 ---
 
@@ -107,6 +107,8 @@ state: in_progress
 | 2026-07-17T00:00:00Z | - | - | Branch created | mission/projectbrowser-library/01 |
 | 2026-07-17T00:05:00Z | WU1 | S1.1 | Sortie COMPLETED | All model files created, compilation verified, all exit criteria met |
 | 2026-07-17T00:05:00Z | WU1 | S1.2 | Sortie DISPATCHED | FileTypeHandler & callback models (model: sonnet, agent: a8a386a1c99e073fc) |
+| 2026-07-17T00:10:00Z | WU1 | S1.2 | Sortie COMPLETED | FileAction and FileTypeHandler models created, @Sendable conformance verified, build succeeded |
+| 2026-07-17T00:10:00Z | WU1 | S1.3 | Sortie DISPATCHED | Unit tests for all models (model: sonnet, agent: a17494174aa631ab5) |
 
 ---
 
