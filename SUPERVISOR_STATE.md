@@ -94,7 +94,7 @@ state: in_progress
 
 | Work Unit | Sortie | Sortie State | Attempt | Model | Task ID | Output File | Dispatched At |
 |-----------|--------|-------------|---------|-------|---------|-------------|---------------|
-| WU4: Main Container | S4.4 | DISPATCHED | 1/3 | sonnet | a33041b18becaedb6 | /private/tmp/claude-501/.../tasks/a33041b18becaedb6.output | 2026-07-17T00:00:00Z |
+| WU5: Produciesta | S5.1 | DISPATCHED | 1/3 | sonnet | acc56b980ad255089 | /private/tmp/claude-501/.../tasks/acc56b980ad255089.output | 2026-07-17T00:00:00Z |
 
 ---
 
