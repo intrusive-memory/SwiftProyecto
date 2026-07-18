@@ -65,16 +65,16 @@ state: in_progress
 - **Depends On**: WU1 ✅ COMPLETE
 
 ### WU3: View Layer – Components
-- **Work Unit State**: RUNNING
-- **Sorties**: S3.1 ✅, S3.2 ✅, S3.3 ✅, S3.4 ✅, S3.5 ✅, S3.6 (pending)
+- **Work Unit State**: ✅ COMPLETED
+- **Sorties**: S3.1 ✅, S3.2 ✅, S3.3 ✅, S3.4 ✅, S3.5 ✅, S3.6 ✅
 - **Current Sortie**: 6 of 6
 - **Depends On**: WU1 ✅ COMPLETE, S2.1 ✅ COMPLETE
 
 ### WU4: Main Container & Layout
-- **Work Unit State**: NOT_STARTED
-- **Sorties**: S4.1, S4.2, S4.3, S4.4
+- **Work Unit State**: RUNNING
+- **Sorties**: S4.1 (pending), S4.2, S4.3, S4.4
 - **Current Sortie**: 1 of 4
-- **Depends On**: WU3, WU2
+- **Depends On**: WU3 ✅ COMPLETE, WU2 ✅ COMPLETE
 
 ### WU5: Produciesta Integration
 - **Work Unit State**: NOT_STARTED
@@ -94,7 +94,7 @@ state: in_progress
 
 | Work Unit | Sortie | Sortie State | Attempt | Model | Task ID | Output File | Dispatched At |
 |-----------|--------|-------------|---------|-------|---------|-------------|---------------|
-| WU3: View Layer | S3.6 | DISPATCHED | 1/3 | sonnet | aaf989921f6208843 | /private/tmp/claude-501/.../tasks/aaf989921f6208843.output | 2026-07-17T00:00:00Z |
+| WU4: Main Container | S4.1 | DISPATCHED | 1/3 | sonnet | af7cf33756e459a30 | /private/tmp/claude-501/.../tasks/af7cf33756e459a30.output | 2026-07-17T00:00:00Z |
 
 ---
 
@@ -127,6 +127,9 @@ state: in_progress
 | 2026-07-17T00:40:00Z | WU3 | S3.5 | Sortie DISPATCHED | ProjectBrowserSidebar assembly (model: sonnet, agent: aba6bdccf48fb6845) |
 | 2026-07-17T00:42:00Z | WU3 | S3.5 | Sortie COMPLETED | ProjectBrowserSidebar composed Header + FileTreeView + ActionBar with dividers |
 | 2026-07-17T00:42:00Z | WU3 | S3.6 | Sortie DISPATCHED | ProjectDetailPane with handler lookup & fallback (model: sonnet, agent: aaf989921f6208843) |
+| 2026-07-17T00:45:00Z | WU3 | S3.6 | Sortie COMPLETED | ProjectDetailPane with handler registry; added fileSize to ProjectFile model |
+| 2026-07-17T00:45:00Z | WU3 | - | Work Unit COMPLETED | All 6 view sorties complete; 52 tests passing; no regressions |
+| 2026-07-17T00:45:00Z | WU4 | S4.1 | Sortie DISPATCHED | ProjectWindow with NavigationSplitView (model: sonnet, agent: af7cf33756e459a30) |
 
 ---
 
