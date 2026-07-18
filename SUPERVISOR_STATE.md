@@ -53,16 +53,16 @@ state: in_progress
 ## Work Unit Details
 
 ### WU1: Core Data Models
-- **Work Unit State**: RUNNING
-- **Sorties**: S1.1 ✅ COMPLETED, S1.2 ✅ COMPLETED, S1.3 ✅ COMPLETED, S1.4 (pending)
+- **Work Unit State**: ✅ COMPLETED
+- **Sorties**: S1.1 ✅, S1.2 ✅, S1.3 ✅, S1.4 ✅
 - **Current Sortie**: 4 of 4
 - **Priority**: CRITICAL (foundation for all other work)
 
 ### WU2: File Discovery Service
-- **Work Unit State**: NOT_STARTED
-- **Sorties**: S2.1, S2.2, S2.3
+- **Work Unit State**: RUNNING
+- **Sorties**: S2.1 (pending), S2.2, S2.3
 - **Current Sortie**: 1 of 3
-- **Depends On**: WU1
+- **Depends On**: WU1 ✅ READY
 
 ### WU3: View Layer – Components
 - **Work Unit State**: NOT_STARTED
@@ -94,7 +94,7 @@ state: in_progress
 
 | Work Unit | Sortie | Sortie State | Attempt | Model | Task ID | Output File | Dispatched At |
 |-----------|--------|-------------|---------|-------|---------|-------------|---------------|
-| WU1: Core Data Models | S1.4 | DISPATCHED | 1/3 | sonnet | ada2fc6bc87c6aa5f | /private/tmp/claude-501/.../tasks/ada2fc6bc87c6aa5f.output | 2026-07-17T00:00:00Z |
+| WU2: File Discovery Service | S2.1 | DISPATCHED | 1/3 | sonnet | abbcf548aeaea2748 | /private/tmp/claude-501/.../tasks/abbcf548aeaea2748.output | 2026-07-17T00:00:00Z |
 
 ---
 
@@ -111,6 +111,9 @@ state: in_progress
 | 2026-07-17T00:10:00Z | WU1 | S1.3 | Sortie DISPATCHED | Unit tests for all models (model: sonnet, agent: a17494174aa631ab5) |
 | 2026-07-17T00:15:00Z | WU1 | S1.3 | Sortie COMPLETED | 25 tests, 100% coverage, all passing; Package.swift updated with ProjectBrowserTests target |
 | 2026-07-17T00:15:00Z | WU1 | S1.4 | Sortie DISPATCHED | Verify models package export and no circular deps (model: sonnet, agent: ada2fc6bc87c6aa5f) |
+| 2026-07-17T00:20:00Z | WU1 | S1.4 | Sortie COMPLETED | All models public, package builds cleanly, no circular dependencies, XcodeBuild verified |
+| 2026-07-17T00:20:00Z | WU1 | - | Work Unit COMPLETED | WU1 foundation ready; unlocking WU2 |
+| 2026-07-17T00:20:00Z | WU2 | S2.1 | Sortie DISPATCHED | ProjectFileDiscovery service with recursive directory scanning (model: sonnet, agent: abbcf548aeaea2748) |
 
 ---
 
