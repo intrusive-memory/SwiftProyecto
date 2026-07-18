@@ -54,8 +54,8 @@ state: in_progress
 
 ### WU1: Core Data Models
 - **Work Unit State**: RUNNING
-- **Sorties**: S1.1 ✅ COMPLETED, S1.2 ✅ COMPLETED, S1.3 (pending), S1.4
-- **Current Sortie**: 3 of 4
+- **Sorties**: S1.1 ✅ COMPLETED, S1.2 ✅ COMPLETED, S1.3 ✅ COMPLETED, S1.4 (pending)
+- **Current Sortie**: 4 of 4
 - **Priority**: CRITICAL (foundation for all other work)
 
 ### WU2: File Discovery Service
@@ -94,7 +94,7 @@ state: in_progress
 
 | Work Unit | Sortie | Sortie State | Attempt | Model | Task ID | Output File | Dispatched At |
 |-----------|--------|-------------|---------|-------|---------|-------------|---------------|
-| WU1: Core Data Models | S1.3 | DISPATCHED | 1/3 | sonnet | a17494174aa631ab5 | /private/tmp/claude-501/.../tasks/a17494174aa631ab5.output | 2026-07-17T00:00:00Z |
+| WU1: Core Data Models | S1.4 | DISPATCHED | 1/3 | sonnet | ada2fc6bc87c6aa5f | /private/tmp/claude-501/.../tasks/ada2fc6bc87c6aa5f.output | 2026-07-17T00:00:00Z |
 
 ---
 
@@ -109,6 +109,8 @@ state: in_progress
 | 2026-07-17T00:05:00Z | WU1 | S1.2 | Sortie DISPATCHED | FileTypeHandler & callback models (model: sonnet, agent: a8a386a1c99e073fc) |
 | 2026-07-17T00:10:00Z | WU1 | S1.2 | Sortie COMPLETED | FileAction and FileTypeHandler models created, @Sendable conformance verified, build succeeded |
 | 2026-07-17T00:10:00Z | WU1 | S1.3 | Sortie DISPATCHED | Unit tests for all models (model: sonnet, agent: a17494174aa631ab5) |
+| 2026-07-17T00:15:00Z | WU1 | S1.3 | Sortie COMPLETED | 25 tests, 100% coverage, all passing; Package.swift updated with ProjectBrowserTests target |
+| 2026-07-17T00:15:00Z | WU1 | S1.4 | Sortie DISPATCHED | Verify models package export and no circular deps (model: sonnet, agent: ada2fc6bc87c6aa5f) |
 
 ---
 
