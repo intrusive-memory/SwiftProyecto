@@ -66,8 +66,8 @@ state: in_progress
 
 ### WU3: View Layer – Components
 - **Work Unit State**: RUNNING
-- **Sorties**: S3.1 (pending), S3.2 (pending), S3.3 (pending), S3.4 (pending), S3.5, S3.6
-- **Current Sortie**: 1 of 6
+- **Sorties**: S3.1 (running), S3.2 (running), S3.3 (running), S3.4 ✅ COMPLETED, S3.5 (pending), S3.6 (pending)
+- **Current Sortie**: 4 of 6
 - **Depends On**: WU1 ✅ COMPLETE, S2.1 ✅ COMPLETE
 
 ### WU4: Main Container & Layout
@@ -95,9 +95,6 @@ state: in_progress
 | Work Unit | Sortie | Sortie State | Attempt | Model | Task ID | Output File | Dispatched At |
 |-----------|--------|-------------|---------|-------|---------|-------------|---------------|
 | WU3: View Layer | S3.1 | DISPATCHED | 1/3 | sonnet | a08722ec1983718b0 | /private/tmp/claude-501/.../tasks/a08722ec1983718b0.output | 2026-07-17T00:00:00Z |
-| WU3: View Layer | S3.2 | DISPATCHED | 1/3 | sonnet | ad2a816a8e73531dc | /private/tmp/claude-501/.../tasks/ad2a816a8e73531dc.output | 2026-07-17T00:00:00Z |
-| WU3: View Layer | S3.3 | DISPATCHED | 1/3 | sonnet | a1b6f262c03e8eb5e | /private/tmp/claude-501/.../tasks/a1b6f262c03e8eb5e.output | 2026-07-17T00:00:00Z |
-| WU3: View Layer | S3.4 | DISPATCHED | 1/3 | sonnet | a491b46a752a84e5f | /private/tmp/claude-501/.../tasks/a491b46a752a84e5f.output | 2026-07-17T00:00:00Z |
 
 ---
 
@@ -123,6 +120,9 @@ state: in_progress
 | 2026-07-17T00:28:00Z | WU2 | S2.3 | Sortie DISPATCHED | Integration test with real directories & deep nesting (model: sonnet, agent: a4f9981ea2cb6137f) |
 | 2026-07-17T00:32:00Z | WU2 | S2.3 | Sortie COMPLETED | 7 integration tests, realistic nested structures, 52 total tests passing; WU2 complete |
 | 2026-07-17T00:32:00Z | WU3 | S3.1-3.4 | Sorties DISPATCHED | FileTreeView, ProjectHeader, ProjectActionBar, DefaultContentViews dispatched in parallel |
+| 2026-07-17T00:35:00Z | WU3 | S3.4 | Sortie COMPLETED | PlainTextContentView, UnsupportedFileView, LoadingView, ErrorView with fallbacks |
+| 2026-07-17T00:36:00Z | WU3 | S3.2 | Sortie COMPLETED | ProjectHeader with responsive title/counts/metadata display (macOS & iOS) |
+| 2026-07-17T00:38:00Z | WU3 | S3.3 | Sortie COMPLETED | ProjectActionBar with platform-aware Sync/Import/LoadAll/UnloadAll buttons |
 
 ---
 
