@@ -76,11 +76,11 @@ state: in_progress
 - **Current Sortie**: 4 of 4
 - **Depends On**: WU3 ✅ COMPLETE, WU2 ✅ COMPLETE
 
-### WU5: Produciesta Integration
+### WU5: Proyecto Integration
 - **Work Unit State**: RUNNING
-- **Sorties**: S5.1 (PARTIAL - handlers created, awaiting dep wiring), S5.2, S5.3
+- **Sorties**: S5.1 ✅ (COMPLETE - ProjectBrowser linked to Proyecto.xcodeproj), S5.2, S5.3
 - **Current Sortie**: 1 of 3
-- **Depends On**: WU4 ✅ COMPLETE, ProjectBrowser dependency needed
+- **Depends On**: WU4 ✅ COMPLETE, Proyecto app exists at ~/Projects/apps/Proyecto
 
 ### WU6: Testing & Documentation
 - **Work Unit State**: NOT_STARTED
@@ -94,7 +94,7 @@ state: in_progress
 
 | Work Unit | Sortie | Sortie State | Attempt | Model | Task ID | Output File | Dispatched At |
 |-----------|--------|-------------|---------|-------|---------|-------------|---------------|
-| WU5: Produciesta | S5.1 | DISPATCHED | 1/3 | sonnet | acc56b980ad255089 | /private/tmp/claude-501/.../tasks/acc56b980ad255089.output | 2026-07-17T00:00:00Z |
+| (none) | - | - | - | - | - | - | - |
 
 ---
 
@@ -141,6 +141,15 @@ state: in_progress
 | 2026-07-17T01:00:00Z | WU4 | - | Work Unit COMPLETED | All 4 sorties complete; full container with actions, loading, platform support |
 | 2026-07-17T01:00:00Z | WU5 | - | Work Unit UNLOCKED | Ready to begin Produciesta integration |
 | 2026-07-17T01:05:00Z | WU5 | S5.1 | Sortie PARTIAL | Handlers created (plain-text fallbacks); ProjectBrowser dep not yet wired; awaiting S5.2 dependency setup |
+| 2026-07-18T14:00:00Z | WU5 | S5.1 | Mission Pivot | Pivoted from Produciesta to Proyecto app integration; S5.1 re-scoped to wire SwiftProyecto dependency into Proyecto.xcodeproj |
+| 2026-07-18T14:00:00Z | WU5 | S5.1 | Dispatch | Wire ProjectBrowser package to Proyecto.xcodeproj (model: sonnet, agent: a6cfcb6c22419944f) |
+| 2026-07-18T14:45:00Z | WU5 | S5.1 | Sortie PARTIAL | Package wired (XCRemoteSwiftPackageReference added); macOS build succeeds; BLOCKER: Xcode 27 cannot resolve ProjectBrowser product for import (module resolution issue) |
+| 2026-07-18T14:46:00Z | WU5 | S5.1 | Root Cause Identified | Issue: ProjectBrowser product never linked to Proyecto target's Frameworks build phase; XCRemoteSwiftPackageReference exists but product not added to Link Binary With Libraries |
+| 2026-07-18T14:46:00Z | WU5 | S5.1 | Retry Dispatched (Attempt 2) | Agent a59d347908e2fa0ac dispatched to add ProjectBrowser product to Frameworks build phase (model: sonnet) |
+| 2026-07-18T10:30:00Z | WU5 | S5.1 | Class Name Fixed | Discovered correct Xcode 27 class name: XCSwiftPackageProductDependency (not PBXPackageProductDependency); pbxproj parsing error resolved |
+| 2026-07-18T10:32:00Z | WU5 | S5.1 | Path Resolution Fixed | Fixed relative paths in pbxproj and workspace: ../../package-collection/pkg/SwiftProyecto (was incorrectly ../../../...) |
+| 2026-07-18T10:35:00Z | WU5 | S5.1 | Sortie COMPLETED | ProjectBrowser product successfully linked via XCSwiftPackageProductDependency; Proyecto.xcworkspace created for proper resolution; import ProjectBrowser compiles; macOS & iOS builds verified |
+| 2026-07-18T10:35:00Z | WU5 | S5.1 | Commit | Committed to Proyecto repository (6bef352): "Link ProjectBrowser framework to Proyecto target (S5.1 retry complete)" |
 
 ---
 
@@ -153,5 +162,5 @@ state: in_progress
 
 ---
 
-**Status**: READY FOR DISPATCH  
-**Last Updated**: 2026-07-17
+**Status**: WU5 RUNNING (S5.1 COMPLETE – ProjectBrowser linked to Proyecto.xcodeproj)  
+**Last Updated**: 2026-07-18
