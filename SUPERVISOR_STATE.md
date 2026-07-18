@@ -72,8 +72,8 @@ state: in_progress
 
 ### WU4: Main Container & Layout
 - **Work Unit State**: RUNNING
-- **Sorties**: S4.1 ✅ COMPLETED, S4.2 ✅ COMPLETED, S4.3 (pending), S4.4
-- **Current Sortie**: 3 of 4
+- **Sorties**: S4.1 ✅, S4.2 ✅, S4.3 ✅, S4.4 (pending)
+- **Current Sortie**: 4 of 4
 - **Depends On**: WU3 ✅ COMPLETE, WU2 ✅ COMPLETE
 
 ### WU5: Produciesta Integration
@@ -94,7 +94,7 @@ state: in_progress
 
 | Work Unit | Sortie | Sortie State | Attempt | Model | Task ID | Output File | Dispatched At |
 |-----------|--------|-------------|---------|-------|---------|-------------|---------------|
-| WU4: Main Container | S4.3 | DISPATCHED | 1/3 | sonnet | abddfef5b5fa263ea | /private/tmp/claude-501/.../tasks/abddfef5b5fa263ea.output | 2026-07-17T00:00:00Z |
+| WU4: Main Container | S4.4 | DISPATCHED | 1/3 | sonnet | a33041b18becaedb6 | /private/tmp/claude-501/.../tasks/a33041b18becaedb6.output | 2026-07-17T00:00:00Z |
 
 ---
 
@@ -135,6 +135,8 @@ state: in_progress
 | 2026-07-17T00:48:00Z | WU4 | S4.2 | Sortie DISPATCHED | File actions (reload, delete, show in Finder) (model: sonnet, agent: adae1d2c0421a440b) |
 | 2026-07-17T00:52:00Z | WU4 | S4.2 | Sortie COMPLETED | File action handler service, context menu actions, 18 tests; 70 total passing |
 | 2026-07-17T00:52:00Z | WU4 | S4.3 | Sortie DISPATCHED | Lazy loading with in-memory cache (model: sonnet, agent: abddfef5b5fa263ea) |
+| 2026-07-17T00:56:00Z | WU4 | S4.3 | Sortie COMPLETED | Lazy loading service, cache management, Load All/Unload All actions; 78 total tests |
+| 2026-07-17T00:56:00Z | WU4 | S4.4 | Sortie DISPATCHED | iOS NavigationStack layout (model: sonnet, agent: a33041b18becaedb6) |
 
 ---
 
