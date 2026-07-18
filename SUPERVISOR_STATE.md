@@ -78,9 +78,9 @@ state: in_progress
 
 ### WU5: Produciesta Integration
 - **Work Unit State**: RUNNING
-- **Sorties**: S5.1 (pending), S5.2, S5.3
+- **Sorties**: S5.1 (PARTIAL - handlers created, awaiting dep wiring), S5.2, S5.3
 - **Current Sortie**: 1 of 3
-- **Depends On**: WU4 ✅ COMPLETE
+- **Depends On**: WU4 ✅ COMPLETE, ProjectBrowser dependency needed
 
 ### WU6: Testing & Documentation
 - **Work Unit State**: NOT_STARTED
@@ -140,6 +140,7 @@ state: in_progress
 | 2026-07-17T01:00:00Z | WU4 | S4.4 | Sortie COMPLETED | Platform-aware layout (NavigationSplitView macOS, NavigationStack iOS); 81 tests |
 | 2026-07-17T01:00:00Z | WU4 | - | Work Unit COMPLETED | All 4 sorties complete; full container with actions, loading, platform support |
 | 2026-07-17T01:00:00Z | WU5 | - | Work Unit UNLOCKED | Ready to begin Produciesta integration |
+| 2026-07-17T01:05:00Z | WU5 | S5.1 | Sortie PARTIAL | Handlers created (plain-text fallbacks); ProjectBrowser dep not yet wired; awaiting S5.2 dependency setup |
 
 ---
 
