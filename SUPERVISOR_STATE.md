@@ -71,16 +71,16 @@ state: in_progress
 - **Depends On**: WU1 ✅ COMPLETE, S2.1 ✅ COMPLETE
 
 ### WU4: Main Container & Layout
-- **Work Unit State**: RUNNING
-- **Sorties**: S4.1 ✅, S4.2 ✅, S4.3 ✅, S4.4 (pending)
+- **Work Unit State**: ✅ COMPLETED
+- **Sorties**: S4.1 ✅, S4.2 ✅, S4.3 ✅, S4.4 ✅
 - **Current Sortie**: 4 of 4
 - **Depends On**: WU3 ✅ COMPLETE, WU2 ✅ COMPLETE
 
 ### WU5: Produciesta Integration
-- **Work Unit State**: NOT_STARTED
-- **Sorties**: S5.1, S5.2, S5.3
+- **Work Unit State**: RUNNING
+- **Sorties**: S5.1 (pending), S5.2, S5.3
 - **Current Sortie**: 1 of 3
-- **Depends On**: WU4
+- **Depends On**: WU4 ✅ COMPLETE
 
 ### WU6: Testing & Documentation
 - **Work Unit State**: NOT_STARTED
@@ -137,6 +137,9 @@ state: in_progress
 | 2026-07-17T00:52:00Z | WU4 | S4.3 | Sortie DISPATCHED | Lazy loading with in-memory cache (model: sonnet, agent: abddfef5b5fa263ea) |
 | 2026-07-17T00:56:00Z | WU4 | S4.3 | Sortie COMPLETED | Lazy loading service, cache management, Load All/Unload All actions; 78 total tests |
 | 2026-07-17T00:56:00Z | WU4 | S4.4 | Sortie DISPATCHED | iOS NavigationStack layout (model: sonnet, agent: a33041b18becaedb6) |
+| 2026-07-17T01:00:00Z | WU4 | S4.4 | Sortie COMPLETED | Platform-aware layout (NavigationSplitView macOS, NavigationStack iOS); 81 tests |
+| 2026-07-17T01:00:00Z | WU4 | - | Work Unit COMPLETED | All 4 sorties complete; full container with actions, loading, platform support |
+| 2026-07-17T01:00:00Z | WU5 | - | Work Unit UNLOCKED | Ready to begin Produciesta integration |
 
 ---
 
