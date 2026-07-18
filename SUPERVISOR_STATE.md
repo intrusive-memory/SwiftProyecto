@@ -60,8 +60,8 @@ state: in_progress
 
 ### WU2: File Discovery Service
 - **Work Unit State**: RUNNING
-- **Sorties**: S2.1 ✅ COMPLETED, S2.2 (pending), S2.3
-- **Current Sortie**: 2 of 3
+- **Sorties**: S2.1 ✅ COMPLETED, S2.2 ✅ COMPLETED, S2.3 (pending)
+- **Current Sortie**: 3 of 3
 - **Depends On**: WU1 ✅ COMPLETE
 
 ### WU3: View Layer – Components
@@ -94,7 +94,7 @@ state: in_progress
 
 | Work Unit | Sortie | Sortie State | Attempt | Model | Task ID | Output File | Dispatched At |
 |-----------|--------|-------------|---------|-------|---------|-------------|---------------|
-| WU2: File Discovery Service | S2.2 | DISPATCHED | 1/3 | sonnet | aa305b5f2c25b0d54 | /private/tmp/claude-501/.../tasks/aa305b5f2c25b0d54.output | 2026-07-17T00:00:00Z |
+| WU2: File Discovery Service | S2.3 | DISPATCHED | 1/3 | sonnet | a4f9981ea2cb6137f | /private/tmp/claude-501/.../tasks/a4f9981ea2cb6137f.output | 2026-07-17T00:00:00Z |
 
 ---
 
@@ -116,6 +116,8 @@ state: in_progress
 | 2026-07-17T00:20:00Z | WU2 | S2.1 | Sortie DISPATCHED | ProjectFileDiscovery service with recursive directory scanning (model: sonnet, agent: abbcf548aeaea2748) |
 | 2026-07-17T00:25:00Z | WU2 | S2.1 | Sortie COMPLETED | Async directory discovery, ignore patterns, symlink handling; 12 new tests, 37 total passing |
 | 2026-07-17T00:25:00Z | WU2 | S2.2 | Sortie DISPATCHED | PROJECT.md metadata parsing (model: sonnet, agent: aa305b5f2c25b0d54) |
+| 2026-07-17T00:28:00Z | WU2 | S2.2 | Sortie COMPLETED | Async ProjectMetadata.load(from:) with YAML parsing; 8 new tests, 45 total passing |
+| 2026-07-17T00:28:00Z | WU2 | S2.3 | Sortie DISPATCHED | Integration test with real directories & deep nesting (model: sonnet, agent: a4f9981ea2cb6137f) |
 
 ---
 
