@@ -66,8 +66,8 @@ state: in_progress
 
 ### WU3: View Layer – Components
 - **Work Unit State**: RUNNING
-- **Sorties**: S3.1 ✅, S3.2 ✅, S3.3 ✅, S3.4 ✅, S3.5 (pending), S3.6 (pending)
-- **Current Sortie**: 5 of 6
+- **Sorties**: S3.1 ✅, S3.2 ✅, S3.3 ✅, S3.4 ✅, S3.5 ✅, S3.6 (pending)
+- **Current Sortie**: 6 of 6
 - **Depends On**: WU1 ✅ COMPLETE, S2.1 ✅ COMPLETE
 
 ### WU4: Main Container & Layout
@@ -94,7 +94,7 @@ state: in_progress
 
 | Work Unit | Sortie | Sortie State | Attempt | Model | Task ID | Output File | Dispatched At |
 |-----------|--------|-------------|---------|-------|---------|-------------|---------------|
-| WU3: View Layer | S3.5 | DISPATCHED | 1/3 | sonnet | aba6bdccf48fb6845 | /private/tmp/claude-501/.../tasks/aba6bdccf48fb6845.output | 2026-07-17T00:00:00Z |
+| WU3: View Layer | S3.6 | DISPATCHED | 1/3 | sonnet | aaf989921f6208843 | /private/tmp/claude-501/.../tasks/aaf989921f6208843.output | 2026-07-17T00:00:00Z |
 
 ---
 
@@ -125,6 +125,8 @@ state: in_progress
 | 2026-07-17T00:38:00Z | WU3 | S3.3 | Sortie COMPLETED | ProjectActionBar with platform-aware Sync/Import/LoadAll/UnloadAll buttons |
 | 2026-07-17T00:40:00Z | WU3 | S3.1 | Sortie COMPLETED | FileTreeView with hierarchical DisclosureGroups, icons, selection, loading/error states |
 | 2026-07-17T00:40:00Z | WU3 | S3.5 | Sortie DISPATCHED | ProjectBrowserSidebar assembly (model: sonnet, agent: aba6bdccf48fb6845) |
+| 2026-07-17T00:42:00Z | WU3 | S3.5 | Sortie COMPLETED | ProjectBrowserSidebar composed Header + FileTreeView + ActionBar with dividers |
+| 2026-07-17T00:42:00Z | WU3 | S3.6 | Sortie DISPATCHED | ProjectDetailPane with handler lookup & fallback (model: sonnet, agent: aaf989921f6208843) |
 
 ---
 
