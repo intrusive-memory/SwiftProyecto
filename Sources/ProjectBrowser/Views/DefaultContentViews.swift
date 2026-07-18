@@ -73,27 +73,26 @@ public struct UnsupportedFileView: View {
     return "unknown type"
   }
 
+  private var handlerHint: String {
+    if let ext = file.fileExtension, !ext.isEmpty {
+      return "No file handler for the binary type '.\(ext)'"
+    }
+    return "No file handler registered for this file type"
+  }
+
   public var body: some View {
     VStack(spacing: 12) {
       Image(systemName: "doc.questionmark")
         .font(.system(size: 40))
         .foregroundStyle(.secondary)
 
-      Text("No handler for \(file.displayName)")
+      Text(handlerHint)
         .font(.headline)
         .multilineTextAlignment(.center)
 
-      Text(extensionLabel)
+      Text("Register a file handler to view this content")
         .font(.subheadline)
         .foregroundStyle(.secondary)
-
-      // Stub for now — wiring to NSWorkspace/UIApplication "open with
-      // default app" behavior is deferred to a later sortie.
-      Button("Open with default app") {
-        // No-op stub; real implementation deferred.
-      }
-      .buttonStyle(.bordered)
-      .padding(.top, 4)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .padding()
