@@ -35,6 +35,11 @@ public struct FileTreeView: View {
   private let onFolderToggle: (UUID) -> Void
   private let onSelect: (ProjectFile) -> Void
 
+  /// Invoked when the user chooses a file action from a file row's context
+  /// menu (reload, delete, show in Finder). `nil` (the default) hides the
+  /// context menu entirely.
+  private let onFileAction: ((ProjectFile, FileAction) -> Void)?
+
   /// Creates a hierarchical file tree view.
   ///
   /// - Parameters:
@@ -49,18 +54,22 @@ public struct FileTreeView: View {
   ///     `expandedFolders` in response.
   ///   - onSelect: Invoked with a file when the user selects it. The caller
   ///     is responsible for updating `selectedFile` in response.
+  ///   - onFileAction: Invoked with a file and the chosen action when the
+  ///     user picks a context-menu item. `nil` hides the context menu.
   public init(
     files: [ProjectFile],
     expandedFolders: Binding<Set<UUID>>,
     selectedFile: Binding<ProjectFile?>,
     onFolderToggle: @escaping (UUID) -> Void,
-    onSelect: @escaping (ProjectFile) -> Void
+    onSelect: @escaping (ProjectFile) -> Void,
+    onFileAction: ((ProjectFile, FileAction) -> Void)? = nil
   ) {
     self.files = files
     self._expandedFolders = expandedFolders
     self._selectedFile = selectedFile
     self.onFolderToggle = onFolderToggle
     self.onSelect = onSelect
+    self.onFileAction = onFileAction
   }
 
   public var body: some View {
@@ -71,7 +80,8 @@ public struct FileTreeView: View {
           expandedFolders: $expandedFolders,
           selectedFile: $selectedFile,
           onFolderToggle: onFolderToggle,
-          onSelect: onSelect
+          onSelect: onSelect,
+          onFileAction: onFileAction
         )
       }
     }
@@ -137,6 +147,7 @@ private struct FileTreeNodeRow: View {
 
   let onFolderToggle: (UUID) -> Void
   let onSelect: (ProjectFile) -> Void
+  let onFileAction: ((ProjectFile, FileAction) -> Void)?
 
   private var isExpanded: Binding<Bool> {
     Binding(
@@ -158,7 +169,8 @@ private struct FileTreeNodeRow: View {
             expandedFolders: $expandedFolders,
             selectedFile: $selectedFile,
             onFolderToggle: onFolderToggle,
-            onSelect: onSelect
+            onSelect: onSelect,
+            onFileAction: onFileAction
           )
         }
       } label: {
@@ -177,9 +189,29 @@ private struct FileTreeNodeRow: View {
           onSelect(node.file)
         }
         .contextMenu {
-          // Placeholder structure — real actions (reload, delete, show in
-          // Finder, custom) are wired up to `FileActionCallback` in S3.5.
-          Text("Actions coming soon")
+          if let onFileAction {
+            Button {
+              onFileAction(node.file, .reload)
+            } label: {
+              Label("Reload", systemImage: "arrow.clockwise")
+            }
+
+            #if os(macOS)
+              Button {
+                onFileAction(node.file, .showInFinder)
+              } label: {
+                Label("Show in Finder", systemImage: "folder")
+              }
+            #endif
+
+            Divider()
+
+            Button(role: .destructive) {
+              onFileAction(node.file, .delete)
+            } label: {
+              Label("Delete", systemImage: "trash")
+            }
+          }
         }
     }
   }

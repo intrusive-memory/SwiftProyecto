@@ -63,6 +63,11 @@ public struct ProjectBrowserSidebar: View {
   private let onLoadAll: () -> Void
   private let onUnloadAll: () -> Void
 
+  /// Invoked when the user chooses a file action from a file row's context
+  /// menu in the embedded ``FileTreeView`` (reload, delete, show in
+  /// Finder). `nil` (the default) hides the context menu.
+  private let onFileAction: ((ProjectFile, FileAction) -> Void)?
+
   /// Whether the action bar's buttons are currently enabled. Forwarded
   /// directly to ``ProjectActionBar/isEnabled``.
   private let isActionBarEnabled: Bool
@@ -86,6 +91,9 @@ public struct ProjectBrowserSidebar: View {
   ///   - onImport: Invoked when the user taps Import.
   ///   - onLoadAll: Invoked when the user taps Load All.
   ///   - onUnloadAll: Invoked when the user taps Unload All.
+  ///   - onFileAction: Invoked with a file and the chosen action when the
+  ///     user picks a file row's context-menu item. `nil` hides the
+  ///     context menu.
   public init(
     files: [ProjectFile],
     metadata: ProjectMetadata?,
@@ -98,7 +106,8 @@ public struct ProjectBrowserSidebar: View {
     onSync: @escaping () -> Void,
     onImport: @escaping () -> Void,
     onLoadAll: @escaping () -> Void,
-    onUnloadAll: @escaping () -> Void
+    onUnloadAll: @escaping () -> Void,
+    onFileAction: ((ProjectFile, FileAction) -> Void)? = nil
   ) {
     self.files = files
     self.metadata = metadata
@@ -112,6 +121,7 @@ public struct ProjectBrowserSidebar: View {
     self.onImport = onImport
     self.onLoadAll = onLoadAll
     self.onUnloadAll = onUnloadAll
+    self.onFileAction = onFileAction
   }
 
   public var body: some View {
@@ -128,7 +138,8 @@ public struct ProjectBrowserSidebar: View {
         expandedFolders: $expandedFolders,
         selectedFile: $selectedFile,
         onFolderToggle: onFolderToggle,
-        onSelect: onSelect
+        onSelect: onSelect,
+        onFileAction: onFileAction
       )
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 

@@ -6,11 +6,19 @@ import SwiftUI
 /// ``UnsupportedFileView`` otherwise.
 ///
 /// `ProjectDetailPane` is purely presentational: it owns no state of its
-/// own. Lazy content loading (``FileLoaderCallback``) and file actions
-/// (``FileActionCallback``) are threaded through as optional callbacks for
-/// forward compatibility with WU4 (S4.2 file actions, S4.3 lazy loading);
-/// neither is invoked by `ProjectDetailPane` itself in Phase 1 — handler
-/// view builders are responsible for fetching their own content today.
+/// own, and never invokes a `FileLoaderCallback` itself. `ProjectWindow`
+/// owns lazy content loading (S4.3) — it decides when to fetch a
+/// handler-less file's contents, tracks in-flight loads, and passes the
+/// result down as `contents`/`isLoadingContent`/`loadError`.
+/// `ProjectDetailPane` only renders whatever state it's handed:
+///
+/// - A file with a registered handler always renders via that handler —
+///   handlers own fetching their own content and are unaffected by lazy
+///   loading.
+/// - A handler-less file shows ``LoadingView`` while `isLoadingContent` is
+///   `true`, ``ErrorView`` (with a retry action) when `loadError` is set,
+///   ``PlainTextContentView`` once `contents` arrives, or
+///   ``UnsupportedFileView`` as the final fallback.
 ///
 /// ## Layout
 ///
@@ -45,36 +53,68 @@ public struct ProjectDetailPane: View {
   /// selected.
   private let handlers: [String: (ProjectFile) -> AnyView]
 
-  /// A consumer-supplied callback that asynchronously loads a selected
-  /// file's contents.
-  ///
-  /// - Note: Stub for S4.3 (lazy loading). Stored but not yet invoked by
-  ///   `ProjectDetailPane`.
-  private let contentLoader: FileLoaderCallback?
+  /// The lazily-loaded contents of `selectedFile`, as fetched by
+  /// `ProjectWindow`'s ``FileLoaderCallback``-backed cache. `nil` until a
+  /// load completes successfully (or immediately, for files with a
+  /// registered handler — handlers never consult this).
+  private let contents: ProjectFileContents?
 
-  /// A consumer-supplied callback invoked when a file action is triggered.
+  /// Whether `ProjectWindow` currently has a content fetch in flight for
+  /// `selectedFile`. Drives ``LoadingView`` for handler-less files.
+  private let isLoadingContent: Bool
+
+  /// A human-readable error message if `selectedFile`'s most recent content
+  /// load failed, otherwise `nil`. Drives ``ErrorView`` for handler-less
+  /// files.
+  private let loadError: String?
+
+  /// Invoked when a file action is triggered from the metadata footer's
+  /// reload/show-in-Finder/delete buttons.
   ///
-  /// - Note: Stub for S4.2 (file actions). Stored but not yet invoked by
-  ///   `ProjectDetailPane`.
-  private let onAction: FileActionCallback?
+  /// Deliberately typed as a plain, non-`Sendable` closure rather than the
+  /// public `FileActionCallback` — this is purely UI wiring to whatever
+  /// hosts `ProjectDetailPane` (always invoked on the main actor from a
+  /// `Button` action), not the consumer-facing callback surfaced by
+  /// `ProjectWindow`'s own `onFileAction` initializer parameter.
+  private let onAction: ((ProjectFile, FileAction) -> Void)?
+
+  /// Invoked with `selectedFile` when the user taps "Retry" on the
+  /// handler-less ``ErrorView`` fallback. `nil` hides the retry button's
+  /// effect (the button itself is always shown by ``ErrorView``, but taps
+  /// become a no-op).
+  private let onRetryLoad: ((ProjectFile) -> Void)?
 
   /// Creates a project detail pane.
   ///
   /// - Parameters:
   ///   - selectedFile: The currently-selected file, or `nil` if none.
   ///   - handlers: A registry mapping file extensions to view builders.
-  ///   - contentLoader: Reserved for S4.3 lazy loading; unused in Phase 1.
-  ///   - onAction: Reserved for S4.2 file actions; unused in Phase 1.
+  ///   - contents: The selected file's lazily-loaded contents, if any.
+  ///   - isLoadingContent: Whether a content fetch is in flight for
+  ///     `selectedFile`.
+  ///   - loadError: An error message if the most recent content load
+  ///     failed, otherwise `nil`.
+  ///   - onAction: Invoked with the selected file and the chosen action
+  ///     when the user taps a footer action button (reload, show in
+  ///     Finder, delete).
+  ///   - onRetryLoad: Invoked with the selected file when the user taps
+  ///     "Retry" on the error fallback view.
   public init(
     selectedFile: ProjectFile?,
     handlers: [String: (ProjectFile) -> AnyView],
-    contentLoader: FileLoaderCallback? = nil,
-    onAction: FileActionCallback? = nil
+    contents: ProjectFileContents? = nil,
+    isLoadingContent: Bool = false,
+    loadError: String? = nil,
+    onAction: ((ProjectFile, FileAction) -> Void)? = nil,
+    onRetryLoad: ((ProjectFile) -> Void)? = nil
   ) {
     self.selectedFile = selectedFile
     self.handlers = handlers
-    self.contentLoader = contentLoader
+    self.contents = contents
+    self.isLoadingContent = isLoadingContent
+    self.loadError = loadError
     self.onAction = onAction
+    self.onRetryLoad = onRetryLoad
   }
 
   public var body: some View {
@@ -97,12 +137,23 @@ public struct ProjectDetailPane: View {
 
   // MARK: - Content
 
-  /// Looks up a registered handler for `file`'s extension and renders it,
-  /// falling back to ``UnsupportedFileView`` when no handler is registered.
+  /// Looks up a registered handler for `file`'s extension and renders it.
+  /// When no handler is registered, renders `ProjectWindow`'s lazy-loading
+  /// state instead: a spinner while loading, an error view (with retry) if
+  /// the load failed, the fetched text once available, or
+  /// ``UnsupportedFileView`` if nothing has loaded yet.
   @ViewBuilder
   private func contentView(for file: ProjectFile) -> some View {
     if let handler = handlers[file.fileExtension ?? ""] {
       handler(file)
+    } else if isLoadingContent {
+      LoadingView(filename: file.displayName)
+    } else if let loadError {
+      ErrorView(error: loadError) {
+        onRetryLoad?(file)
+      }
+    } else if let contents {
+      PlainTextContentView(text: contents.text)
     } else {
       UnsupportedFileView(file: file)
     }
@@ -130,12 +181,48 @@ public struct ProjectDetailPane: View {
       Label(Self.formattedSize(file.fileSize), systemImage: "internaldrive")
       Label(Self.formattedDate(file.modifiedDate), systemImage: "clock")
       Spacer()
+      actionButtons(for: file)
     }
     .font(.caption)
     .foregroundStyle(.secondary)
     .padding(.horizontal)
     .padding(.vertical, 8)
     .frame(maxWidth: .infinity)
+  }
+
+  /// File-action buttons (reload, show in Finder, delete) shown alongside
+  /// the metadata footer. Each dispatches through `onAction`; when
+  /// `onAction` is `nil` the buttons are hidden entirely rather than shown
+  /// disabled, since there's nothing for them to do.
+  @ViewBuilder
+  private func actionButtons(for file: ProjectFile) -> some View {
+    if let onAction {
+      HStack(spacing: 12) {
+        Button {
+          onAction(file, .reload)
+        } label: {
+          Image(systemName: "arrow.clockwise")
+        }
+        .help("Reload")
+
+        #if os(macOS)
+          Button {
+            onAction(file, .showInFinder)
+          } label: {
+            Image(systemName: "folder")
+          }
+          .help("Show in Finder")
+        #endif
+
+        Button(role: .destructive) {
+          onAction(file, .delete)
+        } label: {
+          Image(systemName: "trash")
+        }
+        .help("Delete")
+      }
+      .buttonStyle(.borderless)
+    }
   }
 
   // MARK: - Formatting
@@ -192,6 +279,34 @@ public struct ProjectDetailPane: View {
   ProjectDetailPane(
     selectedFile: ProjectDetailPanePreviewFiles.movieFile,
     handlers: [:]
+  )
+}
+
+#Preview("macOS – Loading (S4.3)", traits: .fixedLayout(width: 480, height: 360)) {
+  ProjectDetailPane(
+    selectedFile: ProjectDetailPanePreviewFiles.movieFile,
+    handlers: [:],
+    isLoadingContent: true
+  )
+}
+
+#Preview("macOS – Load Error (S4.3)", traits: .fixedLayout(width: 480, height: 360)) {
+  ProjectDetailPane(
+    selectedFile: ProjectDetailPanePreviewFiles.movieFile,
+    handlers: [:],
+    loadError: "Permission denied: assets/reel.mov"
+  )
+}
+
+#Preview("macOS – Fallback Loaded Text (S4.3)", traits: .fixedLayout(width: 480, height: 360)) {
+  ProjectDetailPane(
+    selectedFile: ProjectDetailPanePreviewFiles.movieFile,
+    handlers: [:],
+    contents: ProjectFileContents(
+      file: ProjectDetailPanePreviewFiles.movieFile,
+      data: nil,
+      text: "Lazily-loaded fallback text contents."
+    )
   )
 }
 

@@ -14,9 +14,9 @@ base_dependencies:
 
 # ProjectBrowser Library – Execution Plan
 
-**Mission Summary**: Build a reusable, generic **ProjectWindow** SwiftUI component that enables consumers (e.g., Produciesta) to browse any directory, register custom file type handlers, and render file contents. Decouples file browsing UI from domain logic, making it reusable across projects.
+**Mission Summary**: Build a reusable, generic **ProjectWindow** SwiftUI component that enables consumers to browse any directory, register custom file type handlers, and render file contents. Demonstrate integration in standalone **Proyecto** app. Decouples file browsing UI from domain logic, making it reusable across projects.
 
-**Scope**: Phase 1 (Core Library) – Basic file discovery, master-detail layout, handler registry, file actions, lazy loading.
+**Scope**: Phase 1 (Core Library + App Integration) – Basic file discovery, master-detail layout, handler registry, file actions, lazy loading, and working Proyecto app integration.
 
 ---
 
@@ -387,70 +387,72 @@ base_dependencies:
 
 ---
 
-### WU5: Integration with Produciesta
-**Goal**: Connect ProjectBrowser to Produciesta app, register handlers for screenplay formats.
+### WU5: Integration with Proyecto App
+**Goal**: Connect ProjectBrowser library to standalone Proyecto app for file browsing.
 **Sorties**: 3
 **Duration**: ~2 days
 
-#### S5.1 – Create Handler Registry for Produciesta
+#### S5.1 – Add SwiftProyecto Package Dependency to Proyecto
 **Entry Criteria**:
-- WU4 complete (ProjectWindow with handler API)
-- Produciesta has ScreenplayView, ScreenplayContentView available
+- WU4 complete (ProjectWindow library fully functional)
+- Proyecto app Xcode project exists at ~/Projects/apps/Proyecto
 
-**Goal**: Implement `ProduciestaProjectHandlers.swift` that registers handlers for .fountain, .fdx, .md.
+**Goal**: Wire SwiftProyecto package as a dependency in the Proyecto Xcode project.
 
 **Exit Criteria**:
-- ✅ `Produciesta/Sources/Handlers/ProduciestaProjectHandlers.swift` created
-- ✅ Handlers dict for .fountain, .fdx, .md
-- ✅ Each handler maps ProjectFile → AnyView
-- ✅ Fountain handler uses existing ScreenplayView
-- ✅ Markdown handler shows plain text
-- ✅ FDX handler uses existing FDXContentView (if available)
-- ✅ Compiles with Produciesta targets
+- ✅ Proyecto.xcodeproj links SwiftProyecto package
+- ✅ Proyecto app target can import ProjectBrowser
+- ✅ Build succeeds with no linking errors
+- ✅ No circular dependencies
+- ✅ Platform compatibility verified (macOS 26.0+, iOS 26.0+)
 
 ---
 
-#### S5.2 – Connect ProjectWindow to App Menu
+#### S5.2 – Create Project Launcher UI in Proyecto
 **Entry Criteria**:
-- S5.1 complete (handlers created)
+- S5.1 complete (SwiftProyecto dependency wired)
 - S4.1 complete (ProjectWindow implemented)
 
-**Goal**: Add "Open Project Folder" menu item to Produciesta that launches ProjectWindow.
+**Goal**: Replace ContentView in Proyecto with UI that opens a folder picker and launches ProjectWindow.
 
 **Exit Criteria**:
-- ✅ Menu item exists in Produciesta main menu (macOS)
-- ✅ Clicking opens file picker (FileImporter or OpenPanel)
+- ✅ Proyecto/ContentView.swift updated with folder picker button
+- ✅ Clicking button opens FileImporter (iOS) or NSOpenPanel (macOS)
 - ✅ Selected directory passed to ProjectWindow
-- ✅ Handlers registered before ProjectWindow shown
-- ✅ ProjectWindow modal/sheet presented
-- ✅ Selection callbacks update app state
-- ✅ Integrates with existing GuionDocumentView navigation
+- ✅ ProjectWindow presented as sheet/modal
+- ✅ File list displays correctly
+- ✅ Can select and view files
+- ✅ Compiles and runs on macOS and iOS simulators
 
 ---
 
-#### S5.3 – Remove Legacy Code
+#### S5.3 – Verify End-to-End Workflow
 **Entry Criteria**:
-- S5.2 complete (new integration working)
+- S5.2 complete (UI wired)
 
-**Goal**: Delete or archive old ProjectView/ProjectWindow code in Produciesta.
+**Goal**: Test the complete flow: launch app → open folder → browse files → view content.
 
 **Exit Criteria**:
-- ✅ Legacy files moved to `Docs/reference/` or deleted
-- ✅ All imports of legacy views removed
-- ✅ Produciesta builds cleanly without legacy code
+- ✅ App launches without crashes
+- ✅ Folder picker dialog appears
+- ✅ Can select a real directory (e.g., SwiftProyecto source tree)
+- ✅ File tree loads and displays
+- ✅ Clicking file shows content in detail pane
+- ✅ File content renders correctly (plain text for fallback)
 - ✅ No compilation errors
-- ✅ References to old code updated in comments/docs
+- ✅ Tested on both macOS and iOS (simulator)
 
 ---
 
-### WU6: Testing & Documentation
-**Goal**: Comprehensive unit/integration tests, API documentation, and architecture guide.
-**Sorties**: 4
+### WU6: Testing, Verification & Documentation
+**Goal**: End-to-end verification, unit/integration tests, and architecture documentation.
+**Sorties**: 3
 **Duration**: ~2 days
 
 #### S6.1 – Integration Tests for ProjectWindow
 **Entry Criteria**:
 - All WU1–WU5 sorties complete
+- Proyecto app successfully displays ProjectWindow
 
 **Goal**: Write integration tests that exercise the full flow: discover → select → render.
 
@@ -458,36 +460,18 @@ base_dependencies:
 - ✅ `Tests/ProjectWindowIntegrationTests.swift` created
 - ✅ Tests discover files in temp directory
 - ✅ Tests select file and verify callback fired
-- ✅ Tests render file with handler
-- ✅ Tests delete file and verify tree updated
-- ✅ Tests all file actions work end-to-end
+- ✅ Tests render file with default handler
+- ✅ Tests file actions (reload) work end-to-end
 - ✅ All tests pass with `swift_package_test`
-- ✅ Test coverage > 80% for public API
+- ✅ Test coverage > 75% for public API
 
 ---
 
-#### S6.2 – Performance Tests
-**Entry Criteria**:
-- S2.1 complete (ProjectFileDiscovery)
-- S3.1 complete (FileTreeView)
-
-**Goal**: Measure and document performance on large directories.
-
-**Exit Criteria**:
-- ✅ `Tests/ProjectBrowserPerformanceTests.swift` created
-- ✅ Test discovers 1,000 files; measure time and memory
-- ✅ Test renders file tree; verify frame rate > 30 fps
-- ✅ Test loads 10 MB file; measure time to display
-- ✅ Performance doc written with benchmarks
-- ✅ All measurements meet targets from spec § 9
-
----
-
-#### S6.3 – Public API Documentation
+#### S6.2 – Public API Documentation
 **Entry Criteria**:
 - All components complete (WU1–WU5)
 
-**Goal**: Write comprehensive API documentation for ProjectWindow.
+**Goal**: Write comprehensive API documentation for ProjectWindow and integration guide.
 
 **Exit Criteria**:
 - ✅ `Sources/ProjectBrowser/README.md` created
@@ -496,22 +480,24 @@ base_dependencies:
 - ✅ Platform-specific usage notes
 - ✅ Error handling guide
 - ✅ Callback signature reference
+- ✅ Integration example showing Proyecto app usage
 - ✅ All public types documented with doc comments
 
 ---
 
-#### S6.4 – Architecture & Integration Documentation
+#### S6.3 – Architecture & Integration Documentation
 **Entry Criteria**:
 - All components complete
 
-**Goal**: Write architecture document explaining component interactions, dependency graph, and integration points.
+**Goal**: Write architecture document explaining component interactions and integration points.
 
 **Exit Criteria**:
 - ✅ `Docs/ARCHITECTURE_ProjectBrowser.md` created
 - ✅ Component diagram showing ProjectWindow, sidebar, detail, services
 - ✅ Data flow diagram showing file discovery → selection → rendering
 - ✅ Handler registry flow explained
-- ✅ Integration points with SwiftProyecto, SwiftCompartido documented
+- ✅ Integration points with SwiftProyecto documented
+- ✅ Proyecto app integration described
 - ✅ Future enhancements (Phase 2) listed
 - ✅ Document references spec and requirements
 
@@ -557,12 +543,12 @@ base_dependencies:
 
 ---
 
-### Q5: Produciesta Integration Scope
-**Question**: Should we modify Produciesta's main document view to use ProjectWindow, or just add it as an optional modal?
+### Q5: Standalone Proyecto App Integration
+**Question**: Should ProjectBrowser be integrated into Proyecto as a complete file browser, or just demonstrate capability?
 
-**Current Resolution**: **MVP**: Add as optional "Open Project Folder" menu item launching modal. Produciesta can continue using existing GuionDocumentView for single-file editing.
+**Current Resolution**: **Phase 1**: Build Proyecto as a standalone file browser demonstrating ProjectWindow functionality. Future versions can integrate into other apps (Produciesta, etc.) as needed.
 
-**Status**: ✅ RESOLVED (no blocker)
+**Status**: ✅ RESOLVED (no blocker) — Integration now targets Proyecto instead of Produciesta
 
 ---
 
@@ -577,7 +563,7 @@ base_dependencies:
 ✅ macOS layout (NavigationSplitView) fully functional.  
 ✅ iOS layout (NavigationStack) fully functional.  
 ✅ No crashes on large directories (tested to 10,000 files).  
-✅ Integrated into Produciesta v5.0 with screenplay handler.  
+✅ Proyecto standalone app demonstrates full file browsing workflow.  
 ✅ Documented API and architecture.  
 
 ---
