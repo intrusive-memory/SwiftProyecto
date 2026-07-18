@@ -72,8 +72,8 @@ state: in_progress
 
 ### WU4: Main Container & Layout
 - **Work Unit State**: RUNNING
-- **Sorties**: S4.1 (pending), S4.2, S4.3, S4.4
-- **Current Sortie**: 1 of 4
+- **Sorties**: S4.1 ✅ COMPLETED, S4.2 (pending), S4.3, S4.4
+- **Current Sortie**: 2 of 4
 - **Depends On**: WU3 ✅ COMPLETE, WU2 ✅ COMPLETE
 
 ### WU5: Produciesta Integration
@@ -94,7 +94,7 @@ state: in_progress
 
 | Work Unit | Sortie | Sortie State | Attempt | Model | Task ID | Output File | Dispatched At |
 |-----------|--------|-------------|---------|-------|---------|-------------|---------------|
-| WU4: Main Container | S4.1 | DISPATCHED | 1/3 | sonnet | af7cf33756e459a30 | /private/tmp/claude-501/.../tasks/af7cf33756e459a30.output | 2026-07-17T00:00:00Z |
+| WU4: Main Container | S4.2 | DISPATCHED | 1/3 | sonnet | adae1d2c0421a440b | /private/tmp/claude-501/.../tasks/adae1d2c0421a440b.output | 2026-07-17T00:00:00Z |
 
 ---
 
@@ -130,6 +130,9 @@ state: in_progress
 | 2026-07-17T00:45:00Z | WU3 | S3.6 | Sortie COMPLETED | ProjectDetailPane with handler registry; added fileSize to ProjectFile model |
 | 2026-07-17T00:45:00Z | WU3 | - | Work Unit COMPLETED | All 6 view sorties complete; 52 tests passing; no regressions |
 | 2026-07-17T00:45:00Z | WU4 | S4.1 | Sortie DISPATCHED | ProjectWindow with NavigationSplitView (model: sonnet, agent: af7cf33756e459a30) |
+| 2026-07-17T00:48:00Z | WU4 | S4.1 | Sortie COMPLETED | ProjectWindow container with async file discovery, state management |
+| 2026-07-17T00:48:00Z | - | - | CHECKPOINT | Committed all library code (WU1-WU4.1): 19 files, 3600+ lines, 52 tests |
+| 2026-07-17T00:48:00Z | WU4 | S4.2 | Sortie DISPATCHED | File actions (reload, delete, show in Finder) (model: sonnet, agent: adae1d2c0421a440b) |
 
 ---
 
