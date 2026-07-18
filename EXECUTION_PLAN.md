@@ -1,8 +1,10 @@
 ---
 type: execution-plan
-state: planning
+state: in_progress
 feature_name: ProjectBrowser Library (Reusable Project Window UI)
 starting_point_commit: 013a67f
+mission_branch: mission/projectbrowser-library/01
+iteration: 1
 created_date: 2026-07-17
 target_platforms: macOS 26.0+, iOS 26.0+
 base_dependencies:
