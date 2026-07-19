@@ -338,7 +338,10 @@ final class ProjectWindowTests: XCTestCase {
     actor Capture {
       var file: ProjectFile?
       var text: String?
-      func record(_ f: ProjectFile, _ t: String) { file = f; text = t }
+      func record(_ f: ProjectFile, _ t: String) {
+        file = f
+        text = t
+      }
     }
     let capture = Capture()
 

@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [4.5.0] - 2026-07-19
+
 ### Added
 
 - **Default text files are now editable** — the handler-less fallback for any UTF-8 text file renders in a new `EditableTextContentView` backed by SwiftUI's `TextEditor` (monospaced), with dirty tracking, a Save control, and a ⌘S shortcut. Binary files (non-UTF-8) still fall back to the read-only `PlainTextContentView`.
