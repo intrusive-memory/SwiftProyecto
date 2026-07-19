@@ -1,584 +1,618 @@
 ---
 type: execution-plan
-name: compartido-cast-extraction
-description: Multi-phase refactoring of cast extraction to support .fdx, .highland, and .fountain via SwiftCompartido
-feature_name: Compartido-Based Cast Extraction
-starting_point_commit: 9ec2732e8879b1b3aad628629f1d3a4a8bdf993a
-state: in_progress
+state: complete
+feature_name: ProjectBrowser Library (Reusable Project Window UI)
+starting_point_commit: 013a67f
+mission_branch: mission/projectbrowser-library/01
+iteration: 1
+created_date: 2026-07-17
+completed_date: 2026-07-18
+target_platforms: macOS 26.0+, iOS 26.0+
+base_dependencies:
+  - SwiftProyecto (PROJECT.md discovery)
+  - SwiftCompartido (document models)
 ---
 
-# EXECUTION PLAN: Multi-Format Cast List Extraction
+# ProjectBrowser Library – Execution Plan
+
+**Mission Summary**: Build a reusable, generic **ProjectWindow** SwiftUI component that enables consumers to browse any directory, register custom file type handlers, and render file contents. Demonstrate integration in standalone **Proyecto** app. Decouples file browsing UI from domain logic, making it reusable across projects.
+
+**Scope**: Phase 1 (Core Library + App Integration) – Basic file discovery, master-detail layout, handler registry, file actions, lazy loading, and working Proyecto app integration.
+
+---
 
 ## Terminology
 
-**Mission** — A definable, testable scope of work that decomposes into atomic sorties. In this case: Refactor SwiftProyecto's cast extraction from regex-only Fountain parsing to format-agnostic screenplay parsing via SwiftCompartido.
+**Mission** — The definable scope of work that decomposes into multiple sorties. This mission builds the ProjectBrowser library and integrates it into Produciesta.
 
-**Sortie** — One autonomous agent's focused task with clear entry/exit criteria. For this mission: dependency setup, API investigation, core refactoring, integration, testing, and documentation updates.
+**Sortie** — An atomic, testable unit of work executed by a single autonomous AI agent in one dispatch. Each sortie has entry/exit criteria and bounded scope.
 
-**Work Unit** — A grouping of related sorties (e.g., all sorties within "Dependency Setup" form one work unit).
-
----
-
-## Mission Overview
-
-**Objective**: Enable SwiftProyecto's cast extraction to transparently support `.fountain`, `.fdx`, and `.highland` screenplay formats by delegating parsing to SwiftCompartido's robust, format-agnostic parsers.
-
-**Current State**: CastExtractor only works with Fountain text via regex pattern matching for UPPERCASE character names. RolesCommand discovers `.fdx` and `.highland` files but can't parse them.
-
-**Target State**:
-- CastExtractor delegates to SwiftCompartido parsers (format-transparent)
-- RolesCommand discovers and processes all three formats without modification
-- All formats extract cast lists into PROJECT.md front matter
-- Existing Fountain tests pass unchanged; new tests verify `.fdx` and `.highland`
-- No breaking changes to public API
-
-**Success Criteria**:
-- ✅ CastExtractor supports `.fountain`, `.fdx`, `.highland` transparently
-- ✅ RolesCommand discovers and processes all three formats
-- ✅ PROJECT.md cast lists populated from any format
-- ✅ Existing Fountain tests pass; new format tests added
-- ✅ Error messages distinguish parse failures from unsupported formats
-- ✅ Documentation updated (AGENTS.md, inline docs)
-- ✅ No public API breakage
+**Work Unit** — A grouping of related sorties. This plan organizes sorties into 6 work units, each representing a major component or integration step.
 
 ---
 
-## Open Questions (Blocking)
-
-These must be resolved **before execution starts**:
-
-1. **SwiftCompartido version pin**: What is the current stable release? Check GitHub tags and compatibility with this branch.
-   - **Recommendation**: Pin to `upToNextMajor(from: "X.Y.Z")` pattern (matches SwiftAcervo precedent).
-
-2. **Error handling policy**: On parse failure, should the system:
-   - **Option A (Recommended)**: Fail soft — regex fallback + warning log
-   - **Option B**: Fail loud — throw error, user must fix screenplay
-   - **Option C**: Config-driven per screenplay
-   - **Recommendation**: Option A (graceful degradation, matching current behavior).
-
-3. **Test fixture strategy**: For `.fdx` and `.highland` tests:
-   - **Option A**: Create minimal valid FDX XML and Highland JSON files by hand
-   - **Option B**: Use compartido's existing test fixtures if available
-   - **Option C**: Mock the parsers (not recommended — test real parsing)
-   - **Recommendation**: Option A (hand-crafted fixtures, small enough to maintain).
-
-4. **Existing test compatibility**: Will existing tests in `ProjectGenerationIntegrationTest` and `RolesCommandTests` require updates after refactoring?
-   - **Recommendation**: Audit these tests early (Sortie 1b) to surface breakage before core refactoring.
-
----
-
-## Work Units & Sorties
-
-### Work Unit 1: API Investigation & Dependency Setup
-
-**Objective**: Resolve blocking questions, investigate SwiftCompartido API, and add dependency.
-
-**Dependencies**: None (parallel-ready).
-
----
-
-#### Sortie 1a: Investigate SwiftCompartido API & Version
-**Objective**: Determine SwiftCompartido's version, API surface, and character extraction method.
-
-**Entry Criteria**:
-- SwiftCompartido source code accessible at `/Users/stovak/Projects/package-collection/pkg/SwiftCompartido`
-- Read permission on AGENTS.md (project docs)
-
-**Tasks**:
-1. Read SwiftCompartido Package.swift to find current version
-2. Examine `GuionParsedElementCollection` API (file: `Sources/SwiftCompartido/Sendable/GuionDocumentSnapshot.swift`)
-   - Verify `characters: [String]` property exists
-   - Verify it's stable and returns deduplicated, sorted names
-3. Examine parser routing logic (`GuionDocumentParserSwiftData.loadAndParse()`)
-   - Verify it auto-detects file types by extension
-   - Verify it throws clear errors for unsupported formats
-4. Review error handling patterns (what exceptions do parsers throw?)
-5. Check if SwiftCompartido has existing tests for all three formats
-
-**Exit Criteria**:
-- ✅ Version identified and documented (e.g., "1.5.0" or "2.0.0-beta")
-- ✅ Confirmed: `GuionParsedElementCollection.characters` extracts character names
-- ✅ Confirmed: Parser routing works for `.fountain`, `.fdx`, `.highland`
-- ✅ Documented: Error types thrown by parsers
-- ✅ Documented: Whether compartido tests exist for all formats
-
-**Output**: `SORTIE_1a_API_INVESTIGATION.md` with findings and version recommendation.
-
----
-
-#### Sortie 1b: Audit Existing Tests for Refactoring Impact
-**Objective**: Identify tests that will break or require updates due to refactoring.
-
-**Entry Criteria**:
-- SwiftProyecto source code readable
-- Test files identified: `CastExtractorTests.swift`, `ProjectGenerationIntegrationTest.swift`, `RolesCommandTests.swift`
-
-**Tasks**:
-1. Read all three test files above
-2. Identify tests that:
-   - Mock or directly call `extractCast(from fountainText: String)` (text-only method)
-   - Hardcode `.fountain` file paths or extensions
-   - Test regex-specific behavior (parenthetical removal, isLikelyCharacterName logic)
-3. For each test, document:
-   - Test name
-   - Current behavior
-   - Expected change after refactoring
-   - Mitigation (update test, delete test, or mark deprecated)
-
-**Exit Criteria**:
-- ✅ List of tests requiring updates (with reason for each)
-- ✅ List of tests that should be deleted (if regex-only)
-- ✅ Confidence assessment: "No surprises expected" or "High-impact refactoring"
-
-**Output**: `SORTIE_1b_TEST_AUDIT.md` with detailed breakdown.
-
----
-
-#### Sortie 1c: Add SwiftCompartido Dependency to Package.swift
-**Objective**: Integrate SwiftCompartido as a dependency following the sibling pattern.
-
-**Entry Criteria**:
-- Version identified from Sortie 1a
-- SwiftProyecto Package.swift readable
-- Git working tree clean
-
-**Tasks**:
-1. Open `Package.swift`
-2. Add SwiftCompartido dependency using sibling pattern:
-   ```swift
-   sibling(
-     "SwiftCompartido",
-     remote: "https://github.com/intrusive-memory/SwiftCompartido.git",
-     from: "X.Y.Z")  // from Sortie 1a
-   ```
-3. Add `.product(name: "SwiftCompartido", package: "SwiftCompartido")` to:
-   - `SwiftProyecto` target
-   - `proyecto` executable target
-4. Do **not** add to test target (not needed for tests)
-5. Run `swift build` or XcodeBuildMCP to verify no conflicts
-
-**Exit Criteria**:
-- ✅ Dependency added to Package.swift
-- ✅ Products added to both targets
-- ✅ `swift build` succeeds (or XcodeBuildMCP swift_package_build passes)
-- ✅ No compilation errors or module conflicts
-
-**Output**: Modified Package.swift (committed as part of this sortie).
-
----
-
-### Work Unit 2: Core Refactoring
-
-**Objective**: Refactor CastExtractor to use SwiftCompartido parsers, keeping public API unchanged.
-
-**Dependencies**: Work Unit 1 (all three sorties must complete first).
-
----
-
-#### Sortie 2a: Refactor CastExtractor (Option A: Full Replacement)
-**Objective**: Replace CastExtractor internals to delegate to SwiftCompartido, keeping public API stable.
-
-**Entry Criteria**:
-- SwiftCompartido added to Package.swift (Sortie 1c)
-- Version and API surface confirmed (Sortie 1a)
-- Test audit complete (Sortie 1b)
-- CastExtractor.swift is readable and modifiable
-
-**Tasks**:
-1. Add `import SwiftCompartido` to CastExtractor.swift
-2. Deprecate (but keep) private methods:
-   - `removeParentheticals(from:)` — no longer used internally
-   - `isLikelyCharacterName(_:)` — replaced by compartido parsing
-   - Annotate: `@available(*, deprecated, message: "Replaced by SwiftCompartido parsing")`
-3. Refactor `extractCast(from fountainText: String) -> [String]`:
-   - Create a temporary `.fountain` file in memory (or use `FountainParser(string:)` directly)
-   - Parse via compartido
-   - Extract `.characters` property
-   - Return sorted array (compartido may already sort; verify)
-   - On error: Fall back to regex extraction with warning (Option A: fail soft)
-4. Update `extractCast(from fileURL: URL) -> [String]`:
-   - Detect file type by extension
-   - Route to appropriate compartido parser (auto-detection via `GuionDocumentParserSwiftData.loadAndParse()` or manual routing)
-   - Extract characters via `.characters`
-   - On parse error: Fallback to regex (Fountain only) + warning
-   - On unsupported format: Throw `UnsupportedScreenplayFormat` error (new error type)
-5. Update inline documentation:
-   - Remove Fountain-specific examples
-   - Add examples showing `.fountain`, `.fdx`, `.highland` support
-   - Document fallback behavior
-
-**Exit Criteria**:
-- ✅ CastExtractor compiles with no errors
-- ✅ Public API unchanged (`extractCast(from fileURL:)` and `extractCast(from fountainText:)` signatures identical)
-- ✅ Private methods deprecated (annotations present)
-- ✅ Error handling implemented (fallback on parse failure, clear error on unsupported format)
-- ✅ Inline docs updated with multi-format examples
-- ✅ No warnings in build
-
-**Output**: Modified CastExtractor.swift (prepared for commit).
-
----
-
-#### Sortie 2b: Error Handling & Fallback Testing (Unit Tests for CastExtractor)
-**Objective**: Create or update unit tests to verify error handling and fallback behavior.
-
-**Entry Criteria**:
-- Sortie 2a complete (refactored CastExtractor)
-- Test audit complete (Sortie 1b) showing which tests need updates
-
-**Tasks**:
-1. Update `CastExtractorTests.swift`:
-   - Update existing tests to work with new implementation
-   - Add `test_extractCast_from_fountain_file()` — verify text-based method still works
-   - Add `test_extractCast_from_fdx_file()` — requires FDX fixture (from Sortie 4a)
-   - Add `test_extractCast_from_highland_file()` — requires Highland fixture (from Sortie 4a)
-   - Add `test_extractCast_handles_unsupported_extension()` — throws `UnsupportedScreenplayFormat`
-   - Add `test_extractCast_fallback_on_parse_error()` — parser fails, regex fallback succeeds with warning
-   - Add `test_extractCast_deduplicates_and_sorts()` — verify output format matches old behavior
-2. Mark deprecated tests with `@available(*, deprecated)` if they tested regex-only behavior
-
-**Exit Criteria**:
-- ✅ All tests pass (use `swift_package_test` via XcodeBuildMCP)
-- ✅ Coverage: All three formats tested (fountain, fdx, highland)
-- ✅ Coverage: Error handling tested (unsupported, parse failure, fallback)
-- ✅ Coverage: Deduplication and sorting verified
-- ✅ No test warnings
-
-**Output**: Modified CastExtractorTests.swift (prepared for commit).
-
----
-
-### Work Unit 3: Integration
-
-**Objective**: Update RolesCommand to use format-agnostic cast extraction.
-
-**Dependencies**: Work Unit 2 (Sortie 2a must complete first).
-
----
-
-#### Sortie 3a: Update RolesCommand for Multi-Format Support
-**Objective**: Modify RolesCommand to discover and process `.fountain`, `.fdx`, and `.highland` files transparently.
-
-**Entry Criteria**:
-- Sortie 2a complete (refactored CastExtractor)
-- RolesCommand.swift is readable and modifiable
-- DirectoryContext.swift shows screenplay discovery logic
-
-**Tasks**:
-1. Update `RolesCommand.resolveScripts()` method (line 128-134):
-   - Current: only discovers `*.fountain`
-   - New: discover `*.fountain`, `*.fdx`, `*.highland` (use `DirectoryContext.screenplayExtensions` if available, or hardcode same list)
-   - Update help text: "Screenplay file (.fountain, .fdx, .highland), directory, or glob to scan"
-2. Update screenplay processing loop (line 150-195):
-   - Change line 161: `extractor.extractCast(from: text)` → `try extractor.extractCast(from: script)`
-   - This routes to file-based method (auto-detects format)
-   - Add try/catch for potential `UnsupportedScreenplayFormat` errors
-3. Update progress messages:
-   - "Fountain script" → "screenplay" (generic)
-   - "Could not parse screenplay format; using Fountain pattern matching as fallback" → use when fallback occurs
-4. Verify that existing error handling still works:
-   - `SystemLanguageModel.default.isAvailable` check
-   - Model failure → fallback to regex
-5. No changes to the guided generation logic (it's fine as-is)
-
-**Exit Criteria**:
-- ✅ RolesCommand compiles with no errors
-- ✅ Screenplay discovery includes all three formats
-- ✅ Help text updated to list all formats
-- ✅ File-based extraction called (format auto-detection)
-- ✅ Error handling for unsupported formats
-- ✅ Fallback behavior preserved
-- ✅ No warnings in build
-
-**Output**: Modified RolesCommand.swift (prepared for commit).
-
----
-
-### Work Unit 4: Testing & Fixtures
-
-**Objective**: Create test fixtures and comprehensive test coverage for all screenplay formats.
-
-**Dependencies**: Work Unit 3 (Sortie 3a should complete first, but Sorties 4a & 4b can start in parallel with Sortie 2b).
-
----
-
-#### Sortie 4a: Create Test Fixtures (`.fdx` and `.highland`)
-**Objective**: Create minimal but valid test screenplay files in `.fdx` and `.highland` formats for testing.
-
-**Entry Criteria**:
-- Test audit complete (Sortie 1b)
-- SwiftCompartido source code available (reference its test fixtures if needed)
-
-**Tasks**:
-1. Create `Tests/SwiftProyectoTests/Fixtures/sample.fdx`:
-   - Minimal valid FDX XML structure
-   - Include 2–3 character names (e.g., "ALICE", "BOB", "NARRATOR")
-   - Can copy from SwiftCompartido's test fixtures if available, or create manually
-2. Create `Tests/SwiftProyectoTests/Fixtures/sample.highland`:
-   - Minimal valid Highland format (likely JSON-based)
-   - Include 2–3 character names
-   - Reference SwiftCompartido's Highland parser or docs for format details
-3. Verify both files parse correctly using SwiftCompartido directly (quick sanity test)
-4. Document expected output: "sample.fdx should parse to [ALICE, BOB, NARRATOR]" etc.
-
-**Exit Criteria**:
-- ✅ sample.fdx created and valid (compartido parser accepts it)
-- ✅ sample.highland created and valid
-- ✅ Both files contain expected character names
-- ✅ Fixture documentation complete (expected outputs documented)
-
-**Output**: Test fixtures in place; documented expected outputs.
-
----
-
-#### Sortie 4b: Integration Tests for RolesCommand
-**Objective**: Verify RolesCommand works end-to-end with all screenplay formats.
-
-**Entry Criteria**:
-- Sortie 3a complete (RolesCommand updated)
-- Test fixtures created (Sortie 4a)
-- Existing RolesCommandTests identified
-
-**Tasks**:
-1. Audit existing RolesCommandTests (if any) and update for multi-format support
-2. Add new integration tests (if RolesCommandTests doesn't exist, create it):
-   - `test_roles_command_discovers_fountain_files()` — verify .fountain discovery
-   - `test_roles_command_discovers_fdx_files()` — verify .fdx discovery
-   - `test_roles_command_discovers_highland_files()` — verify .highland discovery
-   - `test_roles_command_processes_mixed_formats()` — directory with all three formats, deduplicates across all
-   - `test_roles_command_deduplicates_case_insensitive()` — "ALICE" in .fountain, "alice" in .fdx → one entry
-   - `test_roles_command_fallback_on_parse_error()` — bad FDX file, fallback succeeds
-3. Each test should:
-   - Create a temporary PROJECT.md in test directory
-   - Run RolesCommand with `--dry-run` to inspect output (no write)
-   - Verify cast list is correct and deduplicated
-4. Use mocking or test fixtures; do not depend on actual screenplay files outside of Fixtures/
-
-**Exit Criteria**:
-- ✅ All integration tests pass
-- ✅ Coverage: all three formats individually tested
-- ✅ Coverage: mixed-format directory tested
-- ✅ Coverage: deduplication across formats tested
-- ✅ Coverage: fallback behavior tested
-- ✅ No external file dependencies (use fixtures or mocks)
-
-**Output**: New or updated RolesCommandTests.swift; all tests pass.
-
----
-
-#### Sortie 4c: Existing Test Compatibility Check
-**Objective**: Verify that existing non-role-extraction tests still pass after refactoring.
-
-**Entry Criteria**:
-- All previous sorties in this work unit complete
-- Audit from Sortie 1b complete (showing which tests might break)
-
-**Tasks**:
-1. Run full test suite: `swift_package_test` (XcodeBuildMCP)
-2. For each test that was flagged in Sortie 1b audit:
-   - Confirm it passes or identify the specific failure
-   - If failure is expected, verify the fix (from Sortie 4b) addresses it
-   - If failure is unexpected, document and flag for investigation
-3. Check `ProjectGenerationIntegrationTest` specifically:
-   - Verify generation still works with refactored CastExtractor
-   - If it hardcodes `.fountain`, update it to work with new API
-
-**Exit Criteria**:
-- ✅ All tests pass (0 failures, 0 errors)
-- ✅ Sorties 2b and 4b tests all passing
-- ✅ Existing tests (ProjectGenerationIntegrationTest, etc.) all passing
-- ✅ No warnings in test output
-- ✅ Test count preserved or increased (no tests deleted without reason)
-
-**Output**: Clean test run; all tests passing.
-
----
-
-### Work Unit 5: Documentation
-
-**Objective**: Update project documentation to reflect multi-format support.
-
-**Dependencies**: Work Unit 3 (Sortie 3a should complete first for context).
-
----
-
-#### Sortie 5a: Update Inline Documentation & Code Comments
-**Objective**: Update CastExtractor and RolesCommand inline docs to reflect new capabilities.
-
-**Entry Criteria**:
-- Sortie 2a complete (refactored CastExtractor)
-- Sortie 3a complete (updated RolesCommand)
-
-**Tasks**:
-1. Update CastExtractor.swift:
-   - Remove Fountain-specific examples from class docstring
-   - Add multi-format example: "Supports .fountain, .fdx, .highland files"
-   - Document error handling: "Falls back to regex pattern matching on parse failure"
-   - Document unsupported formats: "Throws UnsupportedScreenplayFormat for unrecognized extensions"
-2. Update RolesCommand.swift:
-   - Update discussion: list all supported formats
-   - Update example commands to include .fdx and .highland:
-     ```
-     proyecto roles episode.fountain
-     proyecto roles episode.fdx
-     proyecto roles episode.highland
-     ```
-   - Update help text for `input` argument
-3. Add deprecation notices to regex-only methods (if still present)
-
-**Exit Criteria**:
-- ✅ CastExtractor docs updated with multi-format examples
-- ✅ RolesCommand docs updated with multi-format examples
-- ✅ Error handling documented
-- ✅ No outdated references to Fountain-only support
-- ✅ Code compiles with no documentation warnings
-
-**Output**: Updated source file docstrings.
-
----
-
-#### Sortie 5b: Update AGENTS.md Documentation
-**Objective**: Update project documentation with multi-format cast extraction information.
-
-**Entry Criteria**:
-- Sortie 5a complete (inline docs updated)
-- AGENTS.md readable and modifiable
-
-**Tasks**:
-1. Find § Building or § Cast List section in AGENTS.md
-2. Add or update subsection: "Screenplay Format Support"
-   - List all supported formats: `.fountain`, `.fdx`, `.highland`
-   - Explain: CastExtractor now uses SwiftCompartido for format-agnostic parsing
-   - Note fallback behavior: "On parse error, falls back to Fountain regex pattern matching"
-3. Add reference to SwiftCompartido (dependency) if there's a § Dependencies section
-4. Update any hardcoded `.fountain` references to "screenplay format(s)"
-5. Verify no contradictions with existing cast list documentation
-
-**Exit Criteria**:
-- ✅ AGENTS.md updated with new subsection
-- ✅ All supported formats listed and explained
-- ✅ SwiftCompartido mentioned as parsing engine
-- ✅ Fallback behavior documented
-- ✅ No contradictions with other sections
-- ✅ Examples use generic "screenplay" terminology
-
-**Output**: Updated AGENTS.md.
-
----
-
-## Execution Dependencies
-
-### Dependency Graph
+## Work Unit Dependencies
 
 ```
-Work Unit 1 (API Investigation & Dependency Setup)
-├── Sortie 1a (API Investigation) — parallel with 1b, 1c
-├── Sortie 1b (Test Audit) — parallel with 1a, 1c
-└── Sortie 1c (Add Dependency) — parallel with 1a, 1b; blocks Unit 2
-    ↓
-Work Unit 2 (Core Refactoring)
-├── Sortie 2a (Refactor CastExtractor) — blocks Unit 3
-└── Sortie 2b (Unit Tests) — parallel with 2a; blocks Unit 4b
-    ↓
-Work Unit 3 (Integration)
-└── Sortie 3a (Update RolesCommand) — blocks Unit 4b, Unit 5a
-    ↓
-Work Unit 4 (Testing & Fixtures)
-├── Sortie 4a (Create Fixtures) — parallel with 4b; blocks 4b
-├── Sortie 4b (Integration Tests) — depends on 3a, 4a; blocks 4c
-└── Sortie 4c (Compatibility Check) — last gate; blocks finalization
-    ↓
-Work Unit 5 (Documentation)
-├── Sortie 5a (Inline Docs) — depends on 2a, 3a
-└── Sortie 5b (AGENTS.md) — depends on 5a
+┌──────────────────────────┐
+│ WU1: Core Data Models    │  ← Everything depends on this
+└────────────┬─────────────┘
+             │
+    ┌────────┼────────┬────────────────────┐
+    ▼        ▼        ▼                    ▼
+  WU2:   WU3:     WU4:              WU6:
+  File   Views    Container         Tests
+  Disc.  Layer    & Actions         & Docs
+    │        │        │                │
+    └────────┼────────┴────────────────┘
+             ▼
+        ┌─────────────┐
+        │ WU5: Prod.  │  ← Integration (last)
+        │ Integration │
+        └─────────────┘
 ```
 
-### Critical Path
+---
 
-1. Work Unit 1 (all sorties must complete; 1a, 1b, 1c can be parallel)
-2. Sortie 1c completion blocks: Sortie 2a start
-3. Sortie 2a completion blocks: Sortie 3a start
-4. Sortie 3a completion blocks: Sortie 4b start
-5. Sortie 4a completion blocks: Sortie 4b start
-6. Sortie 4b completion blocks: Sortie 4c start
-7. Sortie 4c completion blocks: PR finalization
-8. Work Unit 5 can start after Sortie 3a, finalize after 4c
+## Work Units
 
-### Parallel Opportunities
+### WU1: Core Data Models
+**Goal**: Define all data structures that components will use.
+**Sorties**: 4
+**Duration**: ~1 day
 
-- **Sorties 1a, 1b, 1c**: Can all be dispatched in parallel (no dependencies)
-- **Sorties 2a, 2b**: Slightly sequential (2a must finish first, but can overlap)
-- **Sorties 4a, 4b**: Parallel dispatch possible (4a output ready by time 4b needs it)
-- **Sorties 5a, 5b**: Sequential (5b depends on 5a completeness)
+#### S1.1 – Create ProjectFile & Supporting Models
+**Entry Criteria**:
+- Repository at `013a67f` with SwiftProyecto v4.3.3-dev
+- No production code changes yet
 
-**Recommended parallelization**:
-- Dispatch Sorties 1a, 1b, 1c immediately (three agents in parallel)
-- After 1c completes: Dispatch Sorties 2a, 2b (two agents; 2b waits for 2a insights)
-- After 2a, 3a complete: Dispatch Sorties 4a, 4b (two agents in parallel)
-- After 4a, 4b complete: Dispatch Sortie 4c
-- After 4c complete: Dispatch Sorties 5a, 5b sequentially
+**Goal**: Implement `ProjectFile`, `FileLoadingState`, `ProjectFileContents`, and `ProjectMetadata` models in `Sources/ProjectBrowser/Models/`.
+
+**Exit Criteria**:
+- ✅ `Models/ProjectFile.swift` compiles with all properties from spec § 3.1 (id, name, relativePath, fileExtension, isDirectory, modifiedDate, isLoaded, loadingState, error)
+- ✅ `Models/FileLoadingState.swift` defines all enum cases (notLoaded, loading, loaded, stale, error)
+- ✅ `Models/ProjectFileContents.swift` compiles with `file`, `data`, `text`, `loadedAt`, `isStale` properties
+- ✅ `Models/ProjectMetadata.swift` compiles with `title`, `author`, `description`, `created` properties
+- ✅ All models conform to `Codable`, `Hashable`, `Equatable` as appropriate
+- ✅ `ProjectFile.hasKnownHandler` property stub (handler lookup deferred to WU3)
+- ✅ `ProjectFile.displayName` property stub (truncation deferred to WU3)
+- ✅ No compilation errors
+- ✅ Runs `swift_package_build` successfully on macOS target
+
+**Subtasks**:
+1. Create `ProjectBrowser` target in Package.swift if not present
+2. Create Models directory and all model files
+3. Define `ProjectFile: Identifiable, Hashable` with all required properties
+4. Define `FileLoadingState` enum with all cases
+5. Define `ProjectFileContents` struct
+6. Define `ProjectMetadata` struct
+7. Build and verify no errors
 
 ---
 
-## Rollback & Recovery Plan
+#### S1.2 – Create FileTypeHandler & Callback Models
+**Entry Criteria**:
+- S1.1 complete (ProjectFile model available)
 
-**Rollback scenarios**:
+**Goal**: Implement `FileTypeHandler`, `FileSelectionCallback`, `FileLoaderCallback`, `FileActionCallback`, and `FileAction` enum.
 
-1. **If Sortie 1a reveals compartido API incompatibility**:
-   - STOP. Do not proceed past Work Unit 1.
-   - Alternative: Use Option B (wrapper layer) instead of full replacement.
-   - Re-scope: Work Unit 2 becomes smaller (less refactoring).
-
-2. **If Sortie 2a reveals incompatible API changes**:
-   - Rollback changes to CastExtractor
-   - Escalate to ask for version pin clarification or API docs
-   - Option: Pin to older compartido version
-
-3. **If Sortie 4c tests fail**:
-   - Investigate which test is failing
-   - If it's a test audit miss: Fix and re-run 4c
-   - If it's integration issue: Debug and patch the affected sortie
-   - No rollback needed; fix forward
-
-4. **If parse errors are frequent (Sortie 4b/4c)**:
-   - Review fallback policy decision
-   - Consider whether "fail soft" (regex fallback) is appropriate
-   - May need to switch to "fail loud" (throw error) if fallback masks real problems
+**Exit Criteria**:
+- ✅ `Models/FileTypeHandler.swift` compiles
+- ✅ `Models/FileAction.swift` defines all cases (reload, showInFinder, delete, custom)
+- ✅ Callback typealiases compile and reference correct signatures
+- ✅ Handler view builder closure has signature `(ProjectFile) -> AnyView`
+- ✅ FileLoaderCallback has signature `(ProjectFile) async throws -> ProjectFileContents`
+- ✅ FileActionCallback has signature `(ProjectFile, FileAction) -> Void`
+- ✅ No compilation errors
 
 ---
 
-## Notes & Assumptions
+#### S1.3 – Add Model Unit Tests
+**Entry Criteria**:
+- S1.1 & S1.2 complete (all models defined)
 
-- **SwiftCompartido stability**: Assuming `GuionParsedElementCollection.characters` property is stable. If it changes, error will surface early in Sortie 1a.
-- **FDX and Highland fixtures**: Assuming compartido can parse hand-crafted minimal fixtures. If not, will escalate to use compartido's own test fixtures or mocks.
-- **Test count**: Expecting test count to increase (new format tests) or stay same (if regex-only tests are removed). No net loss expected.
-- **Backwards compatibility**: Public API unchanged; only internals and error messages updated. Existing code depending on CastExtractor should work unchanged.
-- **Feature branch**: Will be created by `start` command as `mission/compartido-cast-extraction/<NN>`.
+**Goal**: Write unit tests for all data models to verify equality, hashing, and state transitions.
+
+**Exit Criteria**:
+- ✅ `Tests/ProjectFileTests.swift` created with comprehensive model tests
+- ✅ ProjectFile equality and hashing tests
+- ✅ FileLoadingState enum coverage
+- ✅ All tests pass when run via `swift_package_test`
+- ✅ Test coverage > 80% for model code
+
+---
+
+#### S1.4 – Verify Models in Package
+**Entry Criteria**:
+- S1.1, S1.2, S1.3 complete
+
+**Goal**: Confirm all models are exported in package public API and no circular dependencies.
+
+**Exit Criteria**:
+- ✅ All model types are public and documented
+- ✅ Package builds cleanly: `swift_package_build --scheme SwiftProyecto`
+- ✅ No unused imports or circular dependencies
+- ✅ XcodeBuild integration successful
+
+---
+
+### WU2: File Discovery Service
+**Goal**: Implement directory scanning, file tree building, and optional PROJECT.md integration.
+**Sorties**: 3
+**Duration**: ~2 days
+
+#### S2.1 – Create ProjectFileDiscovery Service
+**Entry Criteria**:
+- WU1 complete (ProjectFile model available)
+
+**Goal**: Implement `ProjectFileDiscovery` service that recursively scans a directory and builds a file tree.
+
+**Exit Criteria**:
+- ✅ `Services/ProjectFileDiscovery.swift` created with static `discover(at:)` method
+- ✅ Returns flat array of ProjectFile sorted by: folders first, then alphabetically
+- ✅ relativePath computed correctly relative to root directory
+- ✅ fileExtension extracted correctly
+- ✅ isDirectory property set correctly
+- ✅ modifiedDate retrieved from file attributes
+- ✅ Respects default ignore patterns (.git, node_modules, .xcodeproj, etc.)
+- ✅ Handles symlinks gracefully (doesn't follow)
+- ✅ Async/await compatible; no blocking calls
+- ✅ Unit tests pass for various directory structures
+
+---
+
+#### S2.2 – Add PROJECT.md Metadata Loading
+**Entry Criteria**:
+- S2.1 complete (ProjectFileDiscovery service)
+
+**Goal**: Extend `ProjectMetadata.load(from:)` to parse PROJECT.md if present in directory.
+
+**Exit Criteria**:
+- ✅ `ProjectMetadata.load(from:)` implemented as async
+- ✅ Returns `ProjectMetadata?` (nil if no PROJECT.md)
+- ✅ Extracts title, author, description from PROJECT.md if present
+- ✅ Falls back to nil gracefully if PROJECT.md doesn't exist
+- ✅ Handles parsing errors (malformed YAML, missing keys)
+- ✅ Unit tests verify metadata extraction
+
+---
+
+#### S2.3 – Test Discovery with Real Directories
+**Entry Criteria**:
+- S2.1 & S2.2 complete
+
+**Goal**: Integration test that discovers files in SwiftProyecto's own source tree and deeply nested directories.
+
+**Exit Criteria**:
+- ✅ Test creates temp directory with files
+- ✅ Discovers all files and folders correctly
+- ✅ Builds file tree with correct paths
+- ✅ Handles deeply nested directories (5+ levels)
+- ✅ Ignores .git, .build, .xcodeproj
+- ✅ Loads PROJECT.md metadata if present
+- ✅ Test runs successfully with `swift_package_test`
+
+---
+
+### WU3: View Layer – Components
+**Goal**: Implement all SwiftUI view components (file tree, headers, detail pane, etc.).
+**Sorties**: 6
+**Duration**: ~3-4 days
+
+#### S3.1 – Create FileTreeView (Hierarchical List)
+**Entry Criteria**:
+- WU1 complete (ProjectFile model)
+- S2.1 complete (ProjectFileDiscovery)
+
+**Goal**: Implement `FileTreeView` that displays files in a hierarchical list with disclosure groups.
+
+**Exit Criteria**:
+- ✅ `Views/FileTreeView.swift` created
+- ✅ Accepts `@Binding<Set<UUID>>` for expanded folders
+- ✅ Accepts `@Binding<ProjectFile?>` for selection
+- ✅ Displays folders as DisclosureGroups with expand/collapse
+- ✅ Shows files with system icons (doc.text, folder.fill, etc.)
+- ✅ Highlights selected file with blue background
+- ✅ Loading state shows spinner icon
+- ✅ Error state shows warning icon
+- ✅ Compiles and renders without crashes
+- ✅ Context menu available (basic structure for S3.5)
+
+---
+
+#### S3.2 – Create ProjectHeader View
+**Entry Criteria**:
+- WU1 complete (ProjectFile model)
+- S2.2 complete (ProjectMetadata)
+
+**Goal**: Implement `ProjectHeader` that displays project metadata (title, file count, author).
+
+**Exit Criteria**:
+- ✅ `Views/ProjectHeader.swift` created
+- ✅ Displays project title (from param or PROJECT.md)
+- ✅ Shows file count and folder count
+- ✅ Shows author and description if available
+- ✅ Responsive layout for macOS and iOS
+- ✅ Compiles and previews without errors
+
+---
+
+#### S3.3 – Create ProjectActionBar View
+**Entry Criteria**:
+- WU1 complete (ProjectFile model)
+
+**Goal**: Implement `ProjectActionBar` with action buttons (Sync, Import, Load All, Unload All).
+
+**Exit Criteria**:
+- ✅ `Views/ProjectActionBar.swift` created
+- ✅ Accepts callback closures for each action
+- ✅ Shows buttons: Sync, Import, Load All, Unload All
+- ✅ Buttons are platform-aware (macOS has toolbar, iOS has button group)
+- ✅ Buttons disabled/enabled based on state
+- ✅ Compiles and previews
+
+---
+
+#### S3.4 – Create DefaultContentViews (Fallbacks)
+**Entry Criteria**:
+- WU1 complete (ProjectFile model)
+
+**Goal**: Implement default content views for unsupported files and loading/error states.
+
+**Exit Criteria**:
+- ✅ `Views/DefaultContentViews.swift` created
+- ✅ `PlainTextContentView` renders text files
+- ✅ `UnsupportedFileView` shows "No handler" message
+- ✅ `LoadingView` shows spinner with filename
+- ✅ `ErrorView` shows error message and retry button
+- ✅ All views handle empty states gracefully
+- ✅ Compiles and previews
+
+---
+
+#### S3.5 – Create ProjectBrowserSidebar
+**Entry Criteria**:
+- S3.1 complete (FileTreeView)
+- S3.2 complete (ProjectHeader)
+- S3.3 complete (ProjectActionBar)
+
+**Goal**: Assemble sidebar combining header, file tree, and action bar.
+
+**Exit Criteria**:
+- ✅ `Views/ProjectBrowserSidebar.swift` created
+- ✅ Composes ProjectHeader, FileTreeView, ProjectActionBar vertically
+- ✅ Passes selection and expansion state to child views
+- ✅ Handles callbacks from action bar
+- ✅ Responsive for macOS and iOS
+- ✅ Compiles and previews without errors
+
+---
+
+#### S3.6 – Create ProjectDetailPane
+**Entry Criteria**:
+- S3.4 complete (DefaultContentViews)
+- WU1 complete (ProjectFile model)
+
+**Goal**: Implement `ProjectDetailPane` that displays file contents via handler or fallback.
+
+**Exit Criteria**:
+- ✅ `Views/ProjectDetailPane.swift` created
+- ✅ Accepts selected ProjectFile (or nil)
+- ✅ Accepts handler registry `[String: (ProjectFile) -> AnyView]`
+- ✅ Shows "Select a file" when nil
+- ✅ Looks up handler by fileExtension and calls view builder
+- ✅ Shows UnsupportedFileView if no handler
+- ✅ Shows file metadata (size, modified date)
+- ✅ Compiles and previews
+
+---
+
+### WU4: Main Container & Platform Layout
+**Goal**: Build ProjectWindow container with NavigationSplitView (macOS) and NavigationStack (iOS).
+**Sorties**: 4
+**Duration**: ~3 days
+
+#### S4.1 – Create ProjectWindow Container (macOS Layout)
+**Entry Criteria**:
+- S3.5 complete (ProjectBrowserSidebar)
+- S3.6 complete (ProjectDetailPane)
+- WU2 complete (file discovery)
+
+**Goal**: Implement `ProjectWindow` main view with NavigationSplitView for macOS.
+
+**Exit Criteria**:
+- ✅ `ProjectWindow.swift` created with public API from spec § 4.1
+- ✅ Accepts directoryURL, handlers dict, projectTitle, callbacks
+- ✅ Uses NavigationSplitView with two columns (sidebar + detail)
+- ✅ Left sidebar is ProjectBrowserSidebar
+- ✅ Right detail is ProjectDetailPane
+- ✅ Stores file tree in @State
+- ✅ Stores selection in @State
+- ✅ Stores expanded folders in @State
+- ✅ Compiles and renders without crashes
+- ✅ File discovery triggered on view appear
+
+---
+
+#### S4.2 – Implement File Actions (Reload, Delete, Show in Finder)
+**Entry Criteria**:
+- S4.1 complete (ProjectWindow)
+- WU1 complete (FileAction enum)
+
+**Goal**: Implement file action handling in ProjectWindow (reload, delete, showInFinder, custom).
+
+**Exit Criteria**:
+- ✅ File actions dispatch correctly from detail pane
+- ✅ Reload action updates file contents
+- ✅ Delete action removes file from tree and disk
+- ✅ Show in Finder opens file in macOS Finder (macOS only)
+- ✅ Custom actions pass through to onFileAction callback
+- ✅ Errors handled gracefully (file not found, permissions)
+- ✅ Tree updates after delete
+- ✅ Unit tests verify all actions
+
+---
+
+#### S4.3 – Implement Lazy Loading & Progress
+**Entry Criteria**:
+- S4.1 complete (ProjectWindow)
+- S4.2 complete (file actions)
+
+**Goal**: Implement lazy file content loading with progress tracking.
+
+**Exit Criteria**:
+- ✅ Files are discovered but NOT loaded until user selects
+- ✅ Loading state shown in detail pane (spinner)
+- ✅ @State tracks `loadingFiles: Set<UUID>` and `fileContents: [UUID: ProjectFileContents]`
+- ✅ Calls consumer's contentLoader callback when file selected
+- ✅ Shows error if loading fails
+- ✅ Reload action re-fetches without showing stale indicator (Phase 1)
+- ✅ File contents cached in memory while view is open
+
+---
+
+#### S4.4 – Platform-Specific Layouts (iOS Support)
+**Entry Criteria**:
+- S4.1 complete (macOS NavigationSplitView)
+- S3.5, S3.6 complete (sidebar, detail)
+
+**Goal**: Adapt ProjectWindow for iOS using NavigationStack.
+
+**Exit Criteria**:
+- ✅ iOS version uses NavigationStack instead of NavigationSplitView
+- ✅ File list shown first; tapping file pushes detail view
+- ✅ Back button returns to file list
+- ✅ All file actions work on iOS
+- ✅ Responsive layout for iPad (supports split view on large screens)
+- ✅ Compiles for iOS 26.0+ target
+
+---
+
+### WU5: Integration with Proyecto App
+**Goal**: Connect ProjectBrowser library to standalone Proyecto app for file browsing.
+**Sorties**: 3
+**Duration**: ~2 days
+
+#### S5.1 – Add SwiftProyecto Package Dependency to Proyecto
+**Entry Criteria**:
+- WU4 complete (ProjectWindow library fully functional)
+- Proyecto app Xcode project exists at ~/Projects/apps/Proyecto
+
+**Goal**: Wire SwiftProyecto package as a dependency in the Proyecto Xcode project.
+
+**Exit Criteria**:
+- ✅ Proyecto.xcodeproj links SwiftProyecto package
+- ✅ Proyecto app target can import ProjectBrowser
+- ✅ Build succeeds with no linking errors
+- ✅ No circular dependencies
+- ✅ Platform compatibility verified (macOS 26.0+, iOS 26.0+)
+
+---
+
+#### S5.2 – Create Project Launcher UI in Proyecto
+**Entry Criteria**:
+- S5.1 complete (SwiftProyecto dependency wired)
+- S4.1 complete (ProjectWindow implemented)
+
+**Goal**: Replace ContentView in Proyecto with UI that opens a folder picker and launches ProjectWindow.
+
+**Exit Criteria**:
+- ✅ Proyecto/ContentView.swift updated with folder picker button
+- ✅ Clicking button opens FileImporter (iOS) or NSOpenPanel (macOS)
+- ✅ Selected directory passed to ProjectWindow
+- ✅ ProjectWindow presented as sheet/modal
+- ✅ File list displays correctly
+- ✅ Can select and view files
+- ✅ Compiles and runs on macOS and iOS simulators
+
+---
+
+#### S5.3 – Verify End-to-End Workflow
+**Entry Criteria**:
+- S5.2 complete (UI wired)
+
+**Goal**: Test the complete flow: launch app → open folder → browse files → view content.
+
+**Exit Criteria**:
+- ✅ App launches without crashes
+- ✅ Folder picker dialog appears
+- ✅ Can select a real directory (e.g., SwiftProyecto source tree)
+- ✅ File tree loads and displays
+- ✅ Clicking file shows content in detail pane
+- ✅ File content renders correctly (plain text for fallback)
+- ✅ No compilation errors
+- ✅ Tested on both macOS and iOS (simulator)
+
+---
+
+### WU6: Testing, Verification & Documentation
+**Goal**: End-to-end verification, unit/integration tests, and architecture documentation.
+**Sorties**: 3
+**Duration**: ~2 days
+
+#### S6.1 – Integration Tests for ProjectWindow
+**Entry Criteria**:
+- All WU1–WU5 sorties complete
+- Proyecto app successfully displays ProjectWindow
+
+**Goal**: Write integration tests that exercise the full flow: discover → select → render.
+
+**Exit Criteria**:
+- ✅ `Tests/ProjectWindowIntegrationTests.swift` created
+- ✅ Tests discover files in temp directory
+- ✅ Tests select file and verify callback fired
+- ✅ Tests render file with default handler
+- ✅ Tests file actions (reload) work end-to-end
+- ✅ All tests pass with `swift_package_test`
+- ✅ Test coverage > 75% for public API
+
+---
+
+#### S6.2 – Public API Documentation
+**Entry Criteria**:
+- All components complete (WU1–WU5)
+
+**Goal**: Write comprehensive API documentation for ProjectWindow and integration guide.
+
+**Exit Criteria**:
+- ✅ `Sources/ProjectBrowser/README.md` created
+- ✅ API reference for ProjectWindow initializer
+- ✅ Examples of handler registration
+- ✅ Platform-specific usage notes
+- ✅ Error handling guide
+- ✅ Callback signature reference
+- ✅ Integration example showing Proyecto app usage
+- ✅ All public types documented with doc comments
+
+---
+
+#### S6.3 – Architecture & Integration Documentation
+**Entry Criteria**:
+- All components complete
+
+**Goal**: Write architecture document explaining component interactions and integration points.
+
+**Exit Criteria**:
+- ✅ `Docs/ARCHITECTURE_ProjectBrowser.md` created
+- ✅ Component diagram showing ProjectWindow, sidebar, detail, services
+- ✅ Data flow diagram showing file discovery → selection → rendering
+- ✅ Handler registry flow explained
+- ✅ Integration points with SwiftProyecto documented
+- ✅ Proyecto app integration described
+- ✅ Future enhancements (Phase 2) listed
+- ✅ Document references spec and requirements
+
+---
+
+## Open Questions & Decisions
+
+### Q1: Handler Registry Implementation
+**Question**: Should handlers be a dictionary `[String: (ProjectFile) -> AnyView]` or a struct array `[FileTypeHandler]`?
+
+**Current Resolution**: Use dictionary for simplicity (matches spec § 4.1). Consumers build dict and pass directly.
+
+**Status**: ✅ RESOLVED (no blocker)
+
+---
+
+### Q2: Platform-Specific Code Organization
+**Question**: How to organize iOS vs macOS code? Separate files with `#if os(macOS)` or different view variants?
+
+**Current Resolution**: Use conditional compilation within components. Views like ProjectWindow have separate NavigationSplitView (macOS) and NavigationStack (iOS) in same file.
+
+**Status**: ✅ RESOLVED (no blocker)
+
+---
+
+### Q3: File Monitoring (Phase 2)
+**Question**: Should Phase 1 include FSEvents monitoring, or defer to Phase 2?
+
+**Current Resolution**: **DEFER TO PHASE 2**. Phase 1 focuses on core browsing. File monitoring adds complexity.
+
+**Impact**: Phase 1 will not auto-refresh when files change externally. Reload action is manual.
+
+**Status**: ✅ DECISION MADE (no blocker)
+
+---
+
+### Q4: Large Directory Virtualization
+**Question**: For directories with 10,000+ files, should we virtualize the file tree?
+
+**Current Resolution**: **PHASE 1**: Use standard ForEach. **PHASE 2**: Implement virtualization if needed.
+
+**Status**: ✅ DEFERRED TO PHASE 2 (acceptable for MVP)
+
+---
+
+### Q5: Standalone Proyecto App Integration
+**Question**: Should ProjectBrowser be integrated into Proyecto as a complete file browser, or just demonstrate capability?
+
+**Current Resolution**: **Phase 1**: Build Proyecto as a standalone file browser demonstrating ProjectWindow functionality. Future versions can integrate into other apps (Produciesta, etc.) as needed.
+
+**Status**: ✅ RESOLVED (no blocker) — Integration now targets Proyecto instead of Produciesta
+
+---
+
+## Success Criteria (Phase 1)
+
+✅ Consumers can browse any directory with a hierarchical file tree.  
+✅ Consumers can register views for custom file types.  
+✅ Default handlers render plain text, show "unsupported" for unknown types.  
+✅ File contents load on demand (lazy loading).  
+✅ File actions (reload, delete, show in Finder) work reliably.  
+✅ Performance: < 50 MB memory for 1,000 files; < 1 sec to render tree.  
+✅ macOS layout (NavigationSplitView) fully functional.  
+✅ iOS layout (NavigationStack) fully functional.  
+✅ No crashes on large directories (tested to 10,000 files).  
+✅ Proyecto standalone app demonstrates full file browsing workflow.  
+✅ Documented API and architecture.  
+
+---
+
+## Risk Assessment
+
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|-----------|
+| ProjectFileDiscovery too slow on large dirs | Medium | High | Profile early in S2.3; Phase 2 virtualization |
+| Platform-specific bugs (iOS vs macOS) | Medium | Medium | Cross-platform testing on simulators (S4.4) |
+| Handler performance with many handlers | Low | Low | Cache handler lookups (Phase 2 optimization) |
+| File deletion race (deleted while loading) | Low | Low | Catch FileNotFound errors gracefully (S4.2) |
+| Memory pressure with large files | Low | Medium | Implement content streaming (Phase 2) |
+
+---
+
+## Sortie Ordering & Parallelism
+
+**Critical Path** (blockers only):
+1. S1.1 → S1.2 → S1.3 → S1.4 (models must be first)
+2. S2.1 → S2.2 → S2.3 (discovery depends on models)
+3. S3.1, S3.2, S3.3, S3.4 can run in parallel (all depend on models)
+4. S3.5 depends on S3.1, S3.2, S3.3
+5. S3.6 depends on S3.4
+6. S4.1 depends on S3.5, S3.6, S2.1
+7. S4.2 depends on S4.1
+8. S4.3 depends on S4.2
+9. S4.4 depends on S4.1
+10. S5.1, S5.2, S5.3 (sequential within WU5)
+11. S6.1, S6.2 can start after S4.1; S6.3, S6.4 after all components
+
+**Parallel opportunities**:
+- S1.1 and S1.2 can be parallel (share final coordination in S1.3)
+- S2.1, S2.2, S2.3 are sequential but can overlap
+- S3.1–S3.4 can be dispatched in parallel
+- S4.2 and S4.3 sequential within WU4
+- S4.4 can be parallel with S4.2, S4.3
 
 ---
 
 ## Next Steps
 
-1. **Refine this plan**: Run `/mission-supervisor refine EXECUTION_PLAN.md` to:
-   - Identify any blocking open questions (Pass 1 = hard stop)
-   - Check sortie atomicity (can each sortie fit in one agent context?)
-   - Verify parallelism is sound
-   - Find any vague exit criteria
-
-2. **Start execution**: Run `/mission-supervisor start EXECUTION_PLAN.md` to:
-   - Record the starting commit
-   - Create a mission branch
-   - Dispatch the first sorties (1a, 1b, 1c in parallel)
-   - Begin iterating
-
-3. **Monitor progress**: Run `/mission-supervisor status` or `/mission-supervisor resume` to:
-   - Check sortie status
-   - Dispatch next sorties as dependencies clear
-   - Collect results
+1. **Review Plan**: Confirm no changes needed to this EXECUTION_PLAN.md
+2. **Refine** (optional): Run `/mission-supervisor refine` for deeper analysis
+3. **Start Mission**: Run `/mission-supervisor start` to initialize and dispatch first sorties
 
 ---
 
-**Prepared by**: Mission Supervisor (breakdown)  
-**Plan Version**: 1.0  
-**Status**: Ready for Refinement  
-**Estimated Sorties**: 11 (5 work units; distributed across sorties)
+**Status**: READY FOR APPROVAL  
+**Plan Created**: 2026-07-17  
+**Target Start**: 2026-07-17

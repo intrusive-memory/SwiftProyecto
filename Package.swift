@@ -55,6 +55,10 @@ let package = Package(
       name: "proyecto",
       targets: ["proyecto"]
     ),
+    .library(
+      name: "ProjectBrowser",
+      targets: ["ProjectBrowser"]
+    ),
   ],
   dependencies: [
     .package(url: "https://github.com/marcprux/universal.git", .upToNextMajor(from: "5.3.0")),
@@ -106,6 +110,24 @@ let package = Package(
       dependencies: [
         "SwiftProyecto",
         .product(name: "SwiftAcervo", package: "SwiftAcervo"),
+      ],
+      swiftSettings: [
+        .enableUpcomingFeature("StrictConcurrency"),
+        .enableExperimentalFeature("Lifetimes"),
+      ]
+    ),
+    .target(
+      name: "ProjectBrowser",
+      dependencies: [],
+      swiftSettings: [
+        .enableUpcomingFeature("StrictConcurrency"),
+        .enableExperimentalFeature("Lifetimes"),
+      ]
+    ),
+    .testTarget(
+      name: "ProjectBrowserTests",
+      dependencies: [
+        "ProjectBrowser"
       ],
       swiftSettings: [
         .enableUpcomingFeature("StrictConcurrency"),
