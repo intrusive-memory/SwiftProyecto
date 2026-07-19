@@ -54,7 +54,13 @@ jobs:
           TARBALL="proyecto-${VERSION}-arm64-macos.tar.gz"
 
           cd bin
-          tar -czvf "${TARBALL}" proyecto
+          # Ship the binary plus any SwiftPM resource bundles produced next to
+          # it (e.g. ZIPFoundation_ZIPFoundation.bundle) so Bundle.module can
+          # resolve them at runtime. The formula installs whatever bundles the
+          # tarball carries.
+          BUNDLES=$(find . -maxdepth 1 -name '*.bundle' | sed 's|^\./||')
+          echo "Bundling: proyecto ${BUNDLES}"
+          tar -czvf "${TARBALL}" proyecto ${BUNDLES}
           SHA256=$(shasum -a 256 "${TARBALL}" | cut -d' ' -f1)
 
           echo "tarball=${TARBALL}" >> $GITHUB_OUTPUT
