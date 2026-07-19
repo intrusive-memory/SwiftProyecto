@@ -17,13 +17,15 @@ let package = Package(
       name: "proyecto",
       targets: ["proyecto"]
     ),
+    .library(
+      name: "ProjectBrowser",
+      targets: ["ProjectBrowser"]
+    ),
   ],
   dependencies: [
     .package(url: "https://github.com/marcprux/universal.git", .upToNextMajor(from: "5.3.0")),
-    .package(
-      url: "https://github.com/intrusive-memory/SwiftAcervo.git", .upToNextMajor(from: "0.24.1")),
-    .package(
-      url: "https://github.com/intrusive-memory/SwiftCompartido.git", .upToNextMajor(from: "7.2.2")),
+    .package(url: "https://github.com/intrusive-memory/SwiftAcervo.git", .upToNextMajor(from: "0.24.1")),
+    .package(url: "https://github.com/intrusive-memory/SwiftCompartido.git", .upToNextMajor(from: "7.2.2")),
     // NOTE: SwiftBruja is deliberately NOT a dependency. `proyecto roles` runs
     // its casting/role extraction on-device via Apple's Foundation Models
     // (guided generation), so the library and CLI stay free of SwiftBruja's
@@ -64,6 +66,24 @@ let package = Package(
       dependencies: [
         "SwiftProyecto",
         .product(name: "SwiftAcervo", package: "SwiftAcervo"),
+      ],
+      swiftSettings: [
+        .enableUpcomingFeature("StrictConcurrency"),
+        .enableExperimentalFeature("Lifetimes"),
+      ]
+    ),
+    .target(
+      name: "ProjectBrowser",
+      dependencies: [],
+      swiftSettings: [
+        .enableUpcomingFeature("StrictConcurrency"),
+        .enableExperimentalFeature("Lifetimes"),
+      ]
+    ),
+    .testTarget(
+      name: "ProjectBrowserTests",
+      dependencies: [
+        "ProjectBrowser"
       ],
       swiftSettings: [
         .enableUpcomingFeature("StrictConcurrency"),
