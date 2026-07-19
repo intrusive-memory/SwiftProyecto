@@ -1,5 +1,5 @@
-import SwiftUI
 import AVFoundation
+import SwiftUI
 
 public struct AudioPlayerView: View {
   private let file: ProjectFile
@@ -10,9 +10,10 @@ public struct AudioPlayerView: View {
   public init(file: ProjectFile, directoryURL: URL) {
     self.file = file
     self.directoryURL = directoryURL
-    _controller = StateObject(wrappedValue: AudioPlayerController(
-      url: directoryURL.appendingPathComponent(file.relativePath)
-    ))
+    _controller = StateObject(
+      wrappedValue: AudioPlayerController(
+        url: directoryURL.appendingPathComponent(file.relativePath)
+      ))
   }
 
   public var body: some View {

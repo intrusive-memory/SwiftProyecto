@@ -3,10 +3,14 @@ import SwiftUI
 /// Provides default file type handlers for common file formats.
 public enum DefaultHandlers {
   /// Common image file extensions: jpg, jpeg, png, gif, webp, tiff, tif, bmp, heic, heif.
-  public static let imageExtensions = ["jpg", "jpeg", "png", "gif", "webp", "tiff", "tif", "bmp", "heic", "heif"]
+  public static let imageExtensions = [
+    "jpg", "jpeg", "png", "gif", "webp", "tiff", "tif", "bmp", "heic", "heif",
+  ]
 
   /// Common audio file extensions: mp3, m4a, aac, wav, flac, ogg, opus, wma, alac, aiff.
-  public static let audioExtensions = ["mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "wma", "alac", "aiff"]
+  public static let audioExtensions = [
+    "mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "wma", "alac", "aiff",
+  ]
 
   /// Creates an image file handler for the given directory.
   ///
