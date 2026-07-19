@@ -31,7 +31,9 @@ release: resolve
 	@PRODUCT_DIR=$$(find $(DERIVED_DATA)/SwiftProyecto-*/Build/Products/Release -name $(BINARY) -type f 2>/dev/null | head -1 | xargs dirname); \
 	if [ -n "$$PRODUCT_DIR" ]; then \
 		cp "$$PRODUCT_DIR/$(BINARY)" $(BIN_DIR)/; \
-		echo "Installed $(BINARY) to $(BIN_DIR)/ (Release)"; \
+		find "$$PRODUCT_DIR" -maxdepth 1 -name '*.bundle' -exec cp -R {} $(BIN_DIR)/ \; ; \
+		echo "Installed $(BINARY) (+ resource bundles) to $(BIN_DIR)/ (Release)"; \
+		ls -d $(BIN_DIR)/*.bundle 2>/dev/null || true; \
 	else \
 		echo "Error: Could not find $(BINARY) in DerivedData"; \
 		exit 1; \

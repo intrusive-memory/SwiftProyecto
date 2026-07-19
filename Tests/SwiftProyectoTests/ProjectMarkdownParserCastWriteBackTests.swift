@@ -98,7 +98,8 @@ final class ProjectMarkdownParserCastWriteBackTests: XCTestCase {
 
     // Re-parse to confirm the intended change landed.
     let (updatedFM, _) = try parser.parse(content: updated)
-    let updatedMember = try XCTUnwrap(updatedFM.cast?.first(where: { $0.character == "PREDATOR_MOM" }))
+    let updatedMember = try XCTUnwrap(
+      updatedFM.cast?.first(where: { $0.character == "PREDATOR_MOM" }))
     XCTAssertEqual(updatedMember.voices["voxalta"], ["PREDATOR_MOM_2"])
     XCTAssertEqual(updatedFM.introFile, "intro.fountain")
     XCTAssertEqual(updatedFM.outroFile, "outro.fountain")
@@ -186,7 +187,10 @@ final class ProjectMarkdownParserCastWriteBackTests: XCTestCase {
     let updated = try parser.replacingCastBlock(in: goldenFixture, with: cast)
 
     // Non-cast content is fully preserved.
-    for key in ["introFile: intro.fountain", "outroFile: outro.fountain", "episodes_index: episodes/index.json", "providerId: voxalta"] {
+    for key in [
+      "introFile: intro.fountain", "outroFile: outro.fountain",
+      "episodes_index: episodes/index.json", "providerId: voxalta",
+    ] {
       XCTAssertTrue(updated.contains(key), "\(key) must survive")
     }
     let (fm, _) = try parser.parse(content: updated)
