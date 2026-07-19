@@ -16,6 +16,16 @@ public typealias FileLoaderCallback = @Sendable (ProjectFile) async throws -> Pr
 /// detail pane's toolbar).
 public typealias FileActionCallback = @Sendable (ProjectFile, FileAction) -> Void
 
+/// A consumer-supplied callback that persists edited text back to a
+/// ``ProjectFile``.
+///
+/// `ProjectWindow` invokes this when the user saves an edit made in the
+/// default editable text view (``EditableTextContentView``). When a consumer
+/// doesn't supply one, `ProjectWindow` falls back to writing the text
+/// directly to disk as UTF-8 (see
+/// ``ProjectFileActionHandler/save(text:to:in:fileWriter:)``).
+public typealias FileWriterCallback = @Sendable (ProjectFile, String) async throws -> Void
+
 /// Associates a file extension with a SwiftUI view builder used to render
 /// files of that type in a `ProjectWindow`'s detail pane.
 ///

@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Default text files are now editable** — the handler-less fallback for any UTF-8 text file renders in a new `EditableTextContentView` backed by SwiftUI's `TextEditor` (monospaced), with dirty tracking, a Save control, and a ⌘S shortcut. Binary files (non-UTF-8) still fall back to the read-only `PlainTextContentView`.
+- **`ProjectFileActionHandler.save(text:to:in:fileWriter:)`** — persists edited text via a consumer-supplied `FileWriterCallback`, or by writing UTF-8 to disk atomically when none is supplied.
+- **`FileWriterCallback` typealias** and a `fileWriter:` parameter on `ProjectWindow` for consumers (e.g. sandboxed apps) that need to own the write — including any security-scoped access. `ProjectBrowser` itself performs no sandbox scoping.
+- **`onSaveText:` parameter on `ProjectDetailPane`** wiring the editable view's saves through to the host. When `nil`, text files render read-only.
+
+### Notes
+
+- All new API is additive and source-compatible; `PlainTextContentView` is unchanged. Existing consumers gain the editor automatically for handler-less text files (with the built-in disk writer) unless they register their own handler.
+
 ---
 
 ## [4.3.3] - 2026-07-12

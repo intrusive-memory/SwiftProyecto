@@ -302,6 +302,90 @@ final class ProjectWindowTests: XCTestCase {
     XCTAssertEqual(result, ProjectFileActionResult())
   }
 
+  // MARK: - Save
+
+  func testSaveWritesTextToDiskWithoutWriter() async throws {
+    let file = try makeFile("notes/todo.txt", contents: "old")
+
+    try await ProjectFileActionHandler.save(
+      text: "new contents", to: file, in: tempRoot, fileWriter: nil)
+
+    let onDisk = try String(
+      contentsOf: tempRoot.appendingPathComponent(file.relativePath), encoding: .utf8)
+    XCTAssertEqual(onDisk, "new contents")
+  }
+
+  func testSaveCreatesFileWhenMissing() async throws {
+    // A ProjectFile whose backing file doesn't exist yet still writes cleanly,
+    // since the parent directory exists.
+    let file = ProjectFile(
+      name: "fresh.txt",
+      relativePath: "fresh.txt",
+      fileExtension: "txt",
+      isDirectory: false,
+      modifiedDate: Date())
+
+    try await ProjectFileActionHandler.save(
+      text: "hello", to: file, in: tempRoot, fileWriter: nil)
+
+    let onDisk = try String(
+      contentsOf: tempRoot.appendingPathComponent("fresh.txt"), encoding: .utf8)
+    XCTAssertEqual(onDisk, "hello")
+  }
+
+  func testSaveDelegatesToFileWriterWhenProvided() async throws {
+    let file = try makeFile("delegated.txt", contents: "disk")
+    actor Capture {
+      var file: ProjectFile?
+      var text: String?
+      func record(_ f: ProjectFile, _ t: String) { file = f; text = t }
+    }
+    let capture = Capture()
+
+    try await ProjectFileActionHandler.save(text: "via writer", to: file, in: tempRoot) {
+      f, t in
+      await capture.record(f, t)
+    }
+
+    let capturedText = await capture.text
+    let capturedFile = await capture.file
+    XCTAssertEqual(capturedText, "via writer")
+    XCTAssertEqual(capturedFile?.id, file.id)
+    // The custom writer fully replaces disk I/O — nothing was written to disk.
+    XCTAssertEqual(
+      try String(contentsOf: tempRoot.appendingPathComponent("delegated.txt"), encoding: .utf8),
+      "disk")
+  }
+
+  func testSavePropagatesFileWriterFailureAsUnderlyingError() async throws {
+    struct WriterError: Error {}
+    let file = try makeFile("boom.txt")
+
+    do {
+      try await ProjectFileActionHandler.save(text: "x", to: file, in: tempRoot) { _, _ in
+        throw WriterError()
+      }
+      XCTFail("Expected the writer's error to propagate")
+    } catch let error as ProjectFileActionError {
+      guard case .underlying = error else {
+        return XCTFail("Expected .underlying, got \(error)")
+      }
+    }
+  }
+
+  func testSavePreservesProjectFileActionErrorFromWriter() async throws {
+    let file = try makeFile("scoped.txt")
+
+    do {
+      try await ProjectFileActionHandler.save(text: "x", to: file, in: tempRoot) { _, _ in
+        throw ProjectFileActionError.permissionDenied("scoped.txt")
+      }
+      XCTFail("Expected the writer's typed error to propagate unchanged")
+    } catch let error as ProjectFileActionError {
+      XCTAssertEqual(error, .permissionDenied("scoped.txt"))
+    }
+  }
+
   #if os(macOS)
     // MARK: - Show in Finder (macOS)
 

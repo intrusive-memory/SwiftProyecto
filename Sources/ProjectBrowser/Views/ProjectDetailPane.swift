@@ -84,6 +84,15 @@ public struct ProjectDetailPane: View {
   /// become a no-op).
   private let onRetryLoad: ((ProjectFile) -> Void)?
 
+  /// Persists edited text for a handler-less text file, backing the default
+  /// ``EditableTextContentView``. When `nil`, text files render read-only via
+  /// ``PlainTextContentView`` instead of the editor.
+  ///
+  /// Like `onAction`, this is deliberately a plain (non-`Sendable`) closure:
+  /// it's UI wiring to whatever hosts the pane (always driven from the main
+  /// actor), not a consumer-facing callback.
+  private let onSaveText: ((ProjectFile, String) async throws -> Void)?
+
   /// Creates a project detail pane.
   ///
   /// - Parameters:
@@ -99,6 +108,8 @@ public struct ProjectDetailPane: View {
   ///     Finder, delete).
   ///   - onRetryLoad: Invoked with the selected file when the user taps
   ///     "Retry" on the error fallback view.
+  ///   - onSaveText: Persists edited text for a handler-less text file. When
+  ///     `nil`, text files render read-only instead of in an editor.
   public init(
     selectedFile: ProjectFile?,
     handlers: [String: (ProjectFile) -> AnyView],
@@ -106,7 +117,8 @@ public struct ProjectDetailPane: View {
     isLoadingContent: Bool = false,
     loadError: String? = nil,
     onAction: ((ProjectFile, FileAction) -> Void)? = nil,
-    onRetryLoad: ((ProjectFile) -> Void)? = nil
+    onRetryLoad: ((ProjectFile) -> Void)? = nil,
+    onSaveText: ((ProjectFile, String) async throws -> Void)? = nil
   ) {
     self.selectedFile = selectedFile
     self.handlers = handlers
@@ -115,6 +127,7 @@ public struct ProjectDetailPane: View {
     self.loadError = loadError
     self.onAction = onAction
     self.onRetryLoad = onRetryLoad
+    self.onSaveText = onSaveText
   }
 
   public var body: some View {
@@ -153,7 +166,18 @@ public struct ProjectDetailPane: View {
         onRetryLoad?(file)
       }
     } else if let contents {
-      PlainTextContentView(text: contents.text)
+      // A UTF-8 text file with a save handler renders in the default editable
+      // ``TextEditor``; keyed by `file.id` so switching selection resets the
+      // draft. Binary files (nil text) and the no-save-handler case fall back
+      // to the read-only ``PlainTextContentView``.
+      if let text = contents.text, let onSaveText {
+        EditableTextContentView(text: text) { edited in
+          try await onSaveText(file, edited)
+        }
+        .id(file.id)
+      } else {
+        PlainTextContentView(text: contents.text)
+      }
     } else {
       UnsupportedFileView(file: file)
     }
