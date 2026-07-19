@@ -1,6 +1,8 @@
 ---
+state: completed
+mission: projectbrowser-library-01
+updated: 2026-07-18
 type: execution-plan
-state: complete
 feature_name: ProjectBrowser Library (Reusable Project Window UI)
 starting_point_commit: 013a67f
 mission_branch: mission/projectbrowser-library/01
@@ -63,7 +65,7 @@ base_dependencies:
 
 #### S1.1 – Create ProjectFile & Supporting Models
 **Entry Criteria**:
-- Repository at `013a67f` with SwiftProyecto v4.3.3-dev
+- Repository at `013a67f` with SwiftProyecto v4.4.0
 - No production code changes yet
 
 **Goal**: Implement `ProjectFile`, `FileLoadingState`, `ProjectFileContents`, and `ProjectMetadata` models in `Sources/ProjectBrowser/Models/`.

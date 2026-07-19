@@ -1,8 +1,10 @@
 ---
+state: completed
+mission: projectbrowser-library-01
+updated: 2026-07-18
 type: mission-state
 mission_branch: mission/projectbrowser-library/01
 iteration: 1
-state: complete
 completed_date: 2026-07-18
 ---
 

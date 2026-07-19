@@ -200,7 +200,9 @@ public enum ProjectFileActionHandler {
   /// it's a directory, all of its descendants (matched by `relativePath`
   /// prefix) — from `files`. Pure and side-effect free, so `ProjectWindow`
   /// can use it to update its `@State` after a successful `.delete`.
-  public static func removingFromTree(_ file: ProjectFile, from files: [ProjectFile]) -> [ProjectFile] {
+  public static func removingFromTree(_ file: ProjectFile, from files: [ProjectFile])
+    -> [ProjectFile]
+  {
     let descendantPrefix = file.relativePath + "/"
     return files.filter { candidate in
       guard candidate.id != file.id else { return false }

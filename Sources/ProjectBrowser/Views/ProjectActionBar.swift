@@ -58,7 +58,7 @@ public struct ProjectActionBar: View {
   public let canUnloadAll: Bool
 
   #if os(iOS)
-  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   #endif
 
   public init(
@@ -85,50 +85,68 @@ public struct ProjectActionBar: View {
 
   public var body: some View {
     #if os(macOS)
-    macLayout
+      macLayout
     #else
-    iOSLayout
+      iOSLayout
     #endif
   }
 
   // MARK: - macOS layout
 
   #if os(macOS)
-  /// A single toolbar-style row of icon+label buttons, matching macOS
-  /// window-toolbar conventions.
-  private var macLayout: some View {
-    HStack(spacing: 8) {
-      actionButton(
-        title: "Sync", systemImage: "arrow.circlepath", enabled: canSync, action: onSync)
-      actionButton(
-        title: "Import", systemImage: "square.and.arrow.down", enabled: canImport,
-        action: onImport)
+    /// A single toolbar-style row of icon+label buttons, matching macOS
+    /// window-toolbar conventions.
+    private var macLayout: some View {
+      HStack(spacing: 8) {
+        actionButton(
+          title: "Sync", systemImage: "arrow.circlepath", enabled: canSync, action: onSync)
+        actionButton(
+          title: "Import", systemImage: "square.and.arrow.down", enabled: canImport,
+          action: onImport)
 
-      Divider()
-        .frame(height: 16)
+        Divider()
+          .frame(height: 16)
 
-      actionButton(
-        title: "Load All", systemImage: "square.stack", enabled: canLoadAll, action: onLoadAll)
-      actionButton(
-        title: "Unload All", systemImage: "xmark.circle", enabled: canUnloadAll,
-        action: onUnloadAll)
+        actionButton(
+          title: "Load All", systemImage: "square.stack", enabled: canLoadAll, action: onLoadAll)
+        actionButton(
+          title: "Unload All", systemImage: "xmark.circle", enabled: canUnloadAll,
+          action: onUnloadAll)
 
-      Spacer()
+        Spacer()
+      }
+      .padding(.horizontal, 8)
+      .padding(.vertical, 6)
     }
-    .padding(.horizontal, 8)
-    .padding(.vertical, 6)
-  }
   #endif
 
   // MARK: - iOS layout
 
   #if !os(macOS)
-  /// A two-row button group on compact-width devices (iPhone), or a single
-  /// full-width row on regular-width devices (iPad).
-  private var iOSLayout: some View {
-    Group {
-      if horizontalSizeClass == .compact {
-        VStack(spacing: 8) {
+    /// A two-row button group on compact-width devices (iPhone), or a single
+    /// full-width row on regular-width devices (iPad).
+    private var iOSLayout: some View {
+      Group {
+        if horizontalSizeClass == .compact {
+          VStack(spacing: 8) {
+            HStack(spacing: 8) {
+              actionButton(
+                title: "Sync", systemImage: "arrow.circlepath", enabled: canSync, action: onSync,
+                expand: true)
+              actionButton(
+                title: "Import", systemImage: "square.and.arrow.down", enabled: canImport,
+                action: onImport, expand: true)
+            }
+            HStack(spacing: 8) {
+              actionButton(
+                title: "Load All", systemImage: "square.stack", enabled: canLoadAll,
+                action: onLoadAll, expand: true)
+              actionButton(
+                title: "Unload All", systemImage: "xmark.circle", enabled: canUnloadAll,
+                action: onUnloadAll, expand: true)
+            }
+          }
+        } else {
           HStack(spacing: 8) {
             actionButton(
               title: "Sync", systemImage: "arrow.circlepath", enabled: canSync, action: onSync,
@@ -136,8 +154,6 @@ public struct ProjectActionBar: View {
             actionButton(
               title: "Import", systemImage: "square.and.arrow.down", enabled: canImport,
               action: onImport, expand: true)
-          }
-          HStack(spacing: 8) {
             actionButton(
               title: "Load All", systemImage: "square.stack", enabled: canLoadAll,
               action: onLoadAll, expand: true)
@@ -146,26 +162,10 @@ public struct ProjectActionBar: View {
               action: onUnloadAll, expand: true)
           }
         }
-      } else {
-        HStack(spacing: 8) {
-          actionButton(
-            title: "Sync", systemImage: "arrow.circlepath", enabled: canSync, action: onSync,
-            expand: true)
-          actionButton(
-            title: "Import", systemImage: "square.and.arrow.down", enabled: canImport,
-            action: onImport, expand: true)
-          actionButton(
-            title: "Load All", systemImage: "square.stack", enabled: canLoadAll,
-            action: onLoadAll, expand: true)
-          actionButton(
-            title: "Unload All", systemImage: "xmark.circle", enabled: canUnloadAll,
-            action: onUnloadAll, expand: true)
-        }
       }
+      .padding(8)
+      .buttonStyle(.bordered)
     }
-    .padding(8)
-    .buttonStyle(.bordered)
-  }
   #endif
 
   // MARK: - Shared button builder

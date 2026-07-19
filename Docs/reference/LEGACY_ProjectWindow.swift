@@ -12,9 +12,9 @@
 //  - Error handling when project is not found
 //
 
-import SwiftUI
 import SwiftData
 import SwiftProyecto
+import SwiftUI
 
 /// Window wrapper for project editing.
 ///
@@ -25,87 +25,87 @@ import SwiftProyecto
 ///
 @MainActor
 struct ProjectWindow: View {
-    let projectID: UUID
+  let projectID: UUID
 
-    @Environment(\.modelContext) private var modelContext
-    @State private var project: ProjectModel?
+  @Environment(\.modelContext) private var modelContext
+  @State private var project: ProjectModel?
 
-    var body: some View {
-        Group {
-            if let project = project {
-                ProjectView(project: project)
-                    .id(project.persistentModelID)
-            } else {
-                ContentUnavailableView {
-                    Label("Project Not Found", systemImage: "folder.fill")
-                } description: {
-                    Text("The project could not be loaded.")
-                }
-            }
+  var body: some View {
+    Group {
+      if let project = project {
+        ProjectView(project: project)
+          .id(project.persistentModelID)
+      } else {
+        ContentUnavailableView {
+          Label("Project Not Found", systemImage: "folder.fill")
+        } description: {
+          Text("The project could not be loaded.")
         }
-        .task {
-            await loadProject()
-        }
-        .onDisappear {
-            updateLastOpenedDate()
-        }
+      }
     }
-
-    // MARK: - Project Loading
-
-    private func loadProject() async {
-        // Fetch project from SwiftData
-        let fetchDescriptor = FetchDescriptor<ProjectModel>(
-            predicate: #Predicate { $0.id == projectID }
-        )
-
-        do {
-            let projects = try modelContext.fetch(fetchDescriptor)
-            if let fetchedProject = projects.first {
-                self.project = fetchedProject
-
-                // Update lastOpenedDate on window open
-                fetchedProject.lastOpenedDate = Date()
-                try? modelContext.save()
-            }
-        } catch {
-            debugError("Failed to load project: \(error.localizedDescription)")
-        }
+    .task {
+      await loadProject()
     }
-
-    private func updateLastOpenedDate() {
-        // Update again when window closes (captures "worked on" time)
-        if let project = project {
-            project.lastOpenedDate = Date()
-            try? modelContext.save()
-        }
+    .onDisappear {
+      updateLastOpenedDate()
     }
+  }
+
+  // MARK: - Project Loading
+
+  private func loadProject() async {
+    // Fetch project from SwiftData
+    let fetchDescriptor = FetchDescriptor<ProjectModel>(
+      predicate: #Predicate { $0.id == projectID }
+    )
+
+    do {
+      let projects = try modelContext.fetch(fetchDescriptor)
+      if let fetchedProject = projects.first {
+        self.project = fetchedProject
+
+        // Update lastOpenedDate on window open
+        fetchedProject.lastOpenedDate = Date()
+        try? modelContext.save()
+      }
+    } catch {
+      debugError("Failed to load project: \(error.localizedDescription)")
+    }
+  }
+
+  private func updateLastOpenedDate() {
+    // Update again when window closes (captures "worked on" time)
+    if let project = project {
+      project.lastOpenedDate = Date()
+      try? modelContext.save()
+    }
+  }
 }
 
 // MARK: - Preview
 
 #Preview {
-    return {
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try! ModelContainer(
-            for: ProjectModel.self,
-            configurations: config
-        )
+  return {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(
+      for: ProjectModel.self,
+      configurations: config
+    )
 
-        // Create sample project
-        let project = ProjectModel(
-            title: "My Series",
-            author: "Jane Showrunner",
-            season: 1,
-            episodes: 12,
-            sourceType: .directory,
-            sourceName: "My Series",
-            sourceRootURL: "/tmp/my-series"
-        )
-        container.mainContext.insert(project)
+    // Create sample project
+    let project = ProjectModel(
+      title: "My Series",
+      author: "Jane Showrunner",
+      season: 1,
+      episodes: 12,
+      sourceType: .directory,
+      sourceName: "My Series",
+      sourceRootURL: "/tmp/my-series"
+    )
+    container.mainContext.insert(project)
 
-        return ProjectWindow(projectID: project.id)
-            .modelContainer(container)
-            .frame(width: 1000, height: 700)
-    }()
+    return ProjectWindow(projectID: project.id)
+      .modelContainer(container)
+      .frame(width: 1000, height: 700)
+  }()
 }

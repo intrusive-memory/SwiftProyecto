@@ -86,7 +86,7 @@ public struct FileTreeView: View {
       }
     }
     #if os(macOS)
-    .listStyle(.sidebar)
+      .listStyle(.sidebar)
     #endif
   }
 

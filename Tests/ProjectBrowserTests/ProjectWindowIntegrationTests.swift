@@ -1,5 +1,5 @@
-import XCTest
 import SwiftUI
+import XCTest
 
 @testable import ProjectBrowser
 
@@ -235,14 +235,14 @@ final class ProjectWindowIntegrationTests: XCTestCase {
   /// files (arbitrary text file types).
   func testDefaultContentLoaderHandlesSwiftFiles() async throws {
     let swiftCode = """
-    import Foundation
+      import Foundation
 
-    struct Example {
-      func demo() -> String {
-        return "Hello, Swift!"
+      struct Example {
+        func demo() -> String {
+          return "Hello, Swift!"
+        }
       }
-    }
-    """
+      """
     let file = try makeFile("Example.swift", contents: swiftCode)
 
     let contents = try await ProjectFileActionHandler.reload(

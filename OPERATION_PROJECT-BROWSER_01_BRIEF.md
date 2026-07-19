@@ -1,4 +1,7 @@
 ---
+state: completed
+mission: projectbrowser-library-01
+updated: 2026-07-18
 type: mission-brief
 mission_name: OPERATION PROJECT-BROWSER
 mission_branch: mission/projectbrowser-library/01

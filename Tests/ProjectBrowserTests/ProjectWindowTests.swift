@@ -310,7 +310,8 @@ final class ProjectWindowTests: XCTestCase {
         var selectedPath: String?
         var rootPath: String?
 
-        func selectFile(_ fullPath: String?, inFileViewerRootedAtPath rootFullPath: String) -> Bool {
+        func selectFile(_ fullPath: String?, inFileViewerRootedAtPath rootFullPath: String) -> Bool
+        {
           selectedPath = fullPath
           rootPath = rootFullPath
           return true
@@ -324,7 +325,8 @@ final class ProjectWindowTests: XCTestCase {
         file: file, in: tempRoot, workspace: workspace)
 
       XCTAssertTrue(didReveal)
-      XCTAssertEqual(workspace.selectedPath, tempRoot.appendingPathComponent(file.relativePath).path)
+      XCTAssertEqual(
+        workspace.selectedPath, tempRoot.appendingPathComponent(file.relativePath).path)
       XCTAssertEqual(workspace.rootPath, tempRoot.path)
     }
   #endif

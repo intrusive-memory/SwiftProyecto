@@ -265,7 +265,9 @@ final class ProjectFileDiscoveryIntegrationTests: XCTestCase {
     }
 
     for (_, children) in childrenByParent {
-      let sortedByIndex = children.sorted { indexByPath[$0.relativePath]! < indexByPath[$1.relativePath]! }
+      let sortedByIndex = children.sorted {
+        indexByPath[$0.relativePath]! < indexByPath[$1.relativePath]!
+      }
       let lastDirectoryIndex = sortedByIndex.lastIndex(where: { $0.isDirectory })
       let firstFileIndex = sortedByIndex.firstIndex(where: { !$0.isDirectory })
 
