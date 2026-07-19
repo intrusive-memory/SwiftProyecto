@@ -204,45 +204,21 @@ public struct ProjectMarkdownParser {
       yaml += "exportFormat: \(escapeYAMLString(exportFormat))\n"
     }
 
-    // Cast list
-    if let cast = frontMatter.cast, !cast.isEmpty {
-      yaml += "cast:\n"
-      for member in cast {
-        yaml += "  - character: \(escapeYAMLString(member.character))\n"
-        if let actor = member.actor {
-          yaml += "    actor: \(escapeYAMLString(actor))\n"
-        }
-        if let gender = member.gender {
-          yaml += "    gender: \(gender.rawValue)\n"
-        }
-        if let voicePrompt = member.voiceDescription {
-          yaml += "    voicePrompt: \(escapeYAMLString(voicePrompt))\n"
-        }
-        if let language = member.language {
-          yaml += "    language: \(escapeYAMLString(language))\n"
-        }
-        if !member.voices.isEmpty {
-          yaml += "    voices:\n"
-          for (provider, voiceIds) in member.voices.sorted(by: { $0.key < $1.key }) {
-            if voiceIds.count == 1, let singleId = voiceIds.first {
-              // Single voice: render inline for readability
-              yaml += "      \(provider): \(escapeYAMLString(singleId))\n"
-            } else if !voiceIds.isEmpty {
-              // Multiple voices: render as array
-              yaml += "      \(provider):\n"
-              for voiceId in voiceIds {
-                yaml += "        - \(escapeYAMLString(voiceId))\n"
-              }
-            }
-          }
-        }
-        // Re-emit any unknown, user-maintained per-member keys (e.g. `bio:`) so
-        // they survive PROJECT.md write-back rather than being silently dropped.
-        for (key, value) in member.extraKeys.sorted(by: { $0.key < $1.key }) {
-          yaml += try! generateCastMemberExtraYAML(key: key, value: value)
-        }
-      }
+    // Intro/outro asset references.
+    //
+    // These are known top-level keys (see ``ProjectFrontMatter/KnownCodingKeys``),
+    // so they are NOT captured by the `appSections` catch-all on decode. They must
+    // therefore be emitted explicitly here, or a full-frontmatter re-emit would
+    // silently drop them on write-back (issue intrusive-memory/SwiftEchada#55).
+    if let introFile = frontMatter.introFile {
+      yaml += "introFile: \(escapeYAMLString(introFile))\n"
     }
+    if let outroFile = frontMatter.outroFile {
+      yaml += "outroFile: \(escapeYAMLString(outroFile))\n"
+    }
+
+    // Cast list
+    yaml += renderCast(frontMatter.cast ?? [])
 
     // Hook fields
     if let preGenerateHook = frontMatter.preGenerateHook {
@@ -291,18 +267,155 @@ public struct ProjectMarkdownParser {
     return yaml
   }
 
+  /// Render the top-level `cast:` block for a list of cast members.
+  ///
+  /// This is the single source of truth for cast YAML emission, shared by both
+  /// ``generate(frontMatter:body:)`` (full-file generation) and
+  /// ``replacingCastBlock(in:with:)`` (surgical write-back). Keeping one
+  /// renderer guarantees the two paths never drift.
+  ///
+  /// - Parameter cast: The cast members to render.
+  /// - Returns: The `cast:` block as YAML text (each line newline-terminated),
+  ///   or an empty string when `cast` is empty (no block to emit).
+  public func renderCast(_ cast: [CastMember]) -> String {
+    guard !cast.isEmpty else { return "" }
+
+    var yaml = "cast:\n"
+    for member in cast {
+      yaml += "  - character: \(escapeYAMLString(member.character))\n"
+      if let actor = member.actor {
+        yaml += "    actor: \(escapeYAMLString(actor))\n"
+      }
+      if let gender = member.gender {
+        yaml += "    gender: \(gender.rawValue)\n"
+      }
+      if let voicePrompt = member.voiceDescription {
+        yaml += "    voicePrompt: \(escapeYAMLString(voicePrompt))\n"
+      }
+      if let language = member.language {
+        yaml += "    language: \(escapeYAMLString(language))\n"
+      }
+      if !member.voices.isEmpty {
+        yaml += "    voices:\n"
+        for (provider, voiceIds) in member.voices.sorted(by: { $0.key < $1.key }) {
+          if voiceIds.count == 1, let singleId = voiceIds.first {
+            // Single voice: render inline for readability
+            yaml += "      \(provider): \(escapeYAMLString(singleId))\n"
+          } else if !voiceIds.isEmpty {
+            // Multiple voices: render as array
+            yaml += "      \(provider):\n"
+            for voiceId in voiceIds {
+              yaml += "        - \(escapeYAMLString(voiceId))\n"
+            }
+          }
+        }
+      }
+      // Re-emit any unknown, user-maintained per-member keys (e.g. `bio:`) so
+      // they survive PROJECT.md write-back rather than being silently dropped.
+      for (key, value) in member.extraKeys.sorted(by: { $0.key < $1.key }) {
+        yaml += try! generateCastMemberExtraYAML(key: key, value: value)
+      }
+    }
+    return yaml
+  }
+
+  /// Surgically replace ONLY the top-level `cast:` block in existing PROJECT.md
+  /// text, leaving every other byte untouched.
+  ///
+  /// This is the lossless write-back path. Rather than re-emitting the whole
+  /// frontmatter from the typed model — which reorders keys, drops comments, and
+  /// (historically) silently deleted any key the hand-rolled emitter forgot
+  /// (issue intrusive-memory/SwiftEchada#55, #44) — it performs a line-span
+  /// splice of just the `cast:` subtree. Introductory/outro keys, inline
+  /// comments, unknown top-level keys, key ordering, and spacing are all
+  /// byte-identical by construction.
+  ///
+  /// Algorithm:
+  /// 1. Locate the `---` … `---` frontmatter delimiters.
+  /// 2. Find the top-level `cast:` key (column 0) and consume the contiguous run
+  ///    of more-indented lines belonging to it.
+  /// 3. Replace exactly those lines with a freshly rendered cast block.
+  /// 4. If there is no existing `cast:` block, insert the rendered block at the
+  ///    end of the frontmatter (just before the closing `---`).
+  ///
+  /// - Parameters:
+  ///   - original: The complete, original PROJECT.md file text.
+  ///   - cast: The updated cast members to write back.
+  /// - Returns: New file text identical to `original` except for the `cast:` block.
+  /// - Throws: ``ParserError/noFrontMatter`` if no `---` … `---` block is found.
+  public func replacingCastBlock(in original: String, with cast: [CastMember]) throws -> String {
+    var lines = original.components(separatedBy: "\n")
+
+    // Locate frontmatter delimiters.
+    guard
+      let firstDelim = lines.firstIndex(where: {
+        $0.trimmingCharacters(in: .whitespaces) == "---"
+      })
+    else {
+      throw ParserError.noFrontMatter
+    }
+    guard
+      let secondDelim = lines[(firstDelim + 1)...].firstIndex(where: {
+        $0.trimmingCharacters(in: .whitespaces) == "---"
+      })
+    else {
+      throw ParserError.noFrontMatter
+    }
+
+    // Render the replacement cast block as discrete lines (drop the trailing
+    // empty element produced by the block's final newline).
+    var castLines = renderCast(cast).components(separatedBy: "\n")
+    if castLines.last == "" {
+      castLines.removeLast()
+    }
+
+    // Find the top-level `cast:` key at column 0 within the frontmatter.
+    var castStart: Int?
+    for index in (firstDelim + 1)..<secondDelim {
+      let line = lines[index]
+      guard let first = line.first, first != " ", first != "\t" else { continue }
+      let key = line.prefix(while: { $0 != ":" })
+      if key == "cast" {
+        castStart = index
+        break
+      }
+    }
+
+    if let start = castStart {
+      // Consume the contiguous run of indented lines belonging to the block.
+      var end = start + 1
+      while end < secondDelim {
+        guard let first = lines[end].first, first == " " || first == "\t" else { break }
+        end += 1
+      }
+      lines.replaceSubrange(start..<end, with: castLines)
+    } else if !castLines.isEmpty {
+      // No existing cast block: insert before the closing delimiter.
+      lines.insert(contentsOf: castLines, at: secondDelim)
+    }
+
+    return lines.joined(separator: "\n")
+  }
+
   /// Generate YAML for an app section.
   private func generateAppSectionYAML(key: String, value: AnyCodable) throws -> String {
     // Decode AnyCodable to get the actual value
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
     let data = try encoder.encode(value)
-    let jsonObject = try JSONSerialization.jsonObject(with: data)
+    // `.fragmentsAllowed` so an unknown top-level key holding a *scalar* (e.g.
+    // `episodes_index: episodes/index.json`) round-trips instead of crashing.
+    // These scalar unknown keys are exactly the #44/#55 loss class.
+    let jsonObject = try JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])
 
-    // Generate YAML for this section
-    var yaml = "\(key):\n"
-    yaml += generateYAMLValue(jsonObject, indent: 1)
-    return yaml
+    // Nested collections descend under a `key:` header; scalars render inline.
+    if jsonObject is [String: Any] || jsonObject is [Any] {
+      var yaml = "\(key):\n"
+      yaml += generateYAMLValue(jsonObject, indent: 1)
+      return yaml
+    } else {
+      return "\(key): \(formatYAMLPrimitive(jsonObject))\n"
+    }
   }
 
   /// Generate YAML for an unknown per-member key nested under a cast member.
