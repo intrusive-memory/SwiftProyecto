@@ -82,6 +82,14 @@ public struct ProjectWindow: View {
   /// text (see ``ProjectFileActionHandler/reload(file:in:contentLoader:)``).
   private let contentLoader: FileLoaderCallback?
 
+  /// A consumer-supplied writer used by the default ``EditableTextContentView``
+  /// to persist edited text. When `nil`, edits are written directly to disk as
+  /// UTF-8 (see ``ProjectFileActionHandler/save(text:to:in:fileWriter:)``).
+  ///
+  /// Sandboxed consumers should supply this and bracket the write in their own
+  /// security-scoped access — `ProjectBrowser` performs no scoping itself.
+  private let fileWriter: FileWriterCallback?
+
   /// An optional predicate applied to the discovered file list; entries for
   /// which this returns `false` are hidden from the sidebar.
   private let fileFilter: ((ProjectFile) -> Bool)?
@@ -155,6 +163,9 @@ public struct ProjectWindow: View {
   ///   - contentLoader: A custom content loader, used for lazy
   ///     load-on-selection and `.reload`. Falls back to reading the file
   ///     from disk when `nil`.
+  ///   - fileWriter: A custom writer used by the default editable text view
+  ///     to persist edits. Falls back to writing UTF-8 directly to disk when
+  ///     `nil`.
   ///   - fileFilter: A predicate hiding files for which it returns `false`.
   ///   - sidebarMinWidth: Sidebar minimum width (macOS). Defaults to `250`.
   ///   - sidebarIdealWidth: Sidebar ideal width (macOS). Defaults to `300`.
@@ -166,6 +177,7 @@ public struct ProjectWindow: View {
     onFileSelection: FileSelectionCallback? = nil,
     onFileAction: FileActionCallback? = nil,
     contentLoader: FileLoaderCallback? = nil,
+    fileWriter: FileWriterCallback? = nil,
     fileFilter: ((ProjectFile) -> Bool)? = nil,
     sidebarMinWidth: CGFloat = 250,
     sidebarIdealWidth: CGFloat = 300,
@@ -177,6 +189,7 @@ public struct ProjectWindow: View {
     self.onFileSelection = onFileSelection
     self.onFileAction = onFileAction
     self.contentLoader = contentLoader
+    self.fileWriter = fileWriter
     self.fileFilter = fileFilter
     self.sidebarMinWidth = sidebarMinWidth
     self.sidebarIdealWidth = sidebarIdealWidth
@@ -340,8 +353,21 @@ public struct ProjectWindow: View {
       isLoadingContent: file.map { loadingFiles.contains($0.id) } ?? false,
       loadError: selectedFileLoadError,
       onAction: dispatchFileAction,
-      onRetryLoad: { file in dispatchFileAction(file, action: .reload) }
+      onRetryLoad: { file in dispatchFileAction(file, action: .reload) },
+      onSaveText: saveText
     )
+  }
+
+  /// Persists edited text for `file` (via `fileWriter` if supplied, otherwise
+  /// straight to disk) and refreshes the in-memory content cache so a later
+  /// reselection or `.reload` observes the saved text rather than a stale
+  /// value. Errors propagate to ``EditableTextContentView``, which surfaces
+  /// them inline and keeps the edit dirty for a retry.
+  private func saveText(_ file: ProjectFile, _ text: String) async throws {
+    try await ProjectFileActionHandler.save(
+      text: text, to: file, in: directoryURL, fileWriter: fileWriter)
+    fileContents[file.id] = ProjectFileContents(
+      file: file, data: Data(text.utf8), text: text, loadedAt: Date())
   }
 
   // MARK: - Actions

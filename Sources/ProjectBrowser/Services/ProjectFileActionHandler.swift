@@ -175,6 +175,42 @@ public enum ProjectFileActionHandler {
     }
   }
 
+  // MARK: - Save
+
+  /// Persists `text` back to `file`: via `fileWriter` if the consumer
+  /// supplied one, otherwise by writing it directly to disk as UTF-8
+  /// (atomically) at `directoryURL/relativePath`.
+  ///
+  /// - Throws: ``ProjectFileActionError/fileNotFound(_:)`` if the file's
+  ///   parent directory no longer exists,
+  ///   ``ProjectFileActionError/permissionDenied(_:)`` if the write isn't
+  ///   permitted, or ``ProjectFileActionError/underlying(_:)`` for any other
+  ///   failure (including one thrown by `fileWriter`).
+  public static func save(
+    text: String,
+    to file: ProjectFile,
+    in directoryURL: URL,
+    fileWriter: FileWriterCallback? = nil
+  ) async throws {
+    if let fileWriter {
+      do {
+        try await fileWriter(file, text)
+        return
+      } catch let error as ProjectFileActionError {
+        throw error
+      } catch {
+        throw ProjectFileActionError.underlying(error.localizedDescription)
+      }
+    }
+
+    let url = fileURL(for: file, in: directoryURL)
+    do {
+      try Data(text.utf8).write(to: url, options: .atomic)
+    } catch {
+      throw mapWriteError(error, path: file.relativePath)
+    }
+  }
+
   // MARK: - Delete
 
   /// Deletes `file` from disk. Directories are removed recursively.
