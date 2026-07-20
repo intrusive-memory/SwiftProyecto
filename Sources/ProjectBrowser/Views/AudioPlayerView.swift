@@ -115,7 +115,10 @@ public struct AudioPlayerView: View {
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .padding()
-    .background(Color(white: 0.95))
+    // Semantic, colour-scheme-adaptive background. A hardcoded light value
+    // (e.g. `Color(white: 0.95)`) leaves the adaptive `.primary`/`.secondary`
+    // foregrounds invisible in dark mode.
+    .background(.background)
     .navigationTitle(file.displayName)
     .onDisappear {
       controller.stop()
@@ -123,7 +126,19 @@ public struct AudioPlayerView: View {
   }
 
   private func formatTime(_ seconds: Double) -> String {
-    guard !seconds.isNaN, !seconds.isInfinite else { return "0:00" }
+    AudioTimeFormatter.string(from: seconds)
+  }
+}
+
+// MARK: - AudioTimeFormatter
+
+/// Formats a duration in seconds as `m:ss` (or `h:mm:ss` once past an hour),
+/// guarding against non-finite or negative input. Factored out of
+/// ``AudioPlayerView`` (where it was a private method) so the formatting logic
+/// can be unit-tested without standing up a view or an `AVPlayer`.
+enum AudioTimeFormatter {
+  static func string(from seconds: Double) -> String {
+    guard seconds.isFinite, seconds >= 0 else { return "0:00" }
     let totalSeconds = Int(seconds)
     let hours = totalSeconds / 3600
     let minutes = (totalSeconds % 3600) / 60
@@ -143,7 +158,12 @@ public struct AudioPlayerView: View {
 final class AudioPlayerController: NSObject, ObservableObject {
   nonisolated private let url: URL
   private var player: AVPlayer?
-  private var timeObserver: Any?
+  // Observer tokens are only ever assigned/read on the main actor, but the
+  // nonisolated `deinit` backstop must release them too — `nonisolated(unsafe)`
+  // permits that (deinit has exclusive access) since the token types aren't
+  // Sendable.
+  nonisolated(unsafe) private var timeObserver: Any?
+  nonisolated(unsafe) private var endObserver: NSObjectProtocol?
 
   @Published var isPlaying = false
   @Published var isReady = false
@@ -173,17 +193,28 @@ final class AudioPlayerController: NSObject, ObservableObject {
     player = AVPlayer(playerItem: playerItem)
     player?.volume = volume
 
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(playerItemDidReachEnd),
-      name: .AVPlayerItemDidPlayToEndTime,
-      object: playerItem
-    )
+    // Block-based observation (not selector-based): `AVPlayerItemDidPlayToEndTime`
+    // can be posted on an arbitrary queue, so hop to the main actor before
+    // touching @Published state rather than mutating it off-actor.
+    endObserver = NotificationCenter.default.addObserver(
+      forName: .AVPlayerItemDidPlayToEndTime,
+      object: playerItem,
+      queue: .main
+    ) { [weak self] _ in
+      Task { @MainActor in self?.handlePlaybackEnded() }
+    }
 
     Task {
       do {
-        let duration = try await asset.load(.duration)
-        self.duration = duration.seconds
+        let loaded = try await asset.load(.duration).seconds
+        // A non-finite or zero duration (unreadable / malformed / indefinite
+        // asset) would make the seek slider build NaN CMTimes and crash on
+        // drag — surface it as an error instead of arming playback.
+        guard loaded.isFinite, loaded > 0 else {
+          self.error = "Audio has no readable duration."
+          return
+        }
+        self.duration = loaded
         self.isReady = true
       } catch {
         self.error = "Failed to load audio: \(error.localizedDescription)"
@@ -221,10 +252,11 @@ final class AudioPlayerController: NSObject, ObservableObject {
   }
 
   func seek(to fraction: Double) {
-    guard let player, let duration else { return }
+    guard let player, let duration, duration.isFinite, duration > 0 else { return }
 
+    let clamped = min(max(fraction, 0), 1)
     isSeeking = true
-    let targetTime = CMTime(seconds: duration * fraction, preferredTimescale: 600)
+    let targetTime = CMTime(seconds: duration * clamped, preferredTimescale: 600)
     player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
       DispatchQueue.main.async {
         self?.isSeeking = false
@@ -232,18 +264,26 @@ final class AudioPlayerController: NSObject, ObservableObject {
     }
   }
 
+  /// Tears the player down. Idempotent: nils each resource as it is released
+  /// so a second call (e.g. `onDisappear` after an explicit stop) is a no-op
+  /// and never double-removes the periodic time observer.
   func stop() {
     player?.pause()
     isPlaying = false
+    isReady = false
 
     if let timeObserver {
       player?.removeTimeObserver(timeObserver)
+      self.timeObserver = nil
     }
-
-    NotificationCenter.default.removeObserver(self)
+    if let endObserver {
+      NotificationCenter.default.removeObserver(endObserver)
+      self.endObserver = nil
+    }
+    player = nil
   }
 
-  @objc private func playerItemDidReachEnd() {
+  private func handlePlaybackEnded() {
     isPlaying = false
     seekPosition = 0
     currentTime = 0
@@ -251,13 +291,15 @@ final class AudioPlayerController: NSObject, ObservableObject {
   }
 
   deinit {
-    DispatchQueue.main.async { [weak self] in
-      guard let self else { return }
-      NotificationCenter.default.removeObserver(self)
-      if let timeObserver = self.timeObserver {
-        self.player?.removeTimeObserver(timeObserver)
-      }
-      self.player?.pause()
+    // Backstop for the case where `stop()` (driven by the view's onDisappear)
+    // never ran — otherwise the periodic time observer and the end-of-item
+    // observer leak. Removing the time observer needs the player it was
+    // registered on, so both are released here together.
+    if let timeObserver {
+      player?.removeTimeObserver(timeObserver)
+    }
+    if let endObserver {
+      NotificationCenter.default.removeObserver(endObserver)
     }
   }
 }
