@@ -41,17 +41,20 @@ public struct AudioPlayerView: View {
       Spacer()
 
       VStack(spacing: 12) {
-        if let currentTime = controller.currentTime, let duration = controller.duration {
+        if controller.currentTime != nil, let duration = controller.duration {
           VStack(spacing: 8) {
-            Slider(value: $controller.seekPosition, in: 0...1)
-              .onChange(of: controller.seekPosition) { oldValue, newValue in
-                if !controller.isSeeking {
-                  controller.seek(to: newValue)
-                }
-              }
+            // `onEditingChanged` — never `.onChange(of: seekPosition)` — is what
+            // separates "the user dragged the thumb" from "playback advanced the
+            // thumb". Seeking in response to the *value* meant every periodic
+            // time-observer tick (10×/sec) issued a sample-accurate seek back to
+            // an already-stale timestamp, flushing the decoder and re-playing
+            // fragments: audible skipping for the whole duration of playback.
+            Slider(value: $controller.seekPosition, in: 0...1) { isEditing in
+              controller.setScrubbing(isEditing)
+            }
 
             HStack {
-              Text(formatTime(currentTime))
+              Text(formatTime(controller.displayTime ?? 0))
               Spacer()
               Text(formatTime(duration))
             }
@@ -177,7 +180,23 @@ final class AudioPlayerController: NSObject, ObservableObject {
     }
   }
 
+  /// `true` while a programmatic seek issued by ``seek(to:)`` is still in
+  /// flight. Distinct from ``isScrubbing``: this tracks AVFoundation's work,
+  /// not the user's finger.
   var isSeeking = false
+
+  /// `true` while the user is actively dragging the scrubber, driven by the
+  /// slider's `onEditingChanged`. While set, ``addTimeObserver()`` stops
+  /// writing ``seekPosition`` so playback can't yank the thumb away mid-drag.
+  @Published var isScrubbing = false
+
+  /// The value to render as elapsed time. While scrubbing this follows the
+  /// thumb rather than playback, so the label and the drag agree; otherwise
+  /// it's just ``currentTime``.
+  var displayTime: Double? {
+    guard isScrubbing, let duration, duration.isFinite else { return currentTime }
+    return duration * seekPosition
+  }
 
   nonisolated init(url: URL) {
     self.url = url
@@ -231,12 +250,31 @@ final class AudioPlayerController: NSObject, ObservableObject {
       forInterval: CMTime(seconds: 0.1, preferredTimescale: 600),
       queue: .main
     ) { [weak self] time in
-      DispatchQueue.main.async {
-        self?.currentTime = time.seconds
-        if let duration = self?.duration, duration > 0 {
-          self?.seekPosition = time.seconds / duration
-        }
+      // Already delivered on the main queue by `queue: .main` above, so the
+      // previous re-dispatch through `DispatchQueue.main.async` only deferred
+      // the update by a runloop turn — making every timestamp staler than it
+      // needed to be.
+      MainActor.assumeIsolated {
+        guard let self else { return }
+        self.currentTime = time.seconds
+        // Don't fight an in-progress drag for control of the thumb.
+        guard !self.isScrubbing, let duration = self.duration, duration > 0 else { return }
+        self.seekPosition = time.seconds / duration
       }
+    }
+  }
+
+  /// Records whether the user is currently dragging the scrubber, and — on
+  /// release — performs the one seek the drag actually asked for.
+  ///
+  /// Seeking only on release (rather than on every value change) is what keeps
+  /// playback smooth: a drag across the slider would otherwise issue hundreds
+  /// of seeks, and normal playback would issue ten per second forever.
+  func setScrubbing(_ scrubbing: Bool) {
+    guard isScrubbing != scrubbing else { return }
+    isScrubbing = scrubbing
+    if !scrubbing {
+      seek(to: seekPosition)
     }
   }
 
@@ -257,7 +295,13 @@ final class AudioPlayerController: NSObject, ObservableObject {
     let clamped = min(max(fraction, 0), 1)
     isSeeking = true
     let targetTime = CMTime(seconds: duration * clamped, preferredTimescale: 600)
-    player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
+    // A tolerance window lets AVPlayer land on a nearby sync sample instead of
+    // flushing and re-priming the decoder to hit an exact frame. Sample-accurate
+    // seeking (`.zero` tolerance) is the expensive mode and a scrubber has no
+    // use for it — 100ms is imperceptible when dragging.
+    let tolerance = CMTime(seconds: 0.1, preferredTimescale: 600)
+    player.seek(to: targetTime, toleranceBefore: tolerance, toleranceAfter: tolerance) {
+      [weak self] _ in
       DispatchQueue.main.async {
         self?.isSeeking = false
       }
