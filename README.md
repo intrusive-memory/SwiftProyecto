@@ -111,7 +111,7 @@ AI agents and apps consume PROJECT.md metadata to understand project structure a
 
 - **[AGENTS.md](AGENTS.md)** — Comprehensive API documentation for AI coding agents and developers.
 
-- **[EXAMPLE_PROJECT.md](EXAMPLE_PROJECT.md)** — Working example of a complete PROJECT.md file.
+- **[EXAMPLE_PROJECT.md](Docs/EXAMPLE_PROJECT.md)** — Working example of a complete PROJECT.md file.
 
 ## Architecture
 
