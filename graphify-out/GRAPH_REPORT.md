@@ -1,15 +1,15 @@
-# Graph Report - .  (2026-07-04)
+# Graph Report - .  (2026-07-25)
 
 ## Corpus Check
 - cluster-only mode — file stats not available
 
 ## Summary
-- 1087 nodes · 1656 edges · 65 communities (39 shown, 26 thin omitted)
-- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 108 edges (avg confidence: 0.8)
+- 1682 nodes · 2724 edges · 93 communities (63 shown, 30 thin omitted)
+- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 139 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5ac0c4ed`
+- Built from commit: `17e37c79`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -56,10 +56,14 @@
 - [[_COMMUNITY_Directory Analysis|Directory Analysis]]
 - [[_COMMUNITY_CI Workflow|CI Workflow]]
 - [[_COMMUNITY_AnyCodable Tests|AnyCodable Tests]]
+- [[_COMMUNITY_Community 42|Community 42]]
+- [[_COMMUNITY_Community 43|Community 43]]
 - [[_COMMUNITY_Project File Reference|Project File Reference]]
 - [[_COMMUNITY_Front Matter Settings Extension|Front Matter Settings Extension]]
 - [[_COMMUNITY_Foundation Models Integration|Foundation Models Integration]]
+- [[_COMMUNITY_Community 47|Community 47]]
 - [[_COMMUNITY_Document Context Type|Document Context Type]]
+- [[_COMMUNITY_Community 49|Community 49]]
 - [[_COMMUNITY_Batch Processing Iterator|Batch Processing Iterator]]
 - [[_COMMUNITY_Package Management|Package Management]]
 - [[_COMMUNITY_Settings Extension System|Settings Extension System]]
@@ -79,229 +83,331 @@
 - [[_COMMUNITY_Quick Start Guide|Quick Start Guide]]
 - [[_COMMUNITY_SwiftProyecto Logo|SwiftProyecto Logo]]
 - [[_COMMUNITY_Discovered File Type|Discovered File Type]]
+- [[_COMMUNITY_Community 69|Community 69]]
+- [[_COMMUNITY_Community 70|Community 70]]
+- [[_COMMUNITY_Community 71|Community 71]]
+- [[_COMMUNITY_Community 72|Community 72]]
+- [[_COMMUNITY_Community 73|Community 73]]
+- [[_COMMUNITY_Community 74|Community 74]]
+- [[_COMMUNITY_Community 75|Community 75]]
+- [[_COMMUNITY_Community 76|Community 76]]
+- [[_COMMUNITY_Community 77|Community 77]]
+- [[_COMMUNITY_Community 78|Community 78]]
+- [[_COMMUNITY_Community 79|Community 79]]
+- [[_COMMUNITY_Community 80|Community 80]]
+- [[_COMMUNITY_Community 81|Community 81]]
+- [[_COMMUNITY_Community 82|Community 82]]
+- [[_COMMUNITY_Community 83|Community 83]]
+- [[_COMMUNITY_Community 84|Community 84]]
+- [[_COMMUNITY_Community 85|Community 85]]
+- [[_COMMUNITY_Community 86|Community 86]]
+- [[_COMMUNITY_Community 87|Community 87]]
+- [[_COMMUNITY_Community 88|Community 88]]
+- [[_COMMUNITY_Community 89|Community 89]]
+- [[_COMMUNITY_Community 90|Community 90]]
+- [[_COMMUNITY_Community 91|Community 91]]
+- [[_COMMUNITY_Community 92|Community 92]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `ProjectMarkdownParserTests` - 56 edges
-2. `ProjectMarkdownParser` - 40 edges
-3. `CastMemberTests` - 39 edges
-4. `ProjectFrontMatterTests` - 39 edges
-5. `GitRepositoryFileSource` - 35 edges
-6. `ProjectModelTests` - 32 edges
-7. `DirectoryFileSource` - 31 edges
-8. `FilePatternTests` - 29 edges
-9. `Sendable` - 28 edges
-10. `ProjectServiceTests` - 28 edges
+2. `ProjectMarkdownParser` - 47 edges
+3. `ProjectWindowIntegrationTests` - 41 edges
+4. `CastMemberTests` - 39 edges
+5. `ProjectFrontMatterTests` - 39 edges
+6. `GitRepositoryFileSource` - 35 edges
+7. `ProjectModelTests` - 32 edges
+8. `DirectoryFileSource` - 31 edges
+9. `ProjectWindowTests` - 31 edges
+10. `FilePatternTests` - 29 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `ProjectFrontMatter` --semantically_similar_to--> `PROJECT.md Format`  [EXTRACTED] [semantically similar]
+  Sources/SwiftProyecto/Utilities/ProjectMarkdownParser.swift → Docs/PROJECT_MD_REFERENCE.md
+- `ProjectMarkdownParser` --references--> `PROJECT.md Format`  [EXTRACTED]
+  Tests/SwiftProyectoTests/ProjectMarkdownParserTests.swift → Docs/PROJECT_MD_REFERENCE.md
+- `ProjectService` --uses--> `FileSource Protocol (Abstraction)`  [EXTRACTED]
+  Tests/SwiftProyectoTests/ProjectServiceTests.swift → Docs/CORE_ARCHITECTURE.md
+- `ProjectService` --shares_data_with--> `ProjectFile Data Model`  [EXTRACTED]
+  Tests/SwiftProyectoTests/ProjectServiceTests.swift → Docs/REQUIREMENTS_ReusableProjectWindow.md
 - `CastMember Unit Tests` --documents--> `CastMember - Character-to-Voice Mapping`  [EXTRACTED]
   Tests/SwiftProyectoTests/CastMemberTests.swift → Docs/PROJECT_MD_REFERENCE.md
-- `ProjectMarkdownParser Unit Tests` --documents--> `ProjectMarkdownParser - YAML Front Matter Parser`  [EXTRACTED]
-  Tests/SwiftProyectoTests/ProjectMarkdownParserTests.swift → AGENTS.md
-- `ModelManager` --uses--> `SwiftAcervo`  [EXTRACTED]
-  Sources/SwiftProyecto/Infrastructure/ModelManager.swift → Package.swift
-- `Config` --implements--> `Sendable`  [EXTRACTED]
-  Tests/SwiftProyectoTests/AppFrontMatterSettingsTests.swift → Sources/SwiftProyecto/Infrastructure/ModelManager.swift
-- `Theme` --implements--> `Sendable`  [EXTRACTED]
-  Tests/SwiftProyectoTests/AppFrontMatterSettingsTests.swift → Sources/SwiftProyecto/Infrastructure/ModelManager.swift
 
 ## Import Cycles
 - None detected.
 
-## Hyperedges (group relationships)
-- **Character-to-Voice Casting System** — concept_castmember, concept_voice_providers, concept_gender_enum, concept_voice_description, concept_cast_discovery, concept_cast_merging [EXTRACTED 1.00]
-- **File Discovery and Source Abstraction** — concept_filesource_abstraction, concept_directoryfilesource, concept_gitrepositoryfilesource, concept_projectservice [EXTRACTED 1.00]
-- **LLM-Powered PROJECT.md Generation** — concept_proyecto_cli, concept_foundationmodels_integration, concept_iterative_generation, concept_qwen2_5_model, concept_acervo_integration [EXTRACTED 1.00]
-- **Batch Audio Generation with Iterator Pattern** — concept_parse_batch_config, concept_parse_iterator_pattern [EXTRACTED 1.00]
-- **PROJECT.md Format and Extension System** — concept_projectmd_format, concept_filepattern, concept_appfrontmattersettings, concept_agents_property [EXTRACTED 1.00]
-- **Core SwiftProyecto Services** — concept_projectservice, concept_projectmarkdownparser, concept_projectdiscovery, concept_bookmarkmanager [EXTRACTED 1.00]
-- **Agentic Project Discovery Pattern** — doc_swiftproyecto_overview, concept_projectmd_format, concept_projectservice, doc_agents_md [INFERRED 0.95]
-- **PROJECT.md Generation Pipeline** — cli_proyectocli, cli_initcommand, cli_iterativeprojectgenerator, cli_directoryanalyzer, utility_projectmarkdownparser, model_projectfrontmatter [EXTRACTED 1.00]
-- **YAML Metadata Representation** — model_projectfrontmatter, model_castmember, model_filepattern, model_ttsconfig, utility_projectmarkdownparser [EXTRACTED 1.00]
-- **Project Lifecycle Management** — service_projectservice, service_projectdiscovery, infra_bookmarkmanager, model_projectmodel, model_projectfilereference [EXTRACTED 1.00]
-- **LLM-Driven Generation System** — cli_iterativeprojectgenerator, cli_directoryanalyzer, cli_projectsection, cli_directorycontext, infra_modelmanager, dep_foundationmodels [EXTRACTED 1.00]
-- **CLI Validation Pattern** — cli_proyectocli, cli_validatecommand, utility_projectmarkdownparser, model_projectfrontmatter [INFERRED 0.95]
-- **CI/CD Release Automation** — workflow_ci, workflow_release, cli_proyectocli, infra_languagemodel [INFERRED 0.90]
-- **File Discovery and Synchronization** — service_projectservice, service_projectdiscovery, model_projectfilereference, model_discoveredfile [EXTRACTED 1.00]
-- **Cast and Character Voice System** — model_castmember, model_gender, rationale_casting_voices, model_projectfrontmatter [INFERRED 0.95]
-- **Package Dependencies** — dep_swiftacervo, dep_universal, dep_argumentparser, dep_foundationmodels [EXTRACTED 1.00]
-
-## Communities (65 total, 26 thin omitted)
+## Communities (93 total, 30 thin omitted)
 
 ### Community 0 - "Project File Service"
-Cohesion: 0.08
-Nodes (26): FileManager, ProjectService, ProjectError, bookmarkCreationFailed, bookmarkResolutionFailed, fileNotFound, noBookmarkData, projectAlreadyExists (+18 more)
+Cohesion: 0.06
+Nodes (37): ByteCountFormatter, ProjectModel, UUID, EdgeInsets, Font, ProjectWindow, ProjectFile, String (+29 more)
+
+### Community 1 - "Markdown Parser Tests"
+Cohesion: 0.07
+Nodes (26): AnyCodable, CastMember, FilePattern, Multi-Season/Multi-Language Schema (v4.0.0), ProjectFrontMatter, ProjectMarkdownParser, Any, AnyCodable (+18 more)
 
 ### Community 2 - "Front Matter Tests"
 Cohesion: 0.05
-Nodes (6): OtherAppSettings, ProjectFrontMatterTests, TestAppSettings, Bool, Int, String
+Nodes (19): FileNode, ProjectModel, Bool, Hasher, Int, ProjectFileReference, ProjectModel, String (+11 more)
 
 ### Community 3 - "Git Repository File Source"
-Cohesion: 0.08
-Nodes (11): GitRepositoryFileSource, Data, Date, DiscoveredFile, FileSourceType, Set, String, URL (+3 more)
+Cohesion: 0.07
+Nodes (27): FileManager, FileSource Protocol (Abstraction), ProjectService, ProjectError, bookmarkCreationFailed, bookmarkResolutionFailed, fileNotFound, noBookmarkData (+19 more)
 
 ### Community 4 - "PROJECT.md Discovery"
+Cohesion: 0.08
+Nodes (8): ProjectFileContentLoaderTests, ProjectWindowPlatformLayoutTests, ProjectWindowTests, ProjectWindow, ProjectFile, String, URL, UUID
+
+### Community 6 - "File Tree Structure"
+Cohesion: 0.05
+Nodes (6): OtherAppSettings, ProjectFrontMatterTests, TestAppSettings, Bool, Int, String
+
+### Community 7 - "Security-Scoped Bookmark Management"
+Cohesion: 0.07
+Nodes (13): Data, ProjectFileContents, ProjectFileTests, Bool, Date, ProjectFile, String, Bool (+5 more)
+
+### Community 8 - "Markdown Parser Core"
+Cohesion: 0.09
+Nodes (4): ProjectWindowIntegrationTests, ProjectFile, String, URL
+
+### Community 9 - "Cast Member Tests"
 Cohesion: 0.09
 Nodes (17): PROJECT.md Discovery Algorithm, ProjectDiscovery, CastMember, String, URL, makeProjectMdContent(), makeTestProject(), ProjectDiscoveryCastReadingTests (+9 more)
 
-### Community 5 - "Directory File Source"
-Cohesion: 0.08
-Nodes (11): FileSource, DirectoryFileSource, Data, Date, FileSourceType, Set, String, URL (+3 more)
-
-### Community 6 - "File Tree Structure"
-Cohesion: 0.07
-Nodes (9): FileNode, Bool, Hasher, Int, ProjectFileReference, ProjectModel, String, UUID (+1 more)
-
-### Community 7 - "Security-Scoped Bookmark Management"
-Cohesion: 0.05
-Nodes (50): Security-Scoped File Access Pattern, YAML Front Matter Parsing, AsyncParsableCommand, BookmarkManager, DynamicCodingKey, KnownCodingKeys, audioDir, author (+42 more)
-
-### Community 8 - "Markdown Parser Core"
-Cohesion: 0.10
-Nodes (20): ProjectMarkdownParser, Any, AnyCodable, FilePattern, Int, ProjectFrontMatter, String, URL (+12 more)
-
 ### Community 10 - "Batch File Iterator"
 Cohesion: 0.09
-Nodes (20): IteratorProtocol, ParseBatchConfig, ValidationError, castListNotFound, episodeFileNotFound, missingCastList, mutuallyExclusive, ParseCommandArguments (+12 more)
+Nodes (26): AudioFormat, Chapter, Codable, Equatable, ExportSettings, GenerationSettings, AppFrontMatterSettings, TTSConfig (+18 more)
 
 ### Community 11 - "File Source Error Handling"
-Cohesion: 0.09
-Nodes (17): FileSourceError, fileNotFound, invalidPath, notGitRepository, permissionDenied, LocalizedError, ValidationError, mutuallyExclusive (+9 more)
+Cohesion: 0.08
+Nodes (11): GitRepositoryFileSource, Data, Date, DiscoveredFile, FileSourceType, Set, String, URL (+3 more)
 
 ### Community 12 - "Project Model Tests"
+Cohesion: 0.08
+Nodes (12): FileSource, DirectoryFileSource, Data, Date, DiscoveredFile, FileSourceType, Set, String (+4 more)
+
+### Community 13 - "File Pattern Tests"
+Cohesion: 0.09
+Nodes (27): Iterative LLM-Based Generation, CustomStringConvertible, FoundationModels, DirectoryAnalyzer, ExpressibleByArrayLiteral, ExpressibleByStringLiteral, FilePattern, multiple (+19 more)
+
+### Community 14 - "Release Workflow"
+Cohesion: 0.08
+Nodes (40): Audio Player Handler, BackendRegistry (LLM Backend Discovery), CastExtractor (Character Discovery), Final Draft XML Format, FileAction Enum Model, FileLoadingState Enum Model, FileTreeView Component, FileTypeHandler Model (+32 more)
+
+### Community 16 - "Bookmark Manager Tests"
+Cohesion: 0.09
+Nodes (23): DateFormatter, Error, Identifiable, FileTypeHandler, ProjectFile, LoadError, invalidEncoding, missingFrontMatter (+15 more)
+
+### Community 17 - "Service Abstractions"
+Cohesion: 0.12
+Nodes (19): FileActionCallback, FileSelectionCallback, ProjectFile, ProjectWindow, ProjectDetailPane, AnyView, Bool, CGFloat (+11 more)
+
+### Community 18 - "Iterative LLM Generation"
+Cohesion: 0.11
+Nodes (12): ProjectFileDiscoveryIntegrationTests, ProjectFileDiscovery, Bool, ProjectFile, Set, String, URL, Bool (+4 more)
+
+### Community 19 - "App Settings Tests"
 Cohesion: 0.07
 Nodes (3): ProjectModelTests, ModelContainer, ModelContext
 
-### Community 15 - "Project Service Tests"
+### Community 20 - "File Reference Tests"
+Cohesion: 0.11
+Nodes (14): Bool, Error, ProjectModel, Set, String, URL, ElementProgressState, GuionDocumentModel (+6 more)
+
+### Community 22 - "CLI Validation Tests"
+Cohesion: 0.12
+Nodes (15): AudioPlayerController, AVPlayer, Double, Float, NSObject, NSObjectProtocol, ObservableObject, Any (+7 more)
+
+### Community 23 - "Documentation Examples"
+Cohesion: 0.18
+Nodes (17): FileRevealing, NSWorkspace, ProjectFileActionError, fileNotFound, permissionDenied, underlying, ProjectFileActionHandler, ProjectFileActionResult (+9 more)
+
+### Community 24 - "Model Container Factory"
 Cohesion: 0.08
 Nodes (4): ProjectServiceTests, ModelContainer, ModelContext, URL
 
-### Community 17 - "Service Abstractions"
-Cohesion: 0.09
-Nodes (25): CastMember - Character-to-Voice Mapping, DirectoryFileSource - Local Directory File Discovery, FileNode - Hierarchical File Tree Structure, FileSource Protocol - Pluggable File Discovery, Gender Enum - M, F, NB, NS Character Gender Specification, GitRepositoryFileSource - Git Repository Support, ProjectDiscovery - Locate PROJECT.md Files, ProjectMarkdownParser - YAML Front Matter Parser (+17 more)
+### Community 26 - "Bookmark Error Handling"
+Cohesion: 0.10
+Nodes (24): CastMember - Character-to-Voice Mapping, DirectoryFileSource - Local Directory File Discovery, FileNode - Hierarchical File Tree Structure, FileSource Protocol - Pluggable File Discovery, Gender Enum - M, F, NB, NS Character Gender Specification, GitRepositoryFileSource - Git Repository Support, ProjectDiscovery - Locate PROJECT.md Files, ProjectMarkdownParser - YAML Front Matter Parser (+16 more)
 
-### Community 18 - "Iterative LLM Generation"
-Cohesion: 0.16
-Nodes (17): Iterative LLM-Based Generation, FoundationModels, DirectoryAnalyzer, ProjectSection, GeneratorError, invalidConfigResponse, invalidNumberResponse, missingRequiredFields (+9 more)
-
-### Community 19 - "App Settings Tests"
+### Community 27 - "Foundation Model Manager"
 Cohesion: 0.15
 Nodes (12): Config, AppFrontMatterSettingsTests, ComplexTestSettings, Config, SimpleTestSettings, Theme, dark, light (+4 more)
 
-### Community 20 - "File Reference Tests"
+### Community 28 - "SwiftData Container Factory"
 Cohesion: 0.10
 Nodes (3): ProjectFileReferenceTests, ModelContainer, ModelContext
 
-### Community 21 - "Batch Parse Configuration"
+### Community 29 - "Audio Export Settings"
+Cohesion: 0.21
+Nodes (12): CGSize, FileTypeHandler, DefaultHandlers, AnyView, ProjectFile, String, URL, CGFloat (+4 more)
+
+### Community 30 - "Project Data Model"
 Cohesion: 0.24
 Nodes (9): ParseBatchConfig, ParseBatchConfigError, invalidProjectPath, projectMdNotFound, ProjectModel, Bool, ParseBatchConfig, String (+1 more)
 
-### Community 22 - "CLI Validation Tests"
+### Community 31 - "File Pattern Type"
+Cohesion: 0.19
+Nodes (3): ProjectFileDiscoveryTests, String, URL
+
+### Community 32 - "Document Context Tests"
+Cohesion: 0.20
+Nodes (13): YAML Front Matter Parsing, DynamicCodingKey, ProjectFrontMatter, AnyCodable, Bool, CastMember, Date, Decoder (+5 more)
+
+### Community 33 - "File Source Protocol"
+Cohesion: 0.22
+Nodes (14): Color, FileTreeNode, Binding, Bool, FileAction, ProjectFile, Set, String (+6 more)
+
+### Community 34 - "SwiftProyecto Tests"
+Cohesion: 0.15
+Nodes (17): DiscoveredFile, FileSource, FileSourceError, fileNotFound, invalidPath, notGitRepository, permissionDenied, FileSourceType (+9 more)
+
+### Community 35 - "YAML Parsing Tests"
 Cohesion: 0.22
 Nodes (4): Int32, ProyectoCLIValidateTests, String, URL
 
-### Community 23 - "Documentation Examples"
+### Community 36 - "Model Download Integration"
 Cohesion: 0.17
-Nodes (8): AudioFormat, Chapter, Double, Chapter, DocumentationExamplesTests, MyAppSettings, PodcastAppSettings, Bool
+Nodes (4): ParseBatchConfigTests, Int, String, URL
 
-### Community 25 - "Settings Type Definitions"
-Cohesion: 0.25
-Nodes (6): ExportSettings, GenerationSettings, AppFrontMatterSettings, NestedSettings, VersionedSettings, UISettings
+### Community 37 - "Character Voice Mapping"
+Cohesion: 0.12
+Nodes (14): Character-to-Voice Mapping Pattern, CaseIterable, CastMember, voices, Gender, female, male, nonBinary (+6 more)
 
-### Community 26 - "Bookmark Error Handling"
-Cohesion: 0.21
-Nodes (12): Bool, Data, String, T, URL, BookmarkError, accessDenied, creationFailed (+4 more)
+### Community 38 - "Type-Erased Codable"
+Cohesion: 0.11
+Nodes (15): Hashable, FileAction, custom, delete, reload, showInFinder, FileLoadingState, error (+7 more)
 
-### Community 27 - "Foundation Model Manager"
+### Community 39 - "Directory Analysis"
+Cohesion: 0.11
+Nodes (18): KnownCodingKeys, audioDir, author, cast, created, description, episodes, episodesDir (+10 more)
+
+### Community 41 - "AnyCodable Tests"
 Cohesion: 0.12
 Nodes (9): ComponentDescriptor, SwiftAcervo, LanguageModel, ModelManager, Bool, String, T, URL (+1 more)
 
-### Community 28 - "SwiftData Container Factory"
+### Community 42 - "Community 42"
+Cohesion: 0.21
+Nodes (12): Bool, Data, String, T, URL, BookmarkError, accessDenied, creationFailed (+4 more)
+
+### Community 43 - "Community 43"
+Cohesion: 0.20
+Nodes (9): ValidationError, castListNotFound, episodeFileNotFound, missingCastList, mutuallyExclusive, ParseCommandArguments, Bool, String (+1 more)
+
+### Community 44 - "Project File Reference"
+Cohesion: 0.20
+Nodes (3): ProjectMetadataTests, String, URL
+
+### Community 45 - "Front Matter Settings Extension"
+Cohesion: 0.25
+Nodes (12): Binding, Bool, FileAction, Int, ProjectFile, ProjectMetadata, Set, String (+4 more)
+
+### Community 46 - "Foundation Models Integration"
 Cohesion: 0.22
 Nodes (9): DocumentContext, ContainerError, cacheDirectoryCreationFailed, containerCreationFailed, projectRootDoesNotExist, ModelContainerFactory, Bool, ModelContainer (+1 more)
 
-### Community 29 - "Audio Export Settings"
-Cohesion: 0.27
-Nodes (10): Equatable, AudioFormat, aac, flac, mp3, ExportSettings, GenerationSettings, UISettings (+2 more)
+### Community 47 - "Community 47"
+Cohesion: 0.15
+Nodes (11): ProjectSection, author, config, description, episodes, genre, season, tags (+3 more)
 
-### Community 30 - "Project Data Model"
+### Community 48 - "Document Context Type"
 Cohesion: 0.23
-Nodes (10): ProjectModel, Bool, Data, Date, FileSource, FileSourceType, Int, ProjectFileReference (+2 more)
+Nodes (12): Security-Scoped File Access Pattern, AsyncParsableCommand, BookmarkManager, ParsableCommand, InitCommand, ProyectoCLI, ValidateCommand, ProjectService (+4 more)
 
-### Community 31 - "File Pattern Type"
+### Community 49 - "Community 49"
+Cohesion: 0.18
+Nodes (13): CastExtractor Component, CastExtractorTests, CastMember Data Model, CastMemberTests, Gender Enum (M, F, NB, NS), GuionParsedElementCollection, Operation Format Detente Mission, ProjectFrontMatter Data Model (+5 more)
+
+### Community 50 - "Batch Processing Iterator"
+Cohesion: 0.22
+Nodes (8): LocalizedError, ValidationError, mutuallyExclusive, ParseBatchArguments, Bool, Int, String, URL
+
+### Community 52 - "Settings Extension System"
 Cohesion: 0.17
-Nodes (10): CustomStringConvertible, ExpressibleByArrayLiteral, ExpressibleByStringLiteral, FilePattern, multiple, single, Bool, Decoder (+2 more)
+Nodes (4): AcervoDownloadIntegrationTests, ModelManagerBareDescriptorTests, SwiftProyectoTests, XCTestCase
 
-### Community 33 - "File Source Protocol"
-Cohesion: 0.21
-Nodes (9): Codable, FileSource, FileSourceType, directory, gitRepository, packageBundle, TTSConfig, Sendable (+1 more)
-
-### Community 34 - "SwiftProyecto Tests"
-Cohesion: 0.29
-Nodes (3): ModelManagerBareDescriptorTests, SwiftProyectoTests, XCTestCase
-
-### Community 35 - "YAML Parsing Tests"
+### Community 53 - "SwiftProyecto Package"
 Cohesion: 0.18
 Nodes (5): OtherAppSettings, TestAppSettings, Bool, Int, String
 
-### Community 37 - "Character Voice Mapping"
-Cohesion: 0.05
-Nodes (41): Character-to-Voice Mapping Pattern, CaseIterable, CodingKey, DiscoveredFile, Hashable, Identifiable, Int64, CastMember (+33 more)
-
-### Community 38 - "Type-Erased Codable"
+### Community 55 - "Argument Parser"
 Cohesion: 0.29
 Nodes (6): AnyCodable, Bool, Data, Decoder, Encoder, T
 
-### Community 39 - "Directory Analysis"
+### Community 56 - "Contributing Guidelines"
 Cohesion: 0.42
 Nodes (5): DirectoryAnalyzer, DirectoryContext, Int, String, URL
 
-### Community 44 - "Project File Reference"
+### Community 58 - "Bookmark Utilities"
+Cohesion: 0.28
+Nodes (9): BackendRegistry, ClaudeAPIBackend, DirectoryAnalyzer, FoundationModelsBackend, GenerateCommand CLI, LLMBackendProtocol, Operation MetaWing Mission, ProjectGeneratorService (+1 more)
+
+### Community 59 - "Cast Discovery"
+Cohesion: 0.22
+Nodes (6): IteratorProtocol, ParseFileIterator, Sequence, Int, ParseBatchConfig, URL
+
+### Community 60 - "Cast List Merging"
+Cohesion: 0.25
+Nodes (7): CodingKey, CodingKeys, actor, character, gender, voiceDescription, voicePrompt
+
+### Community 61 - "Universal"
+Cohesion: 0.46
+Nodes (5): ParseBatchConfig, Bool, Int, String, URL
+
+### Community 62 - "AGENTS Front Matter"
 Cohesion: 0.39
 Nodes (6): ProjectFileReference, Data, Date, ProjectModel, String, UUID
 
-### Community 45 - "Front Matter Settings Extension"
+### Community 64 - "Gemini Integration"
+Cohesion: 0.36
+Nodes (6): ProyectoError, directoryNotFound, llmError, parseError, projectMdExists, projectMdNotFound
+
+### Community 65 - "Performance Testing"
+Cohesion: 0.25
+Nodes (6): ProjectFileContentLoader, Bool, ProjectFile, ProjectFileContents, Set, UUID
+
+### Community 66 - "Quick Start Guide"
 Cohesion: 0.38
 Nodes (3): ProjectFrontMatter, Bool, T
 
-### Community 46 - "Foundation Models Integration"
+### Community 67 - "SwiftProyecto Logo"
 Cohesion: 0.33
 Nodes (6): SwiftAcervo Integration - CDN Model Distribution, Foundation Models Integration - On-Device LLM Inference, Iterative PROJECT.md Generation - 8 Focused Queries, proyecto CLI - LLM-Powered PROJECT.md Generation, Qwen2.5 7B Instruct (4-bit) - Canonical LLM Model, Migration from SwiftBruja to Apple Foundation Models
 
-### Community 48 - "Document Context Type"
+### Community 68 - "Discovered File Type"
 Cohesion: 0.33
 Nodes (5): DocumentContext, project, singleFile, Bool, URL
 
-### Community 50 - "Batch Processing Iterator"
+### Community 69 - "Community 69"
 Cohesion: 0.67
 Nodes (4): ParseBatchConfig - Resolved Batch Configuration, ParseFileIterator - Batch File Processing, PARSE Command Architecture and Iterator Pattern, Iterator Pattern - Separate Batch Logic from Single-File Generation
 
-### Community 51 - "Package Management"
+### Community 70 - "Community 70"
 Cohesion: 0.50
 Nodes (4): Package, sibling(), String, Version
 
-### Community 52 - "Settings Extension System"
+### Community 72 - "Community 72"
 Cohesion: 0.67
 Nodes (3): AppFrontMatterSettings Protocol - Extension System, Extending PROJECT.md with App-Specific Settings, Extension System Design - Avoid Coupling Apps to SwiftProyecto
 
 ## Knowledge Gaps
-- **192 isolated node(s):** `Package`, `String`, `Version`, `Bool`, `ParseBatchConfig` (+187 more)
+- **285 isolated node(s):** `Package`, `String`, `Version`, `Bool`, `ParseBatchConfig` (+280 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **26 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **30 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Sendable` connect `File Source Protocol` to `Git Repository File Source`, `PROJECT.md Discovery`, `Character Voice Mapping`, `Directory File Source`, `File Tree Structure`, `Type-Erased Codable`, `Security-Scoped Bookmark Management`, `Batch File Iterator`, `File Source Error Handling`, `Directory Analysis`, `Document Context Type`, `App Settings Tests`, `Documentation Examples`, `Settings Type Definitions`, `Foundation Model Manager`, `Audio Export Settings`, `File Pattern Type`?**
-  _High betweenness centrality (0.213) - this node is a cross-community bridge._
-- **Why does `ProjectMarkdownParser` connect `Markdown Parser Core` to `Project File Service`, `Markdown Parser Tests`, `Front Matter Tests`, `PROJECT.md Discovery`, `Security-Scoped Bookmark Management`, `Batch Parse Configuration`, `Documentation Examples`, `Settings Type Definitions`, `Audio Export Settings`?**
-  _High betweenness centrality (0.206) - this node is a cross-community bridge._
-- **Why does `ProjectMarkdownParserTests` connect `Markdown Parser Tests` to `Markdown Parser Core`, `SwiftProyecto Tests`, `YAML Parsing Tests`?**
-  _High betweenness centrality (0.174) - this node is a cross-community bridge._
-- **Are the 27 inferred relationships involving `ProjectMarkdownParser` (e.g. with `.from()` and `.parseBatchConfig()`) actually correct?**
-  _`ProjectMarkdownParser` has 27 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 21 inferred relationships involving `GitRepositoryFileSource` (e.g. with `.fileSource()` and `.testDiscoverAndRead_Integration()`) actually correct?**
-  _`GitRepositoryFileSource` has 21 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `ProjectMarkdownParser` connect `Markdown Parser Tests` to `Gemini Integration`, `Git Repository File Source`, `Directory File Source`, `File Tree Structure`, `Cast Member Tests`, `Batch File Iterator`, `Release Workflow`, `File Reference Tests`, `Project Data Model`?**
+  _High betweenness centrality (0.181) - this node is a cross-community bridge._
+- **Why does `ProjectView` connect `File Reference Tests` to `Project File Service`, `Git Repository File Source`, `Type-Erased Codable`?**
+  _High betweenness centrality (0.147) - this node is a cross-community bridge._
+- **Why does `ProjectService` connect `Git Repository File Source` to `Model Container Factory`, `File Reference Tests`, `Release Workflow`?**
+  _High betweenness centrality (0.144) - this node is a cross-community bridge._
+- **Are the 28 inferred relationships involving `ProjectMarkdownParser` (e.g. with `.from()` and `.parseBatchConfig()`) actually correct?**
+  _`ProjectMarkdownParser` has 28 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `Package`, `String`, `Version` to the rest of the system?**
-  _205 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _299 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Project File Service` be split into smaller, more focused modules?**
-  _Cohesion score 0.07686274509803921 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05819209039548023 - nodes in this community are weakly interconnected._
+- **Should `Markdown Parser Tests` be split into smaller, more focused modules?**
+  _Cohesion score 0.0734006734006734 - nodes in this community are weakly interconnected._

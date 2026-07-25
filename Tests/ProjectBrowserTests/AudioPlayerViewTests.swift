@@ -98,6 +98,65 @@ final class AudioPlayerControllerTests: XCTestCase {
     XCTAssertFalse(controller.isSeeking)
   }
 
+  // MARK: - Scrub / playback separation
+  //
+  // Regression cover for the seek feedback loop: the slider used to seek in
+  // response to `seekPosition` changing, so the periodic time observer's own
+  // writes (10×/sec) each triggered a sample-accurate seek back to a stale
+  // timestamp — audible skipping throughout playback.
+
+  func testScrubbingStateTogglesOnlyOnChange() {
+    let controller = AudioPlayerController(url: missingURL)
+    XCTAssertFalse(controller.isScrubbing)
+
+    controller.setScrubbing(true)
+    XCTAssertTrue(controller.isScrubbing)
+
+    // Redundant begins must not re-enter or flip anything.
+    controller.setScrubbing(true)
+    XCTAssertTrue(controller.isScrubbing)
+
+    controller.setScrubbing(false)
+    XCTAssertFalse(controller.isScrubbing)
+  }
+
+  func testEndingAScrubBeforeReadyDoesNotSeek() {
+    let controller = AudioPlayerController(url: missingURL)
+    controller.seekPosition = 0.75
+    controller.setScrubbing(true)
+    controller.setScrubbing(false)
+    // The release-time seek still has to run the readiness guard.
+    XCTAssertFalse(controller.isSeeking)
+    XCTAssertFalse(controller.isScrubbing)
+  }
+
+  func testDisplayTimeFollowsThumbWhileScrubbingAndPlaybackOtherwise() {
+    let controller = AudioPlayerController(url: missingURL)
+    controller.duration = 100
+    controller.currentTime = 10
+
+    // Not scrubbing: the label reports playback position.
+    XCTAssertEqual(controller.displayTime, 10)
+
+    // Scrubbing: the label follows the thumb, so it agrees with the drag.
+    controller.setScrubbing(true)
+    controller.seekPosition = 0.4
+    XCTAssertEqual(controller.displayTime, 40)
+
+    controller.setScrubbing(false)
+    XCTAssertEqual(controller.displayTime, 10)
+  }
+
+  func testDisplayTimeFallsBackToPlaybackOnNonFiniteDuration() {
+    let controller = AudioPlayerController(url: missingURL)
+    controller.currentTime = 7
+    controller.duration = .nan
+    controller.setScrubbing(true)
+    controller.seekPosition = 0.5
+    // A NaN duration must not produce a NaN label.
+    XCTAssertEqual(controller.displayTime, 7)
+  }
+
   func testTogglePlayPauseBeforeReadyIsANoOp() {
     let controller = AudioPlayerController(url: missingURL)
     controller.togglePlayPause()

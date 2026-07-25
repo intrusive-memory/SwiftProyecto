@@ -174,7 +174,7 @@ proyecto generate /path/to/project --season 3 --outro-only
 For detailed API documentation, see:
 - **[AGENTS.md](AGENTS.md)** — API reference for developers
 - **[Docs/PROJECT_MD_REFERENCE.md](Docs/PROJECT_MD_REFERENCE.md)** — Complete PROJECT.md schema
-- **[EXAMPLE_PROJECT.md](EXAMPLE_PROJECT.md)** — Working v4.0 example
+- **[EXAMPLE_PROJECT.md](Docs/EXAMPLE_PROJECT.md)** — Working v4.0 example
 
 ## Quick Reference: v3.x → v4.0 Changes
 
