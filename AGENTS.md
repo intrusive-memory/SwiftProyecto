@@ -2,7 +2,7 @@
 type: reference
 name: AGENTS.md
 description: Quick reference for AI agents working with SwiftProyecto
-updated: 2026-07-19
+updated: 2026-07-25
 ---
 
 # SwiftProyecto — Agent Quick Reference
@@ -36,7 +36,7 @@ SwiftProyecto is a Swift package providing **extensible, agentic discovery of co
 - **[INTRO_OUTRO_GUIDE.md](Docs/INTRO_OUTRO_GUIDE.md)** — Intro/outro file configuration
 
 ### Tools & Visualization
-- **[graphify-out/graph.html](graphify-out/graph.html)** — Interactive visual map of codebase (1104 nodes)
+- **[graphify-out/graph.html](graphify-out/graph.html)** — Interactive visual map of codebase (1682 nodes · 2724 edges)
 - **[graphify-out/GRAPH_REPORT.md](graphify-out/GRAPH_REPORT.md)** — God nodes and community analysis
 
 ---
