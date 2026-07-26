@@ -65,7 +65,9 @@ enum VTTParser {
   }
 
   private static func parseTimingLine(_ line: String) -> (start: Double, end: Double)? {
-    let components = line.split(separator: "-->", omittingEmptySubsequences: true).map { $0.trimmingCharacters(in: .whitespaces) }
+    let components = line.split(separator: "-->", omittingEmptySubsequences: true).map {
+      $0.trimmingCharacters(in: .whitespaces)
+    }
     guard components.count == 2 else { return nil }
 
     guard let start = parseTimeString(String(components[0])) else { return nil }
@@ -76,14 +78,19 @@ enum VTTParser {
 
   private static func parseTimeString(_ timeString: String) -> Double? {
     // Handle format: HH:MM:SS.mmm or MM:SS.mmm
-    let components = timeString.split(separator: ":", omittingEmptySubsequences: false).map(String.init)
+    let components = timeString.split(separator: ":", omittingEmptySubsequences: false).map(
+      String.init)
 
     switch components.count {
     case 2:
-      guard let minutes = Double(components[0]), let seconds = parseSeconds(components[1]) else { return nil }
+      guard let minutes = Double(components[0]), let seconds = parseSeconds(components[1]) else {
+        return nil
+      }
       return minutes * 60 + seconds
     case 3:
-      guard let hours = Double(components[0]), let minutes = Double(components[1]), let seconds = parseSeconds(components[2]) else { return nil }
+      guard let hours = Double(components[0]), let minutes = Double(components[1]),
+        let seconds = parseSeconds(components[2])
+      else { return nil }
       return hours * 3600 + minutes * 60 + seconds
     default:
       return nil

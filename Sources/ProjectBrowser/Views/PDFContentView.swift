@@ -44,49 +44,49 @@ public struct PDFContentView: View {
 }
 
 #if os(iOS)
-private struct PDFViewContainer: UIViewRepresentable {
-  let fileURL: URL
-  @Binding var error: String?
+  private struct PDFViewContainer: UIViewRepresentable {
+    let fileURL: URL
+    @Binding var error: String?
 
-  func makeUIView(context: Context) -> PDFView {
-    let pdfView = PDFView()
-    pdfView.autoScales = true
-    pdfView.displayDirection = .vertical
-    pdfView.displayMode = .singlePageContinuous
+    func makeUIView(context: Context) -> PDFView {
+      let pdfView = PDFView()
+      pdfView.autoScales = true
+      pdfView.displayDirection = .vertical
+      pdfView.displayMode = .singlePageContinuous
 
-    if let document = PDFDocument(url: fileURL) {
-      pdfView.document = document
-    } else {
-      error = "Could not open PDF file"
+      if let document = PDFDocument(url: fileURL) {
+        pdfView.document = document
+      } else {
+        error = "Could not open PDF file"
+      }
+
+      return pdfView
     }
 
-    return pdfView
+    func updateUIView(_ uiView: PDFView, context: Context) {}
   }
-
-  func updateUIView(_ uiView: PDFView, context: Context) {}
-}
 #elseif os(macOS)
-private struct PDFViewContainer: NSViewRepresentable {
-  let fileURL: URL
-  @Binding var error: String?
+  private struct PDFViewContainer: NSViewRepresentable {
+    let fileURL: URL
+    @Binding var error: String?
 
-  func makeNSView(context: Context) -> PDFView {
-    let pdfView = PDFView()
-    pdfView.autoScales = true
-    pdfView.displayDirection = .vertical
-    pdfView.displayMode = .singlePageContinuous
+    func makeNSView(context: Context) -> PDFView {
+      let pdfView = PDFView()
+      pdfView.autoScales = true
+      pdfView.displayDirection = .vertical
+      pdfView.displayMode = .singlePageContinuous
 
-    if let document = PDFDocument(url: fileURL) {
-      pdfView.document = document
-    } else {
-      error = "Could not open PDF file"
+      if let document = PDFDocument(url: fileURL) {
+        pdfView.document = document
+      } else {
+        error = "Could not open PDF file"
+      }
+
+      return pdfView
     }
 
-    return pdfView
+    func updateNSView(_ nsView: PDFView, context: Context) {}
   }
-
-  func updateNSView(_ nsView: PDFView, context: Context) {}
-}
 #endif
 
 #Preview("PDFContentView", traits: .fixedLayout(width: 480, height: 600)) {

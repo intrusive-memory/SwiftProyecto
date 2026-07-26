@@ -1,6 +1,6 @@
 import AVFoundation
-import XCTest
 import Foundation
+import XCTest
 
 @testable import ProjectBrowser
 
