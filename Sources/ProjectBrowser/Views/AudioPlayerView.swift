@@ -38,6 +38,35 @@ public struct AudioPlayerView: View {
       }
       .padding()
 
+      if controller.availableSubtitles {
+        Divider()
+          .padding(.horizontal)
+
+        VStack(alignment: .center, spacing: 8) {
+          Text("Subtitles")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .textCase(.uppercase)
+
+          if let subtitle = controller.currentSubtitle {
+            Text(subtitle)
+              .font(.body)
+              .lineLimit(5)
+              .multilineTextAlignment(.center)
+              .frame(maxWidth: .infinity, minHeight: 60)
+          } else {
+            Text("•••")
+              .font(.caption)
+              .foregroundStyle(.tertiary)
+              .frame(maxWidth: .infinity, minHeight: 60)
+          }
+        }
+        .padding()
+        .background(Color.secondary.opacity(0.1))
+        .cornerRadius(8)
+        .padding()
+      }
+
       Spacer()
 
       VStack(spacing: 12) {
@@ -179,6 +208,10 @@ final class AudioPlayerController: NSObject, ObservableObject {
       player?.volume = volume
     }
   }
+  @Published var currentSubtitle: String?
+  @Published var availableSubtitles = false
+
+  private var vttCues: [VTTCue] = []
 
   /// `true` while a programmatic seek issued by ``seek(to:)`` is still in
   /// flight. Distinct from ``isScrubbing``: this tracks AVFoundation's work,
@@ -223,6 +256,8 @@ final class AudioPlayerController: NSObject, ObservableObject {
       Task { @MainActor in self?.handlePlaybackEnded() }
     }
 
+    loadSubtitles()
+
     Task {
       do {
         let loaded = try await asset.load(.duration).seconds
@@ -243,6 +278,18 @@ final class AudioPlayerController: NSObject, ObservableObject {
     addTimeObserver()
   }
 
+  private func loadSubtitles() {
+    let vttURL = url.deletingPathExtension().appendingPathExtension("vtt")
+    guard FileManager.default.fileExists(atPath: vttURL.path) else { return }
+
+    do {
+      vttCues = try VTTParser.parse(url: vttURL)
+      availableSubtitles = !vttCues.isEmpty
+    } catch {
+      // Silently ignore VTT parsing errors; subtitles are optional
+    }
+  }
+
   private func addTimeObserver() {
     guard let player else { return }
 
@@ -257,11 +304,16 @@ final class AudioPlayerController: NSObject, ObservableObject {
       MainActor.assumeIsolated {
         guard let self else { return }
         self.currentTime = time.seconds
+        self.updateCurrentSubtitle(at: time.seconds)
         // Don't fight an in-progress drag for control of the thumb.
         guard !self.isScrubbing, let duration = self.duration, duration > 0 else { return }
         self.seekPosition = time.seconds / duration
       }
     }
+  }
+
+  private func updateCurrentSubtitle(at time: Double) {
+    currentSubtitle = vttCues.first { $0.isActive(at: time) }?.text
   }
 
   /// Records whether the user is currently dragging the scrubber, and — on

@@ -12,6 +12,9 @@ public enum DefaultHandlers {
     "mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "wma", "alac", "aiff",
   ]
 
+  /// PDF file extension.
+  public static let pdfExtensions = ["pdf"]
+
   /// Creates an image file handler for the given directory.
   ///
   /// Returns a `FileTypeHandler` that renders image files via ``ImageContentView``.
@@ -102,7 +105,51 @@ public enum DefaultHandlers {
     return handlers
   }
 
-  /// Creates a combined dictionary of all default handlers (image + audio).
+  /// Creates a PDF file handler for the given directory.
+  ///
+  /// Returns a `FileTypeHandler` that renders PDF files via ``PDFContentView``.
+  ///
+  /// ## Example
+  ///
+  /// ```swift
+  /// let pdfHandler = DefaultHandlers.pdfHandler(directoryURL: projectURL)
+  /// handlers["pdf"] = pdfHandler.viewBuilder
+  /// ```
+  ///
+  /// - Parameter directoryURL: The project directory containing the PDF file.
+  /// - Returns: A `FileTypeHandler` for PDF files.
+  public static func pdfHandler(directoryURL: URL) -> FileTypeHandler {
+    FileTypeHandler(fileExtension: "pdf") { file in
+      AnyView(PDFContentView(file: file, directoryURL: directoryURL))
+    }
+  }
+
+  /// Creates a dictionary of default PDF handlers.
+  ///
+  /// ## Example
+  ///
+  /// ```swift
+  /// var handlers = DefaultHandlers.pdfHandlers(directoryURL: projectURL)
+  /// handlers.merge(DefaultHandlers.audioHandlers(directoryURL: projectURL)) { _, new in new }
+  ///
+  /// ProjectWindow(
+  ///   directoryURL: projectURL,
+  ///   handlers: handlers
+  /// )
+  /// ```
+  ///
+  /// - Parameter directoryURL: The project directory containing PDF files.
+  /// - Returns: A dictionary mapping PDF extensions to their handlers.
+  public static func pdfHandlers(directoryURL: URL) -> [String: (ProjectFile) -> AnyView] {
+    var handlers: [String: (ProjectFile) -> AnyView] = [:]
+    for ext in pdfExtensions {
+      let handler = pdfHandler(directoryURL: directoryURL)
+      handlers[ext] = handler.viewBuilder
+    }
+    return handlers
+  }
+
+  /// Creates a combined dictionary of all default handlers (image + audio + PDF).
   ///
   /// ## Example
   ///
@@ -117,10 +164,11 @@ public enum DefaultHandlers {
   /// ```
   ///
   /// - Parameter directoryURL: The project directory containing media files.
-  /// - Returns: A dictionary mapping image and audio extensions to their handlers.
+  /// - Returns: A dictionary mapping image, audio, and PDF extensions to their handlers.
   public static func allHandlers(directoryURL: URL) -> [String: (ProjectFile) -> AnyView] {
     var handlers = imageHandlers(directoryURL: directoryURL)
     handlers.merge(audioHandlers(directoryURL: directoryURL)) { _, new in new }
+    handlers.merge(pdfHandlers(directoryURL: directoryURL)) { _, new in new }
     return handlers
   }
 }
