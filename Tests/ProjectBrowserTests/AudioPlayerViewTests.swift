@@ -1,5 +1,6 @@
 import AVFoundation
 import XCTest
+import Foundation
 
 @testable import ProjectBrowser
 
@@ -195,5 +196,91 @@ final class AudioPlayerControllerTests: XCTestCase {
 
     XCTAssertNotNil(controller.error, "An unreadable asset must surface an error")
     XCTAssertFalse(controller.isReady, "An unreadable asset must never arm playback")
+  }
+}
+
+// MARK: - VTT Parser
+
+final class VTTParserTests: XCTestCase {
+
+  func testParseSimpleVTT() {
+    let vtt = """
+      WEBVTT
+
+      00:00:00.500 --> 00:00:07.000
+      Caption text line one
+
+      00:00:14.000 --> 00:00:18.000
+      Caption text line two
+      """
+
+    let cues = VTTParser.parse(content: vtt)
+    XCTAssertEqual(cues.count, 2)
+
+    XCTAssertEqual(cues[0].startTime, 0.5, accuracy: 0.001)
+    XCTAssertEqual(cues[0].endTime, 7.0, accuracy: 0.001)
+    XCTAssertEqual(cues[0].text, "Caption text line one")
+
+    XCTAssertEqual(cues[1].startTime, 14.0, accuracy: 0.001)
+    XCTAssertEqual(cues[1].endTime, 18.0, accuracy: 0.001)
+    XCTAssertEqual(cues[1].text, "Caption text line two")
+  }
+
+  func testParseVTTWithMultilineText() {
+    let vtt = """
+      WEBVTT
+
+      00:00:00.000 --> 00:00:10.000
+      Line one
+      Line two
+      Line three
+      """
+
+    let cues = VTTParser.parse(content: vtt)
+    XCTAssertEqual(cues.count, 1)
+    XCTAssertEqual(cues[0].text, "Line one\nLine two\nLine three")
+  }
+
+  func testParseVTTWithHoursFormat() {
+    let vtt = """
+      WEBVTT
+
+      01:00:00.500 --> 01:00:07.000
+      Caption text
+      """
+
+    let cues = VTTParser.parse(content: vtt)
+    XCTAssertEqual(cues.count, 1)
+    XCTAssertEqual(cues[0].startTime, 3600.5, accuracy: 0.001)
+    XCTAssertEqual(cues[0].endTime, 3607.0, accuracy: 0.001)
+  }
+
+  func testCueActivityCheck() {
+    let cue = VTTCue(startTime: 10.0, endTime: 20.0, text: "Test")
+
+    XCTAssertFalse(cue.isActive(at: 9.99))
+    XCTAssertTrue(cue.isActive(at: 10.0))
+    XCTAssertTrue(cue.isActive(at: 15.0))
+    XCTAssertFalse(cue.isActive(at: 20.0))
+    XCTAssertFalse(cue.isActive(at: 20.01))
+  }
+
+  func testParseVTTSkipsEmptyLines() {
+    let vtt = """
+      WEBVTT
+
+
+      00:00:00.000 --> 00:00:05.000
+      First caption
+
+
+      00:00:05.000 --> 00:00:10.000
+      Second caption
+      """
+
+    let cues = VTTParser.parse(content: vtt)
+    XCTAssertEqual(cues.count, 2)
+    XCTAssertEqual(cues[0].text, "First caption")
+    XCTAssertEqual(cues[1].text, "Second caption")
   }
 }
