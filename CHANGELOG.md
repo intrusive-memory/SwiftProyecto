@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`textEditorBuilder:` parameter on `ProjectWindow` and `ProjectDetailPane`** — a consumer-supplied view builder that replaces the built-in `EditableTextContentView` for handler-less UTF-8 text files. It receives the `ProjectFile` and the file's decoded text and returns the view to render. Previously a consumer could not switch the built-in editor off at all: `fileWriter` was optional, but `ProjectWindow` always supplied `onSaveText`, so every text file got the built-in `TextEditor`.
+- **`TextEditorBuilder` typealias** — `(ProjectFile, String) -> AnyView`.
+
+### Notes
+
+- The file classifier is unchanged. "Is this text?" is still answered by attempting a UTF-8 decode of the file's bytes, which is why `Makefile`, `LICENSE`, and `.zshrc` reach the builder while a `.txt` holding binary bytes does not. Only the destination of that branch changed.
+- The exact-extension `handlers` registry still wins; the builder is the fallback beneath it.
+- Supplying a builder transfers ownership of saving those files to the consumer — the built-in Save control and `fileWriter:` belong to `EditableTextContentView` and are bypassed.
+- Additive and source-compatible: the parameter defaults to `nil`, and with no builder every existing call site behaves exactly as before.
+
 ---
 
 ## [4.5.0] - 2026-07-19

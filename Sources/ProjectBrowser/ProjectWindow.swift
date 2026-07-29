@@ -90,6 +90,18 @@ public struct ProjectWindow: View {
   /// security-scoped access — `ProjectBrowser` performs no scoping itself.
   private let fileWriter: FileWriterCallback?
 
+  /// A consumer-supplied replacement for the built-in ``EditableTextContentView``.
+  ///
+  /// When supplied, every handler-less file whose contents decoded as UTF-8
+  /// text is rendered by this builder instead of the built-in editor, which is
+  /// then never constructed. That also means the consumer owns saving for those
+  /// files: `fileWriter` and the built-in Save control belong to
+  /// ``EditableTextContentView`` and are bypassed.
+  ///
+  /// The `handlers` registry still wins for extensions registered in it — the
+  /// builder is the fallback beneath it, not a replacement for it.
+  private let textEditorBuilder: TextEditorBuilder?
+
   /// An optional predicate applied to the discovered file list; entries for
   /// which this returns `false` are hidden from the sidebar.
   private let fileFilter: ((ProjectFile) -> Bool)?
@@ -166,6 +178,10 @@ public struct ProjectWindow: View {
   ///   - fileWriter: A custom writer used by the default editable text view
   ///     to persist edits. Falls back to writing UTF-8 directly to disk when
   ///     `nil`.
+  ///   - textEditorBuilder: A consumer-supplied view builder that replaces the
+  ///     built-in editable text view for handler-less UTF-8 text files. When
+  ///     `nil`, the built-in editor is used exactly as before. Supplying one
+  ///     also transfers ownership of saving those files to the consumer.
   ///   - fileFilter: A predicate hiding files for which it returns `false`.
   ///   - sidebarMinWidth: Sidebar minimum width (macOS). Defaults to `250`.
   ///   - sidebarIdealWidth: Sidebar ideal width (macOS). Defaults to `300`.
@@ -178,6 +194,7 @@ public struct ProjectWindow: View {
     onFileAction: FileActionCallback? = nil,
     contentLoader: FileLoaderCallback? = nil,
     fileWriter: FileWriterCallback? = nil,
+    textEditorBuilder: TextEditorBuilder? = nil,
     fileFilter: ((ProjectFile) -> Bool)? = nil,
     sidebarMinWidth: CGFloat = 250,
     sidebarIdealWidth: CGFloat = 300,
@@ -190,6 +207,7 @@ public struct ProjectWindow: View {
     self.onFileAction = onFileAction
     self.contentLoader = contentLoader
     self.fileWriter = fileWriter
+    self.textEditorBuilder = textEditorBuilder
     self.fileFilter = fileFilter
     self.sidebarMinWidth = sidebarMinWidth
     self.sidebarIdealWidth = sidebarIdealWidth
@@ -345,7 +363,10 @@ public struct ProjectWindow: View {
   /// always has — shared with ``stackLayout`` so a pushed detail view on
   /// iPhone behaves identically to the split-view detail column on macOS
   /// and iPad.
-  private func detailPane(for file: ProjectFile?) -> ProjectDetailPane {
+  ///
+  /// Internal rather than private so tests can assert that a consumer's
+  /// `textEditorBuilder:` actually reaches the pane.
+  func detailPane(for file: ProjectFile?) -> ProjectDetailPane {
     ProjectDetailPane(
       selectedFile: file,
       handlers: handlers,
@@ -354,7 +375,8 @@ public struct ProjectWindow: View {
       loadError: selectedFileLoadError,
       onAction: dispatchFileAction,
       onRetryLoad: { file in dispatchFileAction(file, action: .reload) },
-      onSaveText: saveText
+      onSaveText: saveText,
+      textEditorBuilder: textEditorBuilder
     )
   }
 

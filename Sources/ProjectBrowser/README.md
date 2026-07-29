@@ -205,6 +205,38 @@ let handlers: [String: (ProjectFile) -> AnyView] = [
 - Handlers receive only metadata (`ProjectFile`), not file contents
 - If a file has no handler, contents are loaded lazily and displayed as plain text
 
+### Text Editor Override
+
+The `handlers` registry matches on an exact extension, which is the wrong shape
+for "any text file" — a real project is full of `Makefile`, `LICENSE`, `.zshrc`,
+and one-off extensions nobody thought to register. `textEditorBuilder:` is the
+fallback beneath the registry for exactly that case:
+
+```swift
+ProjectWindow(
+  directoryURL: projectFolderURL,
+  handlers: ["fountain": { file in AnyView(ScreenplayView(file: file)) }],
+  textEditorBuilder: { file, text in
+    AnyView(MyEditor(file: file, text: text))
+  }
+)
+```
+
+**How it works:**
+1. A registered handler still wins — `.fountain` above never reaches the builder
+2. Otherwise the file's bytes are loaded and decoded as UTF-8
+3. If they decode, the builder is called with the `ProjectFile` and the decoded text
+4. If they don't (a binary file), `PlainTextContentView` renders read-only as before
+
+**Key Points:**
+- The classifier is the decode itself — no extension list, no MIME sniffing. That
+  is what makes `Makefile` text and a `.txt` full of binary not-text.
+- When a builder is supplied, `EditableTextContentView` is never constructed, so
+  the built-in Save control and `fileWriter:` do not apply — the consumer's view
+  owns persistence for those files.
+- Omitting the parameter leaves the built-in editor in place; it is additive and
+  source-compatible.
+
 ### Lazy Content Loading
 
 Files without registered handlers are loaded lazily the first time they're selected. This conserves memory in large projects.
@@ -333,6 +365,8 @@ public struct ProjectWindow: View {
     onFileSelection: FileSelectionCallback? = nil,
     onFileAction: FileActionCallback? = nil,
     contentLoader: FileLoaderCallback? = nil,
+    fileWriter: FileWriterCallback? = nil,
+    textEditorBuilder: TextEditorBuilder? = nil,
     fileFilter: ((ProjectFile) -> Bool)? = nil,
     sidebarMinWidth: CGFloat = 250,
     sidebarIdealWidth: CGFloat = 300,
@@ -349,6 +383,8 @@ public struct ProjectWindow: View {
 | `onFileSelection` | `FileSelectionCallback?` | `nil` | Called when user selects a file |
 | `onFileAction` | `FileActionCallback?` | `nil` | Called when user triggers an action |
 | `contentLoader` | `FileLoaderCallback?` | `nil` | Custom content loader; falls back to disk read if nil |
+| `fileWriter` | `FileWriterCallback?` | `nil` | Custom writer for the built-in editor's saves; falls back to writing UTF-8 to disk if nil |
+| `textEditorBuilder` | `TextEditorBuilder?` | `nil` | Replaces the built-in editor for handler-less UTF-8 text files; falls back to `EditableTextContentView` if nil |
 | `fileFilter` | `((ProjectFile) -> Bool)?` | `nil` | Predicate to hide files (return `false` to hide) |
 | `sidebarMinWidth` | `CGFloat` | `250` | Sidebar minimum width (macOS only) |
 | `sidebarIdealWidth` | `CGFloat` | `300` | Sidebar ideal width (macOS only) |
