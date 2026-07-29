@@ -1,4 +1,5 @@
 import SwiftUI
+import Synchronization
 
 // MARK: - EditableTextContentView
 
@@ -61,6 +62,32 @@ public struct EditableTextContentView: View {
     _savedText = State(initialValue: text)
     _draft = State(initialValue: text)
     self.onSave = onSave
+    Self.constructionCounter.wrappingAdd(1, ordering: .relaxed)
+  }
+
+  // MARK: - Construction witness
+
+  /// Counts how many times this view has been constructed.
+  ///
+  /// A SwiftUI view body can't be introspected after the fact, so "the built-in
+  /// editor was never constructed" — the guarantee a consumer relies on when it
+  /// supplies a ``TextEditorBuilder`` to `ProjectWindow` — has no other witness.
+  /// `ProjectBrowserTests` resets it, renders every fixture through
+  /// ``ProjectDetailPane``, and asserts it is still zero.
+  ///
+  /// Internal, atomic, and untouched by anything but `init`, so it costs
+  /// consumers one relaxed increment per construction and exposes nothing.
+  private static let constructionCounter = Atomic<Int>(0)
+
+  /// The current value of the construction witness.
+  static var constructionCount: Int {
+    constructionCounter.load(ordering: .relaxed)
+  }
+
+  /// Resets the construction witness. Call at the start of a test that asserts
+  /// on ``constructionCount``.
+  static func resetConstructionCount() {
+    constructionCounter.store(0, ordering: .relaxed)
   }
 
   /// Whether the draft differs from the last-saved text.

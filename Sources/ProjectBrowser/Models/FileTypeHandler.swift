@@ -26,6 +26,41 @@ public typealias FileActionCallback = @Sendable (ProjectFile, FileAction) -> Voi
 /// ``ProjectFileActionHandler/save(text:to:in:fileWriter:)``).
 public typealias FileWriterCallback = @Sendable (ProjectFile, String) async throws -> Void
 
+/// A consumer-supplied builder that replaces `ProjectBrowser`'s built-in text
+/// editor for handler-less UTF-8 text files.
+///
+/// It receives the ``ProjectFile`` and the file's decoded UTF-8 contents, and
+/// returns the view to render in place of ``EditableTextContentView``.
+///
+/// This is the *fallback* beneath the exact-extension `handlers` registry, not
+/// a replacement for it: a file whose extension has a registered handler still
+/// renders through that handler. The builder only takes over the branch that
+/// would otherwise construct ``EditableTextContentView`` — every file whose
+/// bytes decode as UTF-8 and that has no registered handler, which is exactly
+/// `ProjectBrowser`'s `text/*` test. Extension-less files like `Makefile`,
+/// `LICENSE`, and `.zshrc` therefore reach the builder; a `.txt` holding
+/// non-UTF-8 bytes does not, and still falls back to the read-only
+/// ``PlainTextContentView``.
+///
+/// Because the consumer owns the substituted view, it also owns persisting
+/// edits made in it — `ProjectWindow`'s `fileWriter:` and the built-in Save
+/// control belong to ``EditableTextContentView`` and are bypassed entirely.
+///
+/// Like `handlers`, this is deliberately a plain (non-`Sendable`) closure: it
+/// is a SwiftUI view builder invoked during body evaluation on the main actor.
+///
+/// ## Example
+///
+/// ```swift
+/// ProjectWindow(
+///   directoryURL: projectFolderURL,
+///   textEditorBuilder: { file, text in
+///     AnyView(MyEditor(url: projectFolderURL.appending(path: file.relativePath), text: text))
+///   }
+/// )
+/// ```
+public typealias TextEditorBuilder = (ProjectFile, String) -> AnyView
+
 /// Associates a file extension with a SwiftUI view builder used to render
 /// files of that type in a `ProjectWindow`'s detail pane.
 ///
