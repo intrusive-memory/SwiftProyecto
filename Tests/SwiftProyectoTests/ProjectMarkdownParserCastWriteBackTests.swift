@@ -197,4 +197,181 @@ final class ProjectMarkdownParserCastWriteBackTests: XCTestCase {
     let narrator = try XCTUnwrap(fm.cast?.first(where: { $0.character == "NARRATOR" }))
     XCTAssertEqual(narrator.voices["voxalta"], ["NARRATOR", "NARRATOR_ALT"])
   }
+
+  // MARK: - Blank lines and comments inside the cast block
+
+  /// A blank line between cast entries used to terminate the block scan, so
+  /// every entry after it was left unreplaced but still indented — the
+  /// re-rendered block landed *above* the survivors and YAML parsed them back
+  /// as duplicate members. This is the regression test for that.
+  func testReplacingCastBlock_BlankLineBetweenEntries_DoesNotDuplicate() throws {
+    let spaced = """
+      ---
+      type: project
+      title: Granville
+      author: Tom Stovall
+      created: 2026-01-01T00:00:00Z
+      cast:
+        - character: NARRATOR
+          voicePrompt: Deep warm baritone
+
+        - character: PREDATOR_MOM
+          voicePrompt: Sharp predatory menace
+      episodes_index: episodes/index.json
+      ---
+      Body
+      """
+    let (frontMatter, _) = try parser.parse(content: spaced)
+    var cast = try XCTUnwrap(frontMatter.cast)
+    XCTAssertEqual(cast.count, 2, "fixture should start with exactly two members")
+
+    let idx = try XCTUnwrap(cast.firstIndex(where: { $0.character == "PREDATOR_MOM" }))
+    cast[idx].voices = ["voxalta": ["PREDATOR_MOM"]]
+
+    let updated = try parser.replacingCastBlock(in: spaced, with: cast)
+    let (reparsed, _) = try parser.parse(content: updated)
+
+    let names = (reparsed.cast ?? []).map(\.character)
+    XCTAssertEqual(
+      names, ["NARRATOR", "PREDATOR_MOM"],
+      "the blank line must not orphan entries into duplicates; got \(names)")
+    XCTAssertEqual(
+      updated.components(separatedBy: "- character: PREDATOR_MOM").count - 1, 1,
+      "PREDATOR_MOM must appear exactly once")
+
+    // The stray leftovers used to land between the new block and the next key.
+    XCTAssertFalse(
+      updated.contains("voicePrompt: Sharp predatory menace\nepisodes_index"),
+      "an unreplaced original entry survived the splice")
+    XCTAssertTrue(updated.contains("episodes_index: episodes/index.json"))
+  }
+
+  /// A blank line *after* the last cast entry separates `cast:` from the next
+  /// key — it belongs outside the block and must be left where it is.
+  func testReplacingCastBlock_TrailingBlankLineStaysOutsideBlock() throws {
+    let trailing = """
+      ---
+      type: project
+      title: Granville
+      author: Tom Stovall
+      created: 2026-01-01T00:00:00Z
+      cast:
+        - character: NARRATOR
+          voicePrompt: Deep warm baritone
+
+      episodes_index: episodes/index.json
+      ---
+      Body
+      """
+    let cast = [CastMember(character: "NARRATOR", voices: ["voxalta": ["NARRATOR"]])]
+    let updated = try parser.replacingCastBlock(in: trailing, with: cast)
+
+    XCTAssertTrue(
+      updated.contains("\n\nepisodes_index: episodes/index.json"),
+      "the blank separator before the next key must survive; got:\n\(updated)")
+    let (reparsed, _) = try parser.parse(content: updated)
+    XCTAssertEqual(reparsed.cast?.count, 1)
+  }
+
+  /// Same tentative-scan rule at the end of the frontmatter: a blank line
+  /// before the closing `---` is not part of the cast block.
+  func testReplacingCastBlock_BlankLineBeforeClosingDelimiterSurvives() throws {
+    let trailing = """
+      ---
+      type: project
+      title: Granville
+      author: Tom Stovall
+      created: 2026-01-01T00:00:00Z
+      cast:
+        - character: NARRATOR
+          voicePrompt: Deep warm baritone
+
+      ---
+      Body
+      """
+    let cast = [CastMember(character: "NARRATOR", voices: ["voxalta": ["NARRATOR"]])]
+    let updated = try parser.replacingCastBlock(in: trailing, with: cast)
+
+    XCTAssertTrue(updated.contains("\n\n---\nBody"), "blank before `---` must survive")
+    let (reparsed, body) = try parser.parse(content: updated)
+    XCTAssertEqual(reparsed.cast?.count, 1)
+    XCTAssertEqual(body, "Body")
+  }
+
+  /// A column-0 comment interior to the block is treated like a blank: it must
+  /// not terminate the scan and orphan the entries below it.
+  func testReplacingCastBlock_InteriorColumnZeroComment_DoesNotDuplicate() throws {
+    let commented = """
+      ---
+      type: project
+      title: Granville
+      author: Tom Stovall
+      created: 2026-01-01T00:00:00Z
+      cast:
+        - character: NARRATOR
+          voicePrompt: Deep warm baritone
+      # separating the two leads
+        - character: PREDATOR_MOM
+          voicePrompt: Sharp predatory menace
+      episodes_index: episodes/index.json
+      ---
+      Body
+      """
+    let (frontMatter, _) = try parser.parse(content: commented)
+    let cast = try XCTUnwrap(frontMatter.cast)
+
+    let updated = try parser.replacingCastBlock(in: commented, with: cast)
+    let (reparsed, _) = try parser.parse(content: updated)
+
+    XCTAssertEqual(
+      (reparsed.cast ?? []).map(\.character), ["NARRATOR", "PREDATOR_MOM"],
+      "an interior comment must not orphan entries into duplicates")
+    XCTAssertTrue(updated.contains("episodes_index: episodes/index.json"))
+  }
+
+  /// A comment *after* the block belongs to whatever follows and must survive.
+  func testReplacingCastBlock_TrailingCommentStaysOutsideBlock() throws {
+    let commented = """
+      ---
+      type: project
+      title: Granville
+      author: Tom Stovall
+      created: 2026-01-01T00:00:00Z
+      cast:
+        - character: NARRATOR
+          voicePrompt: Deep warm baritone
+      # Intro/outro assets follow.
+      introFile: intro.fountain
+      ---
+      Body
+      """
+    let cast = [CastMember(character: "NARRATOR", voices: ["voxalta": ["NARRATOR"]])]
+    let updated = try parser.replacingCastBlock(in: commented, with: cast)
+
+    XCTAssertTrue(
+      updated.contains("# Intro/outro assets follow."),
+      "a trailing comment must survive the splice")
+    let (reparsed, _) = try parser.parse(content: updated)
+    XCTAssertEqual(reparsed.introFile, "intro.fountain")
+  }
+
+  /// An empty cast removes the block outright. `echada generate cast` relies on
+  /// this: it stopped special-casing an empty merge and now passes `[]` straight
+  /// through.
+  func testReplacingCastBlock_EmptyCastRemovesBlock() throws {
+    let (frontMatter, _) = try parser.parse(content: goldenFixture)
+    XCTAssertNotNil(frontMatter.cast)
+
+    let updated = try parser.replacingCastBlock(in: goldenFixture, with: [])
+
+    XCTAssertFalse(updated.contains("cast:"), "the cast block should be gone")
+    XCTAssertFalse(updated.contains("- character: NARRATOR"))
+
+    let (reparsed, _) = try parser.parse(content: updated)
+    XCTAssertTrue(reparsed.cast?.isEmpty ?? true, "no cast members should remain")
+    // Everything else is still there.
+    XCTAssertEqual(reparsed.introFile, "intro.fountain")
+    XCTAssertEqual(reparsed.outroFile, "outro.fountain")
+    XCTAssertEqual(reparsed.title, "Granville")
+  }
 }

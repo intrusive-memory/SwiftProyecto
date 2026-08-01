@@ -332,11 +332,17 @@ public struct ProjectMarkdownParser {
   ///
   /// Algorithm:
   /// 1. Locate the `---` … `---` frontmatter delimiters.
-  /// 2. Find the top-level `cast:` key (column 0) and consume the contiguous run
-  ///    of more-indented lines belonging to it.
+  /// 2. Find the top-level `cast:` key (column 0) and consume the run of
+  ///    more-indented lines belonging to it. Blank lines and column-0 comments
+  ///    interior to the block are consumed too — only the next column-0 key (or
+  ///    the closing `---`) ends it. Trailing blanks/comments stay outside.
   /// 3. Replace exactly those lines with a freshly rendered cast block.
   /// 4. If there is no existing `cast:` block, insert the rendered block at the
   ///    end of the frontmatter (just before the closing `---`).
+  ///
+  /// One limitation is inherent to re-rendering the block: comments *inside*
+  /// `cast:` do not survive, because the replacement is generated from the typed
+  /// model. Comments anywhere else in the file are untouched.
   ///
   /// - Parameters:
   ///   - original: The complete, original PROJECT.md file text.
@@ -382,11 +388,32 @@ public struct ProjectMarkdownParser {
     }
 
     if let start = castStart {
-      // Consume the contiguous run of indented lines belonging to the block.
+      // Consume the run of lines belonging to the block.
+      //
+      // A blank line does NOT end the block. Hand-maintained project files
+      // routinely separate cast entries with one, and treating a blank as the
+      // terminator left every entry after it unreplaced but still indented —
+      // so the re-render was appended *above* the survivors and YAML parsed
+      // them back as duplicate cast members. Column-0 comments are treated the
+      // same way, for the same reason.
+      //
+      // Blanks and comments are therefore scanned past *tentatively*: `end`
+      // only advances to cover them once a further indented line proves they
+      // were interior to the block. Trailing blanks and comments stay outside,
+      // since they separate `cast:` from whatever follows rather than belonging
+      // to it.
       var end = start + 1
-      while end < secondDelim {
-        guard let first = lines[end].first, first == " " || first == "\t" else { break }
-        end += 1
+      var scan = end
+      while scan < secondDelim {
+        let line = lines[scan]
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty || trimmed.hasPrefix("#") {
+          scan += 1
+          continue
+        }
+        guard let first = line.first, first == " " || first == "\t" else { break }
+        scan += 1
+        end = scan
       }
       lines.replaceSubrange(start..<end, with: castLines)
     } else if !castLines.isEmpty {
