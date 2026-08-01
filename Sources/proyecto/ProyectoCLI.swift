@@ -35,6 +35,8 @@ struct ProyectoCLI: AsyncParsableCommand {
         proyecto generate                 # Generate output for current directory
         proyecto generate --season 2      # Generate output for season 2 only
         proyecto generate --intro-only    # Generate intro files only
+
+      \(Acervo.environmentHelp())
       """,
     version: SwiftProyecto.version,
     subcommands: [
