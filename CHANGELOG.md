@@ -9,6 +9,22 @@ All notable changes to SwiftProyecto will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **`replacingCastBlock(in:with:)` no longer duplicates cast members when the `cast:` block contains a blank line or a column-0 comment.** The block scan treated any non-indented line as the terminator, so a blank line between entries — which hand-maintained project files routinely use — ended the scan early. Everything below it was left unreplaced but still indented, the re-rendered block was spliced in *above* the survivors, and re-parsing the file read them back as duplicate cast members. A column-0 comment inside the block failed the same way.
+
+  Blank lines and comments are now scanned past *tentatively*: the block only extends over them once a further indented line proves they were interior to it. Trailing blanks and comments stay outside the block, so the separation between `cast:` and the next key is still preserved byte-for-byte.
+
+  This is the write path every `echada generate` stage uses (`cast`, `prompt`, `vox`) as of SwiftEchada's #44/#55 fix, so the corruption was reachable from an ordinary voice-generation run against a file with a blank line in its cast list.
+
+### Notes
+
+- Comments *inside* the `cast:` block still do not survive, indented or not. That is inherent to regenerating the block from the typed model and is now documented on the method. Comments anywhere else in the file are untouched.
+
+---
+
 ## [4.8.0] - 2026-07-29
 
 ### Added
