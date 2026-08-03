@@ -117,12 +117,6 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
   /// Optional path to outro file (project-resolved: relative to the project root)
   public let outroFile: String?
 
-  // MARK: - Cast List
-
-  /// Character-to-voice mappings for audio generation
-  /// Maps screenplay characters to actors and TTS voice URIs
-  public var cast: [CastMember]?
-
   // MARK: - Hook Fields
 
   /// Shell command to run BEFORE generation
@@ -138,7 +132,8 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
 
   // MARK: - v4.0.0 Multi-Season / Multi-Language Fields
 
-  /// Schema version identifier (4 for v4.0.0, nil for v3.x and earlier)
+  /// Schema version identifier as declared by the parsed document
+  /// (nil for v3.x and earlier; see ``ProjectSchemaVersion``)
   public let schemaVersion: Int?
 
   /// Project type: "project" for single season, "overview" for multi-season master
@@ -182,7 +177,6 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
   ///   - exportFormat: Audio export format (default: "m4a")
   ///   - introFile: Path to intro file (project-resolved: relative to the project root)
   ///   - outroFile: Path to outro file (project-resolved: relative to the project root)
-  ///   - cast: Character-to-voice mappings for audio generation
   ///   - preGenerateHook: Shell command to run before generation
   ///   - postGenerateHook: Shell command to run after generation
   ///   - tts: Optional TTS generation configuration
@@ -210,7 +204,6 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     exportFormat: String? = nil,
     introFile: String? = nil,
     outroFile: String? = nil,
-    cast: [CastMember]? = nil,
     preGenerateHook: String? = nil,
     postGenerateHook: String? = nil,
     tts: TTSConfig? = nil,
@@ -236,7 +229,6 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     self.exportFormat = exportFormat
     self.introFile = introFile
     self.outroFile = outroFile
-    self.cast = cast
     self.preGenerateHook = preGenerateHook
     self.postGenerateHook = postGenerateHook
     self.tts = tts
@@ -266,7 +258,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
   private enum KnownCodingKeys: String, CodingKey, CaseIterable {
     case type, title, author, created, updated, description, season
     case episodes, genre, tags, episodesDir, audioDir
-    case filePattern, exportFormat, introFile, outroFile, cast
+    case filePattern, exportFormat, introFile, outroFile
     case preGenerateHook, postGenerateHook, tts
     case schemaVersion, projectType, seasons, languages, variants, episodePath
   }
@@ -302,12 +294,11 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     try container.encodeIfPresent(exportFormat, forKey: .exportFormat)
     try container.encodeIfPresent(introFile, forKey: .introFile)
     try container.encodeIfPresent(outroFile, forKey: .outroFile)
-    try container.encodeIfPresent(cast, forKey: .cast)
     try container.encodeIfPresent(preGenerateHook, forKey: .preGenerateHook)
     try container.encodeIfPresent(postGenerateHook, forKey: .postGenerateHook)
     try container.encodeIfPresent(tts, forKey: .tts)
 
-    try container.encode(4, forKey: .schemaVersion)
+    try container.encode(ProjectSchemaVersion.current, forKey: .schemaVersion)
     try container.encodeIfPresent(projectType, forKey: .projectType)
     try container.encodeIfPresent(seasons, forKey: .seasons)
 
@@ -340,7 +331,6 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     exportFormat = try container.decodeIfPresent(String.self, forKey: .exportFormat)
     introFile = try container.decodeIfPresent(String.self, forKey: .introFile)
     outroFile = try container.decodeIfPresent(String.self, forKey: .outroFile)
-    cast = try container.decodeIfPresent([CastMember].self, forKey: .cast)
     preGenerateHook = try container.decodeIfPresent(String.self, forKey: .preGenerateHook)
     postGenerateHook = try container.decodeIfPresent(String.self, forKey: .postGenerateHook)
     tts = try container.decodeIfPresent(TTSConfig.self, forKey: .tts)
@@ -401,15 +391,56 @@ extension ProjectFrontMatter {
 extension ProjectFrontMatter {
 
   /// Detect the schema version of this ProjectFrontMatter.
-  /// - Returns: 4 if schemaVersion is set to 4, otherwise 3 (default)
+  /// - Returns: the declared `schemaVersion`, or 3 when the document
+  ///   predates schema versioning (see ``ProjectSchemaVersion``)
   public func detectedSchemaVersion() -> Int {
     schemaVersion ?? 3
   }
 
   /// Returns true if this was originally a v3.x format file.
-  /// Note: Internally normalized to v4.0.0, but this tracks the origin.
+  /// Note: Internally normalized to the current schema, but this tracks the origin.
   public var isLegacyV3Format: Bool {
     schemaVersion == nil
+  }
+
+  /// Returns true when the parsed document carried a legacy `cast:` block.
+  ///
+  /// Since schema v5, `cast:` is not a declared key — a roster found in an
+  /// older PROJECT.md is swept into the unknown-key store and preserved
+  /// verbatim on write. This flag is the migration trigger: the `proyecto`
+  /// CLI uses it to decide when to hand the block to `reparto import` and,
+  /// only after the produced CAST.md is verified, remove it from this file.
+  public var hasLegacyCastKey: Bool {
+    appSections["cast"] != nil
+  }
+
+  /// The `character:` names found in a legacy `cast:` block, in document order.
+  ///
+  /// This is deliberately the *only* reading SwiftProyecto ever does of a
+  /// legacy cast block — just enough for the CLI's post-`reparto import`
+  /// verification that every character survived the transfer. The block is
+  /// otherwise opaque; SwiftProyecto no longer models cast (that is
+  /// SwiftReparto's domain).
+  public var legacyCastCharacterNames: [String] {
+    struct LegacyCastEntry: Codable {
+      let character: String?
+    }
+    guard let castValue = appSections["cast"],
+      let members = try? castValue.decode([LegacyCastEntry].self)
+    else { return [] }
+    return members.compactMap(\.character)
+  }
+
+  /// Returns a copy with the legacy `cast:` block removed from the
+  /// unknown-key store.
+  ///
+  /// Callers must only use this after cast data has been verifiably migrated
+  /// to CAST.md — dropping the block without that verification is exactly the
+  /// data loss the preservation mechanism exists to prevent.
+  public func removingLegacyCastKey() -> ProjectFrontMatter {
+    var copy = self
+    copy.appSections["cast"] = nil
+    return copy
   }
 }
 
@@ -485,7 +516,6 @@ extension ProjectFrontMatter {
       exportFormat: exportFormat,
       introFile: introFile.map { Self.makeRelative($0, to: baseDirectory) },
       outroFile: outroFile.map { Self.makeRelative($0, to: baseDirectory) },
-      cast: cast,
       preGenerateHook: preGenerateHook,
       postGenerateHook: postGenerateHook,
       tts: tts,
@@ -540,242 +570,6 @@ extension ProjectFrontMatter {
     let downs = Array(targetComponents[commonCount...])
     let joined = (ups + downs).joined(separator: "/")
     return joined.isEmpty ? "." : joined
-  }
-}
-
-// MARK: - Cast Mutation Helpers
-
-extension ProjectFrontMatter {
-
-  /// Create a copy of this front matter with the cast list replaced.
-  ///
-  /// Returns a new `ProjectFrontMatter` instance with all fields preserved
-  /// except the cast, which is replaced with the provided value.
-  ///
-  /// **Warning**: This replaces the entire cast list. If you need to update
-  /// voices for a single provider while preserving other providers' voices,
-  /// use ``mergingCast(_:forProvider:)`` instead.
-  ///
-  /// ## Usage
-  ///
-  /// ```swift
-  /// let newCast = [CastMember(character: "NARRATOR", voices: ["apple": "voice-id"])]
-  /// let updated = frontMatter.withCast(newCast)
-  /// ```
-  ///
-  /// - Parameter cast: The new cast list, or `nil` to remove the cast section entirely.
-  /// - Returns: A new `ProjectFrontMatter` with the updated cast.
-  public func withCast(_ cast: [CastMember]?) -> ProjectFrontMatter {
-    ProjectFrontMatter(
-      type: type,
-      title: title,
-      author: author,
-      created: created,
-      description: description,
-      genre: genre,
-      tags: tags,
-      episodesDir: episodesDir,
-      audioDir: audioDir,
-      filePattern: filePattern,
-      exportFormat: exportFormat,
-      introFile: introFile,
-      outroFile: outroFile,
-      cast: cast,
-      preGenerateHook: preGenerateHook,
-      postGenerateHook: postGenerateHook,
-      tts: tts,
-      schemaVersion: schemaVersion,
-      projectType: projectType,
-      seasons: seasons,
-      languages: languages,
-      variants: variants,
-      episodePath: episodePath,
-      appSections: appSections
-    )
-  }
-
-  /// Merge cast member voices for a specific provider, preserving all other provider voices.
-  ///
-  /// This is the **safe** way to update cast voices. For each character in `newCast`:
-  /// - If the character already exists in the current cast, the voice(s) for `providerID`
-  ///   are updated (or added), while all other provider voices are preserved.
-  /// - If the character does not exist in the current cast, it is added as-is.
-  ///
-  /// Characters in the existing cast that are not present in `newCast` are preserved unchanged.
-  ///
-  /// ## Zero Information Loss
-  ///
-  /// All voice IDs are preserved. When updating voices for a specific provider,
-  /// voices for all other providers remain unchanged.
-  ///
-  /// ## Usage
-  ///
-  /// ```swift
-  /// // Existing cast has ElevenLabs voice for NARRATOR
-  /// // newCast has Apple voice for NARRATOR
-  /// let updated = frontMatter.mergingCast(newCast, forProvider: "apple")
-  /// // Result: NARRATOR has both ElevenLabs and Apple voices
-  /// ```
-  ///
-  /// ## Example
-  ///
-  /// ```yaml
-  /// # Before: Has ElevenLabs voice
-  /// cast:
-  ///   - character: NARRATOR
-  ///     voices:
-  ///       elevenlabs:
-  ///         - 21m00Tcm4TlvDq8ikWAM
-  ///
-  /// # After mergingCast with Apple provider:
-  /// cast:
-  ///   - character: NARRATOR
-  ///     voices:
-  ///       apple:
-  ///         - com.apple.voice.premium.en-US.Aaron
-  ///       elevenlabs:
-  ///         - 21m00Tcm4TlvDq8ikWAM
-  /// ```
-  ///
-  /// - Parameters:
-  ///   - newCast: The cast members with voices to merge in. Only the voice(s) for `providerID`
-  ///     are extracted from each member.
-  ///   - providerID: The provider whose voices are being updated (e.g., "apple", "elevenlabs").
-  /// - Returns: A new `ProjectFrontMatter` with the merged cast.
-  public func mergingCast(_ newCast: [CastMember], forProvider providerID: String)
-    -> ProjectFrontMatter
-  {
-    let existingCast = cast ?? []
-    let lowerProviderID = providerID.lowercased()
-
-    // Build a lookup of existing cast by character name
-    var mergedByCharacter: [String: CastMember] = [:]
-    for member in existingCast {
-      mergedByCharacter[member.character] = member
-    }
-
-    // Merge in new cast voices for the specified provider
-    for newMember in newCast {
-      if var existing = mergedByCharacter[newMember.character] {
-        // Character exists: update only the specified provider's voices
-        if let newVoices = newMember.voices[lowerProviderID], !newVoices.isEmpty {
-          existing.voices[lowerProviderID] = newVoices
-        }
-        mergedByCharacter[newMember.character] = existing
-      } else {
-        // New character: add it as-is
-        mergedByCharacter[newMember.character] = newMember
-      }
-    }
-
-    // Preserve original ordering: existing characters first, then new ones
-    var result: [CastMember] = []
-    var seen: Set<String> = []
-
-    // Add existing characters in their original order (with merged voices)
-    for member in existingCast {
-      if let merged = mergedByCharacter[member.character] {
-        result.append(merged)
-        seen.insert(member.character)
-      }
-    }
-
-    // Add new characters that were not in the existing cast
-    for newMember in newCast where !seen.contains(newMember.character) {
-      if let merged = mergedByCharacter[newMember.character] {
-        result.append(merged)
-        seen.insert(newMember.character)
-      }
-    }
-
-    return withCast(result)
-  }
-
-  /// Merge two cast lists using the specified strategy.
-  ///
-  /// Returns a unified cast dictionary keyed by character name. This is the
-  /// primary method for merging cast definitions from different levels
-  /// (master, season, variant) while maintaining the zero information loss guarantee.
-  ///
-  /// ## Zero Information Loss Guarantee
-  ///
-  /// All voice IDs are preserved regardless of merge strategy. When merging
-  /// cast from master, season, and variant levels, no voice information is
-  /// lost. This is essential for multi-season, multi-language projects.
-  ///
-  /// ## Merge Strategies
-  ///
-  /// - **preserveExisting**: Variant overrides master; unspecified fields inherit
-  /// - **preferNew**: New overrides existing; unspecified fields inherit
-  /// - **combine**: Merge voice arrays across providers, removing duplicates
-  ///
-  /// ## Example
-  ///
-  /// ```swift
-  /// // Master cast has NARRATOR and MAESTRA
-  /// let masterCast = [
-  ///   CastMember(character: "NARRATOR", actor: "Tom", voices: ["apple": ["voice1"]]),
-  ///   CastMember(character: "MAESTRA", voices: ["apple": ["voice2"]])
-  /// ]
-  /// // Variant cast overrides NARRATOR and adds GUIDE
-  /// let variantCast = [
-  ///   CastMember(character: "NARRATOR", voices: ["elevenlabs": ["voice3"]])
-  /// ]
-  ///
-  /// let merged = ProjectFrontMatter.mergeCast(
-  ///   masterCast,
-  ///   variantCast,
-  ///   strategy: .combine
-  /// )
-  /// // Result keys: ["NARRATOR", "MAESTRA"]
-  /// // NARRATOR.voices = ["apple": ["voice1"], "elevenlabs": ["voice3"]]
-  /// // MAESTRA.voices = ["apple": ["voice2"]]
-  /// ```
-  ///
-  /// ## Processing Order
-  ///
-  /// 1. Start with master cast, keyed by character name
-  /// 2. For each character in variant cast:
-  ///    - If character exists in master: merge using strategy
-  ///    - If character not in master: add variant's cast member
-  /// 3. Return combined dictionary with all characters
-  ///
-  /// - Parameters:
-  ///   - masterCast: Base cast list (typically from master/overview level)
-  ///   - variantCast: Variant cast list to merge in (season, language, or variant level)
-  ///   - strategy: The merge strategy to use
-  /// - Returns: Dictionary mapping character name to merged CastMember
-  public static func mergeCast(
-    _ masterCast: [CastMember]?,
-    _ variantCast: [CastMember]?,
-    strategy: CastMember.MergeStrategy
-  ) -> [String: CastMember] {
-    // Start with master cast keyed by character
-    var result: [String: CastMember] = [:]
-
-    if let master = masterCast {
-      for member in master {
-        result[member.character] = member
-      }
-    }
-
-    // Merge in variant cast
-    if let variant = variantCast {
-      for variantMember in variant {
-        if let masterMember = result[variantMember.character] {
-          // Character exists in master: merge using strategy
-          result[variantMember.character] = masterMember.merge(
-            with: variantMember,
-            strategy: strategy
-          )
-        } else {
-          // Character not in master: add variant's member as-is
-          result[variantMember.character] = variantMember
-        }
-      }
-    }
-
-    return result
   }
 }
 

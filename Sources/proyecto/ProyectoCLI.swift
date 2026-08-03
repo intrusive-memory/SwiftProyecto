@@ -40,8 +40,9 @@ struct ProyectoCLI: AsyncParsableCommand {
       """,
     version: SwiftProyecto.version,
     subcommands: [
-      InitCommand.self, DownloadCommand.self, RolesCommand.self, ValidateCommand.self,
+      InitCommand.self, DownloadCommand.self, ValidateCommand.self,
       GenerateCommand.self, VariantsCommand.self, InfoCommand.self, GenerateProjectCommand.self,
+      MigrateCommand.self,
     ],
     defaultSubcommand: InitCommand.self
   )
@@ -118,7 +119,8 @@ struct ValidateCommand: ParsableCommand {
       print("✓ Validating: \(projectMdURL.path)")
 
       // Display schema and file type info
-      let schemaVersionStr = result.metadata.schemaVersion == 4 ? "v4.0.0" : "v3.x"
+      let schemaVersionStr =
+        result.metadata.schemaVersion >= 4 ? "v\(result.metadata.schemaVersion)" : "v3.x (legacy)"
       print("ℹ Schema version: \(schemaVersionStr)")
       print("ℹ File type: \(result.metadata.fileType)")
 
@@ -190,9 +192,6 @@ struct ValidateCommand: ParsableCommand {
           }
           if let exportFormat = frontMatter.exportFormat {
             print("  Export Format: \(exportFormat)")
-          }
-          if let cast = frontMatter.cast, !cast.isEmpty {
-            print("  Cast: \(cast.count) member(s)")
           }
           if frontMatter.tts != nil {
             print("  TTS Configuration: present")
@@ -326,6 +325,11 @@ struct InitCommand: AsyncParsableCommand {
       if !update && !force {
         throw ProyectoError.projectMdExists(projectMdURL.path)
       }
+
+      // A legacy `cast:` block must be safely in CAST.md before this command
+      // re-emits PROJECT.md — the full regenerate below cannot preserve it.
+      // Aborts (file untouched) when the migration cannot complete.
+      try CastMigrator(quiet: quiet).ensureMigratedBeforeRewrite(projectMdURL: projectMdURL)
 
       if update {
         let parser = ProjectMarkdownParser()
@@ -473,10 +477,10 @@ struct VariantsCommand: ParsableCommand {
     do {
       let (projectFrontMatter, _) = try parser.parse(fileURL: projectMdURL)
 
-      // Verify this is a v4 schema project
-      guard projectFrontMatter.schemaVersion == 4 else {
+      // Verify this is a versioned (v4+) schema project
+      guard projectFrontMatter.detectedSchemaVersion() >= 4 else {
         throw ProyectoError.parseError(
-          "variants command is only available for v4.0.0 schema projects (schemaVersion: 4)")
+          "variants command requires a versioned schema project (schemaVersion: 4 or later)")
       }
 
       // Print project header
@@ -682,7 +686,8 @@ struct InfoCommand: ParsableCommand {
       print("")
 
       // Schema version
-      let schemaVersionStr = frontMatter.schemaVersion == 4 ? "v4.0.0" : "v3.x"
+      let detected = frontMatter.detectedSchemaVersion()
+      let schemaVersionStr = detected >= 4 ? "v\(detected)" : "v3.x (legacy)"
       print("Schema Version: \(schemaVersionStr)")
 
       // File type

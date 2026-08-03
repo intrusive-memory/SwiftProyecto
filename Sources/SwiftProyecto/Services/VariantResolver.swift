@@ -78,11 +78,6 @@ public class VariantResolver {
   /// hierarchy-based inheritance:
   /// - variant > season > master > default
   ///
-  /// Special handling for cast: uses zero-loss merge strategy where:
-  /// - Specified characters use variant/season values
-  /// - Unspecified characters inherit from master
-  /// - All voice information is preserved
-  ///
   /// - Parameters:
   ///   - variant: The variant PROJECT.md (may be incomplete)
   ///   - master: The master PROJECT.md (complete reference)
@@ -144,13 +139,6 @@ public class VariantResolver {
       ?? seasonDef?.outroFile
       ?? master.outroFile
 
-    // Resolve cast with special merge logic
-    let resolvedCast = resolveCast(
-      variant: variant.cast,
-      seasonCast: seasonDef?.cast,
-      masterCast: master.cast
-    )
-
     // Create and return the resolved ProjectFrontMatter
     return ProjectFrontMatter(
       type: variant.type,
@@ -166,7 +154,6 @@ public class VariantResolver {
       exportFormat: resolvedExportFormat,
       introFile: resolvedIntroFile,
       outroFile: resolvedOutroFile,
-      cast: resolvedCast,
       preGenerateHook: resolvedPreGenerateHook,
       postGenerateHook: resolvedPostGenerateHook,
       tts: resolvedTTS,
@@ -178,111 +165,6 @@ public class VariantResolver {
       episodePath: variant.episodePath ?? master.episodePath,
       appSections: variant.appSections.isEmpty ? master.appSections : variant.appSections
     )
-  }
-
-  // MARK: - Cast Resolution
-
-  /// Resolves cast with zero-loss merge strategy.
-  ///
-  /// Implements cast inheritance where:
-  /// - Characters specified in variant override master/season
-  /// - Characters in season override master
-  /// - Characters only in master are inherited
-  /// - All voice information is preserved (zero-loss guarantee)
-  ///
-  /// - Parameters:
-  ///   - variant: Cast members defined at variant level (lowest)
-  ///   - seasonCast: Cast members defined at season level (middle)
-  ///   - masterCast: Cast members defined at master level (highest)
-  ///
-  /// - Returns: Array of cast members with all levels resolved
-  private static func resolveCast(
-    variant: [CastMember]?,
-    seasonCast: [CastMember]?,
-    masterCast: [CastMember]?
-  ) -> [CastMember]? {
-    // If no cast at any level, return nil
-    guard masterCast != nil || seasonCast != nil || variant != nil else {
-      return nil
-    }
-
-    // Build a dictionary keyed by character name, starting from master
-    var resolvedByCharacter: [String: CastMember] = [:]
-
-    // Add all master cast members
-    if let master = masterCast {
-      for member in master {
-        resolvedByCharacter[member.character] = member
-      }
-    }
-
-    // Merge in season cast using combine strategy (preserves all voices)
-    if let season = seasonCast {
-      for seasonMember in season {
-        if let masterMember = resolvedByCharacter[seasonMember.character] {
-          // Character exists in master: merge using combine strategy
-          resolvedByCharacter[seasonMember.character] = masterMember.merge(
-            with: seasonMember,
-            strategy: .combine
-          )
-        } else {
-          // New character at season level: add as-is
-          resolvedByCharacter[seasonMember.character] = seasonMember
-        }
-      }
-    }
-
-    // Merge in variant cast using combine strategy (preserves all voices)
-    if let variantCast = variant {
-      for variantMember in variantCast {
-        if let existingMember = resolvedByCharacter[variantMember.character] {
-          // Character exists: merge using combine strategy
-          resolvedByCharacter[variantMember.character] = existingMember.merge(
-            with: variantMember,
-            strategy: .combine
-          )
-        } else {
-          // New character at variant level: add as-is
-          resolvedByCharacter[variantMember.character] = variantMember
-        }
-      }
-    }
-
-    // Preserve ordering: master first, then season, then variant
-    var result: [CastMember] = []
-    var seen: Set<String> = []
-
-    // Add master cast in original order (with merged content)
-    if let master = masterCast {
-      for member in master {
-        if let resolved = resolvedByCharacter[member.character] {
-          result.append(resolved)
-          seen.insert(member.character)
-        }
-      }
-    }
-
-    // Add season-only cast in original season order
-    if let season = seasonCast {
-      for member in season where !seen.contains(member.character) {
-        if let resolved = resolvedByCharacter[member.character] {
-          result.append(resolved)
-          seen.insert(member.character)
-        }
-      }
-    }
-
-    // Add variant-only cast in original variant order
-    if let variantCast = variant {
-      for member in variantCast where !seen.contains(member.character) {
-        if let resolved = resolvedByCharacter[member.character] {
-          result.append(resolved)
-          seen.insert(member.character)
-        }
-      }
-    }
-
-    return result.isEmpty ? nil : result
   }
 }
 
