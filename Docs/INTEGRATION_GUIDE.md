@@ -105,7 +105,6 @@ Manages projects, discovers files, and provides secure file access.
 - `discoverFiles(for:)` → Discovers all files in the project directory
 - `syncFiles(for:)` → Synchronizes file state with filesystem
 - `getSecureURL(for:in:)` → Gets a security-scoped URL for file access
-- `readCast(from:filterByProvider:)` → Reads cast list with optional provider filtering
 
 **Example:**
 
@@ -153,7 +152,7 @@ Core model representing PROJECT.md front matter metadata.
 - `audioDir` (String?) - Audio output folder (default: "audio")
 - `filePattern` (FilePattern?) - File patterns to match
 - `exportFormat` (String?) - Export format (m4a, mp3, wav, etc.)
-- `cast` ([CastMember]?) - Character-to-voice mappings
+- `schemaVersion` (Int?) - Schema version (stamped to 5 on every write)
 - `preGenerateHook` (String?) - Pre-generation shell command
 - `postGenerateHook` (String?) - Post-generation shell command
 
@@ -163,49 +162,13 @@ Core model representing PROJECT.md front matter metadata.
 - `resolvedFilePatterns` - File patterns as array (handles single string)
 - `resolvedExportFormat` - Export format with default applied
 
-**Modifying Cast List:**
+### 5. Cast Lives in CAST.md (SwiftReparto)
 
-```swift
-var frontMatter = /* existing */
+SwiftProyecto has **no cast model** since 5.0.0 (schema v5). A production's cast — characters, actors, voice prompts, provider voice mappings — lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto). To integrate cast:
 
-// Add a cast member
-let newMember = CastMember(
-    character: "HERO",
-    actor: "Actor Name",
-    gender: .male,
-    voiceDescription: "Deep, heroic baritone",
-    voices: ["apple": "com.apple.voice.compact.en-US.Aaron"]
-)
-
-let updatedFrontMatter = frontMatter.withCast([newMember])
-// Or merge with existing:
-let merged = try frontMatter.mergingCast([newMember], forProvider: "apple")
-```
-
-### 5. CastMember
-
-Character-to-voice mapping for audio generation.
-
-**Fields:**
-- `character` (String) - Character/role name
-- `actor` (String?) - Actor/performer name
-- `gender` (Gender?) - Character gender (M, F, NB, NS)
-- `voiceDescription` (String?) - Voice selection guidance (e.g., "warm baritone")
-- `voices` ([String: String]) - Provider → voice ID mappings
-
-**Voice Providers:**
-```swift
-let castMember = CastMember(
-    character: "NARRATOR",
-    actor: "Tom Stovall",
-    gender: .male,
-    voices: [
-        "apple": "com.apple.voice.compact.en-US.Aaron",
-        "elevenlabs": "21m00Tcm4TlvDq8ikWAM",
-        "voxalta": "narrator-voice-1"
-    ]
-)
-```
+- **Read/write** the roster with SwiftReparto's `CastMember` and parser (or the `reparto` CLI); only SwiftReparto serializes `CAST.md`
+- **Migrate** a legacy `cast:` block out of an older PROJECT.md with `proyecto migrate` (requires `brew install intrusive-memory/tap/reparto`)
+- A legacy block that hasn't been migrated is preserved verbatim in the unknown-key store — it round-trips on write and is never dropped
 
 ---
 
@@ -225,7 +188,6 @@ func loadProject(at path: String) throws {
     print("Title: \(frontMatter.title)")
     print("Author: \(frontMatter.author)")
     print("Episodes: \(frontMatter.episodes ?? 0)")
-    print("Cast: \(frontMatter.cast?.count ?? 0) members")
 }
 ```
 
@@ -252,15 +214,7 @@ func createProject() throws {
     frontMatter.episodes = 8
     frontMatter.tags = ["drama", "thriller"]
     
-    // Add cast
-    frontMatter.cast = [
-        CastMember(
-            character: "ALICE",
-            actor: "Alice Actor",
-            gender: .female,
-            voices: ["apple": "com.apple.voice.compact.en-US.Samantha"]
-        )
-    ]
+    // (Cast goes in CAST.md via SwiftReparto, not here)
     
     // Generate and write
     let projectURL = URL(fileURLWithPath: "/path/to/PROJECT.md")
@@ -370,7 +324,6 @@ Analyzing directory structure...
 ✓ Genre: Documentary
 ✓ Episodes: 365
 ✓ Created: 2025-06-12T14:23:00Z
-✓ Cast: 3 characters detected
 ✓ Tags: [mindfulness, self-care, meditation]
 
 PROJECT.md created at: ~/Projects/my-podcast/PROJECT.md
@@ -503,7 +456,6 @@ var frontMatter = ProjectFrontMatter(
 frontMatter.description = "Project description"
 frontMatter.genre = "Drama"
 frontMatter.tags = ["drama", "thriller"]
-frontMatter.cast = [/* cast members */]
 
 // Write to file
 try parser.write(
@@ -517,25 +469,9 @@ let content = parser.generate(frontMatter: frontMatter, body: "Body")
 try content.write(to: projectURL, atomically: true, encoding: .utf8)
 ```
 
-### Modifying Cast List
+### Modifying the Cast
 
-```swift
-import SwiftProyecto
-
-let parser = ProjectMarkdownParser()
-let (var frontMatter, body) = try parser.parse(fileURL: projectURL)
-
-// Replace entire cast
-let newCast = [/* new cast members */]
-frontMatter = frontMatter.withCast(newCast)
-
-// Merge with existing cast
-let additionalMembers = [/* new members */]
-frontMatter = try frontMatter.mergingCast(additionalMembers, forProvider: "apple")
-
-// Write updated PROJECT.md
-try parser.write(frontMatter: frontMatter, body: body, to: projectURL)
-```
+Not here. Cast lives in `CAST.md` (SwiftReparto): parse it with SwiftReparto, mutate the `CastDocument` value, and write it back through SwiftReparto — never through SwiftProyecto. If a legacy PROJECT.md still carries a `cast:` block, migrate it with `proyecto migrate` first.
 
 ---
 
@@ -587,27 +523,9 @@ let content = try String(contentsOf: secureURL, encoding: .utf8)
 // No need to call startAccessingSecurityScopedResource - SwiftProyecto handles it
 ```
 
-### Reading Cast List
+### Reading the Cast
 
-```swift
-import SwiftProyecto
-
-let service = ProjectService(modelContext: context)
-
-// Read all cast members
-let allCast = try service.readCast(from: project)
-
-// Filter cast by provider (e.g., only Apple TTS voices)
-let appleVoices = try service.readCast(from: project, filterByProvider: "apple")
-
-// Use filtered cast for TTS generation
-for member in appleVoices {
-    if let appleVoice = member.voices["apple"] {
-        // Use this voice for TTS
-        print("\(member.character) → \(appleVoice)")
-    }
-}
-```
+Read the roster from the project's `CAST.md` with SwiftReparto — SwiftProyecto has no cast-reading API since 5.0.0.
 
 ---
 
@@ -837,21 +755,11 @@ for fileRef in project.fileReferences {
 }
 ```
 
-### 6. Filter Cast by Provider
+### 6. Keep Cast in CAST.md
 
 ```swift
-// ✅ GOOD - Use provider-specific cast
-let appleVoices = try service.readCast(from: project, filterByProvider: "apple")
-for member in appleVoices {
-    // All members have "apple" voice defined
-}
-
-// ❌ AVOID - Checking optionals for each member
-for member in allCast {
-    if let voice = member.voices["apple"] {
-        // Handle presence
-    }
-}
+// ✅ GOOD - Read/write the roster via SwiftReparto against CAST.md
+// ❌ AVOID - Looking for cast in PROJECT.md front matter (schema v5 has no cast: key)
 ```
 
 ### 7. Use `projeto` CLI for Generation
@@ -896,15 +804,12 @@ let formatter = ISO8601DateFormatter()
 let dateString = formatter.string(from: Date())  // "2025-06-12T14:23:00Z"
 ```
 
-### Cast Member Voice Not Found
+### Legacy `cast:` Block in PROJECT.md
 
-```swift
-let member = frontMatter.cast?.first!
-if let voice = member?.voices["apple"] {
-    // Voice exists for this provider
-} else {
-    // Add voice or use different provider
-}
+```bash
+# proyecto validate warns about a legacy cast: block (still exits 0).
+# Move it into CAST.md — requires reparto (brew install intrusive-memory/tap/reparto):
+proyecto migrate /path/to/project
 ```
 
 ---

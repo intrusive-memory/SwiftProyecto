@@ -28,7 +28,7 @@ import Foundation
 /// Definition of a season within a multi-season project.
 ///
 /// Used in PROJECT.md to define season-specific metadata including episode count,
-/// release date, file organization, cast, and TTS configuration.
+/// release date, file organization, and TTS configuration.
 ///
 /// ## Example
 ///
@@ -40,10 +40,6 @@ import Foundation
 ///     episodes: 12
 ///     releaseDate: 2025-01-15T00:00:00Z
 ///     episodesDir: "episodes/season-01"
-///     cast:
-///       - character: NARRATOR
-///         voices:
-///           apple: com.apple.voice.premium.en-US.Aaron
 /// ```
 public struct SeasonDefinition: Codable, Sendable, Equatable {
   /// Season number (required, must be unique within project)
@@ -74,9 +70,6 @@ public struct SeasonDefinition: Codable, Sendable, Equatable {
   /// Optional path to season outro file (project-resolved: relative to the project root)
   public let outroFile: String?
 
-  /// Optional cast list for this season (overrides project-level cast)
-  public let cast: [CastMember]?
-
   /// Optional TTS configuration specific to this season
   public let tts: TTSConfig?
 
@@ -91,7 +84,6 @@ public struct SeasonDefinition: Codable, Sendable, Equatable {
     filePattern: FilePattern? = nil,
     introFile: String? = nil,
     outroFile: String? = nil,
-    cast: [CastMember]? = nil,
     tts: TTSConfig? = nil
   ) {
     self.number = number
@@ -103,7 +95,6 @@ public struct SeasonDefinition: Codable, Sendable, Equatable {
     self.filePattern = filePattern
     self.introFile = introFile
     self.outroFile = outroFile
-    self.cast = cast
     self.tts = tts
   }
 }

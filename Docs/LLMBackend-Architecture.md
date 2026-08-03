@@ -3,12 +3,14 @@ type: architecture-reference
 name: LLMBackend-Architecture
 description: Internal API reference and architecture documentation for v4.1.0 LLM-based PROJECT.md generation
 version: 4.1.0
-updated: 2026-06-23
+updated: 2026-08-02
 ---
 
 # LLMBackend Architecture — Internal API Reference & Developer Guide
 
 **For v4.1.0+** — Automated PROJECT.md generation via LLM backends
+
+> **Schema v5 note (SwiftProyecto 5.0.0)**: the generation-time cast surface described here — `CastExtractor`, `DirectoryAnalysis.extractedCast`, `CastMemberData`, `GeneratedProjectMetadata.cast` — is **retained unchanged**. What changed is the destination: PROJECT.md no longer declares a `cast:` key, so extracted cast data is *not* written into the generated PROJECT.md front matter (a production's roster lives in `CAST.md`, owned by SwiftReparto). `proyecto generate-project` also auto-migrates a legacy `cast:` block via `proyecto migrate` and aborts its rewrite if migration cannot complete.
 
 This document provides:
 - ✅ **Internal API Reference** — Complete protocol and service documentation
@@ -318,6 +320,7 @@ public struct ProjectMetadata: Sendable {
 - Should include all extracted cast members
 - See `CastMemberData` documentation below
 - Can be empty if no cast extracted
+- **Not written to PROJECT.md** since schema v5 — this is generation-time metadata only; the roster file is `CAST.md` (SwiftReparto)
 
 #### Schema Validation
 

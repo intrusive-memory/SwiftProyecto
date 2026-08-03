@@ -347,7 +347,7 @@ final class ProjectMarkdownParserTests: XCTestCase {
     XCTAssertTrue(generated.contains("title: My Series"))
     XCTAssertTrue(generated.contains("author: Jane Showrunner"))
     XCTAssertTrue(generated.contains("description: A sci-fi series"))
-    XCTAssertTrue(generated.contains("schemaVersion: 4"))
+    XCTAssertTrue(generated.contains("schemaVersion: \(ProjectSchemaVersion.current)"))
     XCTAssertTrue(generated.contains("seasons:"))
     XCTAssertTrue(generated.contains("number: 1"))
     XCTAssertTrue(generated.contains("episodes: 12"))
@@ -1192,11 +1192,13 @@ final class ProjectMarkdownParserTests: XCTestCase {
     XCTAssertEqual(frontMatter5.author, "Author")
   }
 
-  // MARK: - Unknown Per-Member Key Passthrough (SwiftEchada#44)
+  // MARK: - Legacy Cast Block Passthrough (schema v5)
 
-  func testRoundTrip_PreservesUnknownCastMemberKey() throws {
-    // A user maintains a `bio:` note on a cast member that SwiftEchada does not
-    // know about. Parsing then re-generating PROJECT.md must not destroy it.
+  func testRoundTrip_PreservesLegacyCastBlockAsUnknownKey() throws {
+    // Since schema v5, `cast:` is not a declared key. A roster found in an
+    // older PROJECT.md must be swept into the unknown-key store (including a
+    // per-member key like `bio:` that was never modeled) and survive the
+    // parse -> generate round-trip until `proyecto migrate` moves it out.
     let content = """
       ---
       type: project
@@ -1206,44 +1208,35 @@ final class ProjectMarkdownParserTests: XCTestCase {
       cast:
         - character: NARRATOR
           actor: Tom Stovall
-          gender: M
-          voicePrompt: Deep, warm baritone
           bio: The steady voice guiding every episode.
           voices:
             apple: com.apple.voice.premium.en-US.Aaron
+        - character: LAO TZU
+          actor: Jason Manino
       ---
 
       # Notes
       """
 
-    // First parse captures the unknown key.
+    // First parse sweeps the legacy block into the unknown-key store.
     let (frontMatter, body) = try parser.parse(content: content)
-    let member = try XCTUnwrap(frontMatter.cast?.first)
-    XCTAssertEqual(member.character, "NARRATOR")
-    XCTAssertEqual(
-      try member.extraKeys["bio"]?.decode(String.self),
-      "The steady voice guiding every episode."
-    )
+    XCTAssertTrue(frontMatter.hasLegacyCastKey)
+    XCTAssertEqual(frontMatter.legacyCastCharacterNames, ["NARRATOR", "LAO TZU"])
 
-    // Generate PROJECT.md back out (the real write-back path) and re-parse.
+    // Generate PROJECT.md back out (the real write-back path): the block is
+    // re-emitted (reformatted, as an unknown key) rather than dropped. Note
+    // the emitter does not guarantee the members' YAML *shape* survives —
+    // only that the key and its content are re-emitted somewhere in the
+    // output. Migration to CAST.md (CastMigrator) never routes through
+    // generate(); it strips the original bytes surgically instead.
     let regenerated = parser.generate(frontMatter: frontMatter, body: body)
-    XCTAssertTrue(regenerated.contains("bio:"), "Regenerated YAML should still contain the bio key")
+    XCTAssertTrue(regenerated.contains("cast:"), "Regenerated YAML should still contain the cast key")
+    XCTAssertTrue(regenerated.contains("NARRATOR"), "Member content should be re-emitted")
+    XCTAssertTrue(regenerated.contains("LAO TZU"), "Member content should be re-emitted")
 
+    // And a second parse still detects the legacy block.
     let (roundTripped, _) = try parser.parse(content: regenerated)
-    let roundTrippedMember = try XCTUnwrap(roundTripped.cast?.first)
-
-    // Known fields survive.
-    XCTAssertEqual(roundTrippedMember.character, "NARRATOR")
-    XCTAssertEqual(roundTrippedMember.actor, "Tom Stovall")
-    XCTAssertEqual(roundTrippedMember.gender, .male)
-    XCTAssertEqual(roundTrippedMember.voiceDescription, "Deep, warm baritone")
-    XCTAssertEqual(
-      roundTrippedMember.voices["apple"], ["com.apple.voice.premium.en-US.Aaron"])
-    // Unknown key survives verbatim.
-    XCTAssertEqual(
-      try roundTrippedMember.extraKeys["bio"]?.decode(String.self),
-      "The steady voice guiding every episode."
-    )
+    XCTAssertTrue(roundTripped.hasLegacyCastKey)
   }
 }
 

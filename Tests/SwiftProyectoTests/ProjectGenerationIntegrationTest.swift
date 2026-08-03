@@ -319,6 +319,9 @@ final class ProjectGenerationIntegrationTest: XCTestCase {
       let (frontMatter, body) = try parser.parse(fileURL: projectMdURL)
       XCTAssertEqual(frontMatter.type, "project")
       XCTAssertEqual(frontMatter.title, "Test with Cast")
+      // Since schema v5 the cast block is preserved as an unknown key.
+      XCTAssertTrue(frontMatter.hasLegacyCastKey, "Legacy cast block should be detected")
+      XCTAssertEqual(frontMatter.legacyCastCharacterNames, ["Alice", "Bob"])
       print("✓ PROJECT.md parsed successfully despite custom cast fields")
       print("  - Title: \(frontMatter.title)")
     } catch {

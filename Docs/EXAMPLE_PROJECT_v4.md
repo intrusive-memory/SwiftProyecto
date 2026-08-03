@@ -2,12 +2,14 @@
 type: example
 name: Example PROJECT.md Files — v4.0.0
 description: Complete working examples of PROJECT.md files in v4.0.0 schema
-updated: 2026-06-23
+updated: 2026-08-02
 ---
 
 # Example PROJECT.md Files — v4.0.0
 
 Complete, working examples of PROJECT.md files demonstrating various v4.0.0 schema patterns.
+
+> **Schema v5 note**: these are historical v4 examples. Under the current schema (v5, SwiftProyecto 5.0.0) the `cast:` blocks shown below no longer belong in PROJECT.md — the roster lives in a sibling `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto), and `proyecto migrate` moves a legacy block over. Everything else in these examples (seasons, languages, variants, TTS) is unchanged in v5; new files are stamped `schemaVersion: 5`.
 
 ---
 
@@ -575,9 +577,9 @@ proyecto validate /path/to/PROJECT.md
 proyecto validate /path/to/project-directory
 ```
 
-### Cast Language Support
+### Cast Language Support (v4 only — removed in v5)
 
-The `language` field on `CastMember` is optional but recommended when creating language-specific variants. It clarifies which language variant a character voice is for.
+In v4, the `language` field on `CastMember` was optional but recommended when creating language-specific variants. In v5 the cast — including per-character language concerns — lives in `CAST.md` (SwiftReparto).
 
 ### See Also
 

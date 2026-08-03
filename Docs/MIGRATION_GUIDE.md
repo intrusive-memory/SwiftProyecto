@@ -2,17 +2,40 @@
 type: guide
 name: PROJECT.md v3.x → v4.0.0 Migration Guide
 description: Step-by-step guide for upgrading existing PROJECT.md files to v4.0.0 schema
-updated: 2026-06-23
+updated: 2026-08-02
 ---
 
 # PROJECT.md v3.x → v4.0.0 Migration Guide
 
 Complete guide for upgrading existing v3.x PROJECT.md files to the v4.0.0 schema with multi-season and multi-language support.
 
+> **Note (schema v5)**: `4` is no longer the latest schema version. The `cast:` examples and cast-migration steps below are v4 historical — schema v5 (SwiftProyecto 5.0.0) removed `cast:` from PROJECT.md entirely. See [Migrating v4 → v5](#migrating-v4--v5-cast-moves-to-castmd) first.
+
+---
+
+## Migrating v4 → v5: Cast Moves to CAST.md
+
+Schema v5 changes exactly one thing about the file format: **PROJECT.md has no `cast:` key**. A production's cast lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto). Every write now stamps `schemaVersion: 5`.
+
+**Your v3/v4 files still parse fine.** A legacy `cast:` block is preserved verbatim as an unknown key and round-trips on write; `proyecto validate` warns about it but never mutates.
+
+To migrate:
+
+```bash
+brew install intrusive-memory/tap/reparto   # CAST.md's owner
+proyecto migrate /path/to/project --dry-run # preview, writes nothing
+proyecto migrate /path/to/project
+```
+
+`proyecto migrate` hands the block to `reparto import` and rewrites PROJECT.md **only after** the transfer is verified (import exits 0, `reparto validate` passes on the produced `CAST.md`, and every `character:` name is present in it), with a `PROJECT.md.bak` backup. The rewrite is byte-surgical — only the `cast:` span and the `schemaVersion:` line change. Refusals (no `reparto` binary, an existing `CAST.md`, a season-level `cast:`) leave PROJECT.md byte-for-byte untouched. `proyecto init --update` and `proyecto generate-project` run this migration automatically and abort if it can't complete.
+
+For the API-level breakage (removed `CastMember` and cast methods), see [UPGRADING.md](../UPGRADING.md).
+
 ---
 
 ## Table of Contents
 
+0. [Migrating v4 → v5: Cast Moves to CAST.md](#migrating-v4--v5-cast-moves-to-castmd)
 1. [Overview](#overview)
 2. [Quick Start](#quick-start)
 3. [Migration Scenarios](#migration-scenarios)
@@ -463,7 +486,9 @@ cp PROJECT.md PROJECT.md.backup-v3
        filePattern: "*.fountain"  # If you had this, move it here
    ```
 
-### Step 4: Update Cast Format
+### Step 4: Update Cast Format (v4 historical — skip if going straight to v5)
+
+Under schema v5 the `cast:` block leaves PROJECT.md entirely (`proyecto migrate` — see the v4 → v5 section above), so there is no cast format to update. The following applied when v4 was current:
 
 **Convert voice objects from v3.x to v4.0.0:**
 
@@ -571,8 +596,7 @@ if frontMatter.isValid {
 - ✓ If `languages[]` is present, each language has `code` and `name`
 - ✓ If `variants[]` is present, each variant has `season`, `language`, and `path`
 - ✓ If `episodePath` is present, it contains valid template variables (`{season}`, `{number}`, `{language}`)
-- ✓ Cast members have non-empty character names
-- ✓ Cast member voices are non-empty
+- ✓ No `cast:` block remains (v5) — `proyecto validate` warns if a legacy one is present; run `proyecto migrate`
 
 ---
 
@@ -629,9 +653,9 @@ If you need to keep a file in v3.x format, you must:
 
 ### "Unknown schema version"
 
-**Problem**: File has `schemaVersion: 5` or other unexpected value
+**Problem**: File has an unexpected `schemaVersion` value
 
-**Solution**: v4.0.0 only supports v4.0.0 (schemaVersion: 4) or v3.x (no schemaVersion). Update or downgrade the file.
+**Solution**: Valid values are: absent (v3 legacy), `4` (multi-season, with `cast:`), and `5` (current, no `cast:`). SwiftProyecto 5.x reads all three and stamps `5` on write. On SwiftProyecto 4.x, `schemaVersion: 5` is unsupported — upgrade the library.
 
 ### "Missing required field"
 
@@ -642,11 +666,11 @@ If you need to keep a file in v3.x format, you must:
 - `seasons[]` present but season has no `number` or `episodes`
 - `variants[]` present but variant has no `season`, `language`, or `path`
 
-### "Cast merge conflict"
+### "Cast merge conflict" (v4 historical)
 
-**Problem**: Error when merging cast from multiple variants
+**Problem**: Error when merging cast from multiple variants (v4 only — variant cast resolution was removed in v5)
 
-**Solution**: Ensure character names match exactly. Cast merging is case-sensitive and requires exact character name matches.
+**Solution**: On v4, ensure character names match exactly — that merge was case-sensitive. On v5, cast lives in `CAST.md` and merging is SwiftReparto's (case- and whitespace-insensitive on `character`).
 
 ### "Invalid episodePath template"
 

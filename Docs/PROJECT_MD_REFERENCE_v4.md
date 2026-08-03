@@ -2,12 +2,14 @@
 type: reference
 name: PROJECT.md Front Matter Schema Reference — v4.0.0
 description: Comprehensive reference for YAML front matter syntax in PROJECT.md files (v4.0.0)
-updated: 2026-06-23
+updated: 2026-08-02
 ---
 
 # PROJECT.md Front Matter Schema Reference — v4.0.0
 
 Comprehensive reference for the YAML front matter syntax used in PROJECT.md files, including v4.0.0 multi-season and multi-language support.
+
+> **Schema v5 (SwiftProyecto 5.0.0)**: the current schema version is **5**, which differs from v4 in exactly one way — **there is no `cast:` key**. A production's cast lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto); a legacy `cast:` block is preserved verbatim as an unknown key and moved out with `proyecto migrate`. The cast sections below are kept as v4 historical reference and are marked accordingly. Everything else in this document (seasons, languages, variants, TTS, hooks) is unchanged in v5.
 
 **See Also**: 
 - [AGENTS.md](../AGENTS.md) for comprehensive library documentation
@@ -50,9 +52,9 @@ The front matter is delimited by `---` markers and contains YAML key-value pairs
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `schemaVersion` | Integer | Optional* | Schema version (`4` for v4.0.0, omit for v3.x compatibility) |
+| `schemaVersion` | Integer | Optional* | Schema version. History: absent = v3 legacy; `4` = multi-season schema, with `cast:`; `5` = current, no `cast:` key. Every write stamps `5` (`ProjectSchemaVersion.current`). |
 
-*If omitted, SwiftProyecto auto-detects v3.x format and migrates internally. Recommended: always explicit in new files.
+*If omitted, SwiftProyecto auto-detects v3.x format and migrates internally; the file normalizes to `schemaVersion: 5` on its first write. Recommended: always explicit in new files.
 
 ### Core Metadata (Required)
 
@@ -86,7 +88,7 @@ seasons:
     filePattern: "*.fountain"
     introFile: intro.md
     outroFile: outro.md
-    cast: [...]  # Optional: override master cast for this season
+    cast: [...]  # v4 only — removed in v5 (cast lives in CAST.md)
     tts: {...}   # Optional: override master TTS config for this season
 ```
 
@@ -103,7 +105,7 @@ seasons:
 | `filePattern` | String or Array | — | Glob pattern(s) matching episode files (e.g., `"*.fountain"` or `["*.fountain", "*.md"]`) |
 | `introFile` | String | — | Path to season intro file (relative to project root) |
 | `outroFile` | String | — | Path to season outro file (relative to project root) |
-| `cast` | Array | — | Season-specific cast (overrides master for this season) |
+| `cast` | Array | — | **v4 only — removed in v5.** Season-specific cast override. A season-level `cast:` in a legacy file blocks `proyecto migrate` (migrate it by hand first). |
 | `tts` | Object | — | Season-specific TTS config (overrides master for this season) |
 
 ### Language Definitions (Optional, v4.0.0+)
@@ -209,7 +211,9 @@ tts:
   actionLineVoice: null    # Optional: separate voice for action/stage directions
 ```
 
-### Cast List (Optional)
+### Cast List (v4 only — removed in v5)
+
+> **Removed in schema v5.** PROJECT.md no longer declares a `cast:` key. The roster lives in `CAST.md` (SwiftReparto's `CastMember`, with `voicePrompt`, `voices`, `extraKeys`). A legacy block found in a v3/v4 file is preserved verbatim as an unknown key; move it over with `proyecto migrate`. This section documents the historical v4 shape.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -217,7 +221,7 @@ tts:
 
 ---
 
-## CastMember Structure
+## CastMember Structure (v4 only — removed in v5)
 
 Each entry in the `cast` array is a character-to-voice mapping:
 
@@ -303,10 +307,12 @@ episodes: 365
 ```
 
 **Detection Rules:**
-- If `schemaVersion: 4` is present → v4.0.0 format
+- If `schemaVersion: 4` or later is present → versioned format (v5 is current; a version greater than the library understands is still parsed by these rules)
 - If `schemaVersion` is absent AND `seasons[]` is present → v4.0.0 format
 - If `schemaVersion` is absent AND `season: <number>` is present → v3.x format (auto-migrated)
-- If `schemaVersion` is absent AND neither `season`/`episodes` nor `seasons[]` → v4.0.0 default
+- If `schemaVersion` is absent AND neither `season`/`episodes` nor `seasons[]` → current-format default
+
+Every write stamps `schemaVersion: 5`.
 
 ### Backward-Compatibility Properties
 
@@ -516,7 +522,7 @@ When working with multi-season/variant projects, properties are resolved hierarc
 
 1. **Variant Level** (highest priority)
    - Properties specific to a variant override everything
-   - Example: Variant cast overrides season and master cast
+   - Example: `variant.tts` overrides season and master TTS config (in v4, cast resolved the same way; cast resolution was removed in v5)
 
 2. **Season Level**
    - Season-specific properties override master defaults
@@ -529,7 +535,9 @@ When working with multi-season/variant projects, properties are resolved hierarc
 4. **Defaults** (lowest priority)
    - Built-in defaults (e.g., `episodesDir: "episodes"`)
 
-### Example: Cast Merging
+### Example: Cast Merging (v4 only — removed in v5)
+
+In v4, cast resolved through the same hierarchy:
 
 ```
 Master cast:     [NARRATOR, GUEST]
@@ -539,6 +547,8 @@ Variant cast:    []  (empty - inherits)
 Result:
 - NARRATOR uses variant's es-voice, GUEST inherits from master
 ```
+
+In v5, `VariantResolver` no longer resolves cast — the roster lives in `CAST.md` (SwiftReparto).
 
 ---
 
@@ -576,7 +586,8 @@ Result:
 - If `variants[]` is present, each variant must have `season`, `language`, and `path`
 - If `episodePath` is used, it must contain valid template variables
 
-### Cast Validation
+### Cast Validation (v4 only — removed in v5)
+Historical v4 rules; in v5 the validator instead *warns* about a legacy `cast:` block (pointing at `proyecto migrate`) and never validates its contents:
 - Character names must be non-empty
 - If `voices` object is present, it must not be empty (at least one provider)
 - Provider values (in v4.0+) must be non-empty arrays

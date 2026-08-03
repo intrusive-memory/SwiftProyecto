@@ -16,7 +16,6 @@ final class VariantResolverTests: XCTestCase {
     audioDir: String? = "master-audio",
     filePattern: FilePattern? = nil,
     exportFormat: String? = nil,
-    cast: [CastMember]? = nil,
     tts: TTSConfig? = nil,
     seasons: [SeasonDefinition]? = nil
   ) -> ProjectFrontMatter {
@@ -32,7 +31,6 @@ final class VariantResolverTests: XCTestCase {
       audioDir: audioDir,
       filePattern: filePattern,
       exportFormat: exportFormat,
-      cast: cast,
       tts: tts,
       schemaVersion: 4,
       projectType: "overview",
@@ -50,7 +48,6 @@ final class VariantResolverTests: XCTestCase {
     audioDir: String? = nil,
     filePattern: FilePattern? = nil,
     exportFormat: String? = nil,
-    cast: [CastMember]? = nil,
     tts: TTSConfig? = nil,
     episodePath: String? = nil
   ) -> ProjectFrontMatter {
@@ -66,7 +63,6 @@ final class VariantResolverTests: XCTestCase {
       audioDir: audioDir,
       filePattern: filePattern,
       exportFormat: exportFormat,
-      cast: cast,
       tts: tts,
       schemaVersion: 4,
       projectType: "project",
@@ -174,181 +170,6 @@ final class VariantResolverTests: XCTestCase {
     let variant3 = makeVariantProjectFrontMatter(description: nil)
     let resolved3 = variant3.resolve(withMaster: masterNoSeason, forSeason: 1)
     XCTAssertEqual(resolved3.description, "Master description")
-  }
-
-  // MARK: - Cast Inheritance Tests
-
-  func testResolve_CastInheritance_VariantSpecified() {
-    let masterCast = [
-      CastMember(
-        character: "NARRATOR",
-        voices: ["apple": ["voice1"]]
-      ),
-      CastMember(
-        character: "MAESTRA",
-        voices: ["apple": ["voice2"]]
-      ),
-    ]
-    let master = makeMasterProjectFrontMatter(cast: masterCast)
-
-    let variantCast = [
-      CastMember(
-        character: "NARRATOR",
-        voices: ["elevenlabs": ["voice3"]]
-      )
-    ]
-    let variant = makeVariantProjectFrontMatter(cast: variantCast)
-
-    let resolved = variant.resolve(withMaster: master, forSeason: 1)
-
-    XCTAssertNotNil(resolved.cast)
-    XCTAssertEqual(resolved.cast?.count, 2)
-
-    // Find NARRATOR in resolved cast
-    if let narrator = resolved.cast?.first(where: { $0.character == "NARRATOR" }) {
-      XCTAssertTrue(narrator.voices.keys.contains("apple"))
-      XCTAssertTrue(narrator.voices.keys.contains("elevenlabs"))
-      // Voice combination: variant's elevenlabs + master's apple
-      XCTAssertEqual(narrator.voices["apple"], ["voice1"])
-      XCTAssertEqual(narrator.voices["elevenlabs"], ["voice3"])
-    } else {
-      XCTFail("NARRATOR not found in resolved cast")
-    }
-
-    // Find MAESTRA in resolved cast (should be inherited)
-    if let maestra = resolved.cast?.first(where: { $0.character == "MAESTRA" }) {
-      XCTAssertEqual(maestra.voices["apple"], ["voice2"])
-      XCTAssertEqual(maestra.voices.keys.count, 1)
-    } else {
-      XCTFail("MAESTRA not found in resolved cast")
-    }
-  }
-
-  func testResolve_CastInheritance_UnspecifiedCharactersInherit() {
-    let masterCast = [
-      CastMember(
-        character: "NARRATOR",
-        actor: "Tom Stovall",
-        voices: ["apple": ["voice1"]]
-      ),
-      CastMember(
-        character: "MAESTRA",
-        voices: ["apple": ["voice2"]]
-      ),
-    ]
-    let master = makeMasterProjectFrontMatter(cast: masterCast)
-
-    let variantCast = [
-      CastMember(
-        character: "NARRATOR",
-        voices: ["elevenlabs": ["voice3"]]
-      )
-    ]
-    let variant = makeVariantProjectFrontMatter(cast: variantCast)
-
-    let resolved = variant.resolve(withMaster: master, forSeason: 1)
-
-    XCTAssertNotNil(resolved.cast)
-    XCTAssertEqual(resolved.cast?.count, 2)
-
-    // NARRATOR should have both voices (merged)
-    if let narrator = resolved.cast?.first(where: { $0.character == "NARRATOR" }) {
-      XCTAssertEqual(narrator.voices.keys.count, 2)
-      XCTAssertTrue(narrator.voices.keys.contains("apple"))
-      XCTAssertTrue(narrator.voices.keys.contains("elevenlabs"))
-    } else {
-      XCTFail("NARRATOR not found")
-    }
-
-    // MAESTRA should be inherited unchanged
-    if let maestra = resolved.cast?.first(where: { $0.character == "MAESTRA" }) {
-      XCTAssertEqual(maestra.voices["apple"], ["voice2"])
-      XCTAssertEqual(maestra.voices.keys.count, 1)
-    } else {
-      XCTFail("MAESTRA not found")
-    }
-  }
-
-  func testResolve_CastInheritance_SeasonOverrideMaster() {
-    let masterCast = [
-      CastMember(
-        character: "NARRATOR",
-        voices: ["apple": ["master-voice"]]
-      )
-    ]
-    let seasonCast = [
-      CastMember(
-        character: "NARRATOR",
-        voices: ["elevenlabs": ["season-voice"]]
-      )
-    ]
-    let seasonDef = SeasonDefinition(
-      number: 1,
-      episodes: 12,
-      cast: seasonCast
-    )
-    let master = makeMasterProjectFrontMatter(
-      cast: masterCast,
-      seasons: [seasonDef]
-    )
-
-    let variantCast = [
-      CastMember(
-        character: "NARRATOR",
-        voices: ["voxalta": ["variant-voice"]]
-      )
-    ]
-    let variant = makeVariantProjectFrontMatter(cast: variantCast)
-
-    let resolved = variant.resolve(withMaster: master, forSeason: 1)
-
-    XCTAssertNotNil(resolved.cast)
-    if let narrator = resolved.cast?.first(where: { $0.character == "NARRATOR" }) {
-      // All three should be present (zero-loss merge)
-      XCTAssertEqual(narrator.voices.keys.count, 3)
-      XCTAssertEqual(narrator.voices["apple"], ["master-voice"])
-      XCTAssertEqual(narrator.voices["elevenlabs"], ["season-voice"])
-      XCTAssertEqual(narrator.voices["voxalta"], ["variant-voice"])
-    } else {
-      XCTFail("NARRATOR not found")
-    }
-  }
-
-  func testResolve_CastInheritance_NilCastAtAllLevels() {
-    let master = makeMasterProjectFrontMatter(cast: nil)
-    let variant = makeVariantProjectFrontMatter(cast: nil)
-
-    let resolved = variant.resolve(withMaster: master, forSeason: 1)
-
-    XCTAssertNil(resolved.cast)
-  }
-
-  func testResolve_CastInheritance_NewCharacterAtVariantLevel() {
-    let masterCast = [
-      CastMember(
-        character: "NARRATOR",
-        voices: ["apple": ["voice1"]]
-      )
-    ]
-    let master = makeMasterProjectFrontMatter(cast: masterCast)
-
-    let variantCast = [
-      CastMember(
-        character: "NEW_CHARACTER",
-        voices: ["elevenlabs": ["voice2"]]
-      )
-    ]
-    let variant = makeVariantProjectFrontMatter(cast: variantCast)
-
-    let resolved = variant.resolve(withMaster: master, forSeason: 1)
-
-    XCTAssertNotNil(resolved.cast)
-    XCTAssertEqual(resolved.cast?.count, 2)
-
-    // Check both characters are present
-    let characters = resolved.cast?.map { $0.character } ?? []
-    XCTAssertTrue(characters.contains("NARRATOR"))
-    XCTAssertTrue(characters.contains("NEW_CHARACTER"))
   }
 
   // MARK: - TTS Configuration Tests
@@ -486,15 +307,6 @@ final class VariantResolverTests: XCTestCase {
     XCTAssertEqual(resolved.author, master.author)
   }
 
-  func testResolve_EmptyCastLists() {
-    let master = makeMasterProjectFrontMatter(cast: [])
-    let variant = makeVariantProjectFrontMatter(cast: [])
-
-    let resolved = variant.resolve(withMaster: master, forSeason: 1)
-
-    XCTAssertNil(resolved.cast)
-  }
-
   func testResolve_VariantAppSections_PreferredOverMaster() throws {
     let masterSections = [
       "app1": try AnyCodable(["setting": "master"])
@@ -544,7 +356,6 @@ final class VariantResolverTests: XCTestCase {
       exportFormat: master.exportFormat,
       introFile: "master-intro.m4a",
       outroFile: "master-outro.m4a",
-      cast: master.cast,
       preGenerateHook: master.preGenerateHook,
       postGenerateHook: master.postGenerateHook,
       tts: master.tts,
@@ -575,7 +386,6 @@ final class VariantResolverTests: XCTestCase {
       exportFormat: variant.exportFormat,
       introFile: "variant-intro.m4a",
       outroFile: "variant-outro.m4a",
-      cast: variant.cast,
       preGenerateHook: variant.preGenerateHook,
       postGenerateHook: variant.postGenerateHook,
       tts: variant.tts,
@@ -621,7 +431,6 @@ final class VariantResolverTests: XCTestCase {
       exportFormat: master.exportFormat,
       introFile: "master-intro.m4a",
       outroFile: "master-outro.m4a",
-      cast: master.cast,
       preGenerateHook: master.preGenerateHook,
       postGenerateHook: master.postGenerateHook,
       tts: master.tts,
@@ -669,7 +478,6 @@ final class VariantResolverTests: XCTestCase {
       exportFormat: master.exportFormat,
       introFile: "master-intro.m4a",
       outroFile: "master-outro.m4a",
-      cast: master.cast,
       preGenerateHook: master.preGenerateHook,
       postGenerateHook: master.postGenerateHook,
       tts: master.tts,
@@ -697,7 +505,6 @@ final class VariantResolverTests: XCTestCase {
       exportFormat: variant.exportFormat,
       introFile: "variant-intro.m4a",
       outroFile: "variant-outro.m4a",
-      cast: variant.cast,
       preGenerateHook: variant.preGenerateHook,
       postGenerateHook: variant.postGenerateHook,
       tts: variant.tts,
@@ -735,7 +542,6 @@ final class VariantResolverTests: XCTestCase {
       exportFormat: master.exportFormat,
       introFile: "master-intro.m4a",
       outroFile: "master-outro.m4a",
-      cast: master.cast,
       preGenerateHook: master.preGenerateHook,
       postGenerateHook: master.postGenerateHook,
       tts: master.tts,

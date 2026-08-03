@@ -449,7 +449,7 @@ final class ProyectoCLIValidateTests: XCTestCase {
       "Expected success message"
     )
     XCTAssertTrue(
-      result.stdout.contains("Schema version: v4.0.0"),
+      result.stdout.contains("Schema version: v4"),
       "Expected schema version in output"
     )
     XCTAssertTrue(
