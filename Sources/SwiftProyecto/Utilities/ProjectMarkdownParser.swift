@@ -432,25 +432,43 @@ public struct ProjectMarkdownParser {
           yaml += generateYAMLValue(nestedDict, indent: indent + 1)
         } else if let array = val as? [Any] {
           yaml += "\(indentStr)\(key):\n"
-          for item in array {
-            if let itemDict = item as? [String: Any] {
-              yaml += "\(indentStr)  -\n"
-              for (k, v) in itemDict.sorted(by: { $0.key < $1.key }) {
-                yaml += "\(indentStr)    \(k): \(formatYAMLPrimitive(v))\n"
-              }
-            } else {
-              yaml += "\(indentStr)  - \(formatYAMLPrimitive(item))\n"
-            }
-          }
+          yaml += generateYAMLValue(array, indent: indent + 1)
         } else {
           yaml += "\(indentStr)\(key): \(formatYAMLPrimitive(val))\n"
         }
       }
       return yaml
     } else if let array = value as? [Any] {
+      // Array items recurse so an array of maps (e.g. a legacy `cast:` block
+      // held as an unknown key) keeps its structure instead of collapsing to
+      // a stringified dictionary. The first key of a map item rides the `- `
+      // marker; subsequent keys align under it.
       var yaml = ""
       for item in array {
-        yaml += "\(indentStr)- \(formatYAMLPrimitive(item))\n"
+        if let itemDict = item as? [String: Any] {
+          var isFirstKey = true
+          for (k, v) in itemDict.sorted(by: { $0.key < $1.key }) {
+            let prefix = isFirstKey ? "\(indentStr)- " : "\(indentStr)  "
+            isFirstKey = false
+            if let nestedDict = v as? [String: Any] {
+              yaml += "\(prefix)\(k):\n"
+              yaml += generateYAMLValue(nestedDict, indent: indent + 2)
+            } else if let nestedArray = v as? [Any] {
+              yaml += "\(prefix)\(k):\n"
+              yaml += generateYAMLValue(nestedArray, indent: indent + 2)
+            } else {
+              yaml += "\(prefix)\(k): \(formatYAMLPrimitive(v))\n"
+            }
+          }
+          if isFirstKey {
+            yaml += "\(indentStr)- {}\n"
+          }
+        } else if let itemArray = item as? [Any] {
+          yaml += "\(indentStr)-\n"
+          yaml += generateYAMLValue(itemArray, indent: indent + 1)
+        } else {
+          yaml += "\(indentStr)- \(formatYAMLPrimitive(item))\n"
+        }
       }
       return yaml
     } else {

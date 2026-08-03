@@ -406,8 +406,9 @@ extension ProjectFrontMatter {
   /// Returns true when the parsed document carried a legacy `cast:` block.
   ///
   /// Since schema v5, `cast:` is not a declared key — a roster found in an
-  /// older PROJECT.md is swept into the unknown-key store and preserved
-  /// verbatim on write. This flag is the migration trigger: the `proyecto`
+  /// older PROJECT.md is swept into the unknown-key store and preserved on
+  /// write (structurally intact; a full re-emit reformats and relocates it).
+  /// This flag is the migration trigger: the `proyecto`
   /// CLI uses it to decide when to hand the block to `reparto import` and,
   /// only after the produced CAST.md is verified, remove it from this file.
   public var hasLegacyCastKey: Bool {

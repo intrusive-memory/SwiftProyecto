@@ -16,8 +16,9 @@ import Foundation
 ///   `cast:` roster.
 /// - **5**: `cast:` is no longer a declared key. A production's cast lives in
 ///   `CAST.md`, owned by SwiftReparto; a legacy `cast:` block found in an older
-///   PROJECT.md is preserved verbatim as an unknown key until the `proyecto`
-///   CLI migrates it out via `reparto import`.
+///   PROJECT.md is preserved as an unknown key — structurally intact, though a
+///   full re-emit reformats it (sorted keys, relocated to the unknown-key
+///   tail) — until the `proyecto` CLI migrates it out via `reparto import`.
 ///
 /// Every document this library emits is stamped with ``current`` — a legacy
 /// file normalizes to the current version on its first write.
