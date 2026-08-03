@@ -9,7 +9,7 @@ All notable changes to SwiftProyecto will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.0.0] - Unreleased
+## [5.0.0] - 2026-08-02
 
 **BREAKING**: the cast surface is removed from SwiftProyecto. A production's cast now lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto) (the `reparto` CLI — `brew install intrusive-memory/tap/reparto`). SwiftReparto's `CastMember` (with `voicePrompt`, `voices`, `extraKeys`) is the replacement type for every consumer that used to read cast out of PROJECT.md. SwiftProyecto deliberately declares **no package dependency** on SwiftReparto — the `reparto` binary is a runtime dependency of the migration path only.
 

@@ -12,7 +12,7 @@ type: reference
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-5.0.0--dev-green.svg" />
+    <img src="https://img.shields.io/badge/Version-5.0.0-green.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -301,7 +301,7 @@ let response = try await session.complete(
 
 ## Features
 
-### 🔥 v5.0.0: Cast Moves to CAST.md (In Development)
+### 🔥 v5.0.0: Cast Moves to CAST.md
 
 - **Schema v5**: PROJECT.md no longer declares a `cast:` key; every write stamps `schemaVersion: 5`
 - **Cast surface removed**: `CastMember`, `ProjectFrontMatter.cast`, cast discovery/merge APIs, and `proyecto roles` are gone — cast lives in [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto)'s `CAST.md`
@@ -399,16 +399,16 @@ Add SwiftProyecto to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "3.5.4")
+    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "5.0.0")
 ]
 ```
 
 Or add it in Xcode:
 1. File > Add Package Dependencies
 2. Enter: `https://github.com/intrusive-memory/SwiftProyecto.git`
-3. Select version: `3.5.4` or later
+3. Select version: `5.0.0` or later
 
-**Note**: Version 3.0.0 has breaking changes (voice format migration). Version 2.6.0 added app-specific settings. If you're upgrading from v1.x or v2.x, see the migration sections below.
+**Note**: Version 5.0.0 has breaking changes (cast moved to CAST.md — see [UPGRADING.md](UPGRADING.md)). Version 3.0.0 changed the voice format. If you're upgrading from an earlier major, see the migration sections below.
 
 ## Usage
 
@@ -1017,10 +1017,7 @@ And generates PROJECT.md frontmatter with:
 ### Building
 
 ```bash
-# Build library and CLI
-swift build
-
-# Or using Makefile (recommended)
+# Always build through the Makefile
 make install        # Debug build
 make release        # Release build
 ```
@@ -1028,7 +1025,7 @@ make release        # Release build
 ### Testing
 
 ```bash
-swift test
+make test
 ```
 
 **Status**: All tests passing. Test suite includes:
@@ -1249,7 +1246,7 @@ SwiftProyecto is released under the MIT License. See [LICENSE](./LICENSE) for de
 
 ## Status
 
-### 🔥 v5.0.0 - Cast Moves to CAST.md (In Development)
+### 🔥 v5.0.0 - Cast Moves to CAST.md
 
 **BREAKING**: the cast surface is removed from SwiftProyecto (schema v5 has no `cast:` key). Cast lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto); `proyecto migrate` moves a legacy block over with verify-then-strip data safety. See [CHANGELOG.md](CHANGELOG.md) and [UPGRADING.md](UPGRADING.md).
 

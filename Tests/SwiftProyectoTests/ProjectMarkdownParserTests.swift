@@ -1230,7 +1230,8 @@ final class ProjectMarkdownParserTests: XCTestCase {
     // output. Migration to CAST.md (CastMigrator) never routes through
     // generate(); it strips the original bytes surgically instead.
     let regenerated = parser.generate(frontMatter: frontMatter, body: body)
-    XCTAssertTrue(regenerated.contains("cast:"), "Regenerated YAML should still contain the cast key")
+    XCTAssertTrue(
+      regenerated.contains("cast:"), "Regenerated YAML should still contain the cast key")
     XCTAssertTrue(regenerated.contains("NARRATOR"), "Member content should be re-emitted")
     XCTAssertTrue(regenerated.contains("LAO TZU"), "Member content should be re-emitted")
 
