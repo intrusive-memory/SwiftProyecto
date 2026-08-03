@@ -24,32 +24,18 @@ description: Data models, services, and internal architecture
 - Required fields: type, title, author, created
 - Optional metadata fields: description, season, episodes, genre, tags
 - Optional generation config: episodesDir, audioDir, filePattern, exportFormat
-- Optional cast list: cast (array of CastMember for character-to-voice mappings)
 - Optional hooks: preGenerateHook, postGenerateHook
 - Convenience accessors: resolvedEpisodesDir, resolvedAudioDir, resolvedFilePatterns, resolvedExportFormat
+- Schema version: `schemaVersion` (stamped to `ProjectSchemaVersion.current` — 5 — on every write)
+- Legacy-cast helpers: `hasLegacyCastKey`, `legacyCastCharacterNames`, `removingLegacyCastKey()` — a `cast:` block found in an older file is preserved verbatim in the unknown-key store, never modeled
 
-**Gender** - Gender specification for character roles
-- Enum values: `.male` (M), `.female` (F), `.nonBinary` (NB), `.notSpecified` (NS)
-- Used to specify expected or preferred gender for character roles
-- `.notSpecified` indicates role doesn't depend on character's gender
-- Codable with raw string values for PROJECT.md YAML
-- Display names: "Male", "Female", "Non-Binary", "Not Specified"
+**ProjectSchemaVersion** - Single source of truth for the PROJECT.md schema version
+- `current` is `5`. History: absent = v3 legacy; 4 = multi-season schema, with `cast:`; 5 = current, no `cast:` key
 
-**CastMember** - Character-to-voice mapping for audio generation
-- Maps screenplay characters to actors and TTS voice URIs
-- Fields: character (String), actor (String?), gender (Gender?), voiceDescription (String?), voices ([String: String])
-- Voice format: Key/value pairs where key is provider name, value is voice identifier
-  - Examples:
-    - `apple: com.apple.voice.compact.en-US.Samantha` (Apple TTS)
-    - `elevenlabs: 21m00Tcm4TlvDq8ikWAM` (ElevenLabs)
-    - `voxalta: female-voice-1` (VoxAlta)
-- **voiceDescription**: Optional description of desired voice characteristics for TTS voice selection
-  - Used by CastMatcher in SwiftHablare to guide intelligent voice selection
-  - Example: "Deep, warm baritone with measured pacing and gravitas"
-- Stored inline in PROJECT.md cast array
-- Identity based on character name (mutable for renaming)
-- Voice resolution: Appropriate voice is selected based on enabled TTS provider
-- No validation of voice identifiers in model - validation happens at generation time
+**Cast (removed in 5.0.0)** - There is no cast model in SwiftProyecto
+- `CastMember`, `Gender`, and the cast field on `ProjectFrontMatter` were removed in 5.0.0
+- A production's cast lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto); its `CastMember` (character, voicePrompt, voices, extraKeys) is the replacement type
+- Migration is the `proyecto` CLI's job (`proyecto migrate`, delegating to `reparto import`); the `reparto` binary is a runtime-only dependency — SwiftProyecto declares no package dependency on SwiftReparto
 
 **FilePattern** - Flexible file pattern type for generation config
 - Accepts single string or array of strings
@@ -111,8 +97,7 @@ description: Data models, services, and internal architecture
 - **Project Management**: `createProject(at:title:author:...)`, `openProject(at:)`
 - **Bookmark Management**: `getSecureURL(for:in:)`, `refreshBookmark(for:in:)`, `createFileBookmark(for:in:)`
 - **PROJECT.md**: Reads/writes project metadata files
-- **Cast List Discovery**: `discoverCastList(for:)` - Automatically extracts characters from all screenplay formats (.fountain, .fdx, .highland)
-- **Cast List Merging**: `mergeCastLists(discovered:existing:)` - Merges discovered characters with existing cast, preserving user edits
+- Cast APIs (`discoverCastList(for:)`, `mergeCastLists(discovered:existing:)`) were removed in 5.0.0 — roster maintenance happens against `CAST.md` via SwiftReparto. Character-name extraction survives only as generation-time directory analysis (`CastExtractor`, `DirectoryAnalysis.extractedCast`) feeding `proyecto generate-project`
 
 **ModelContainerFactory** - SwiftData container creation
 - Creates containers for project metadata only

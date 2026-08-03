@@ -2,9 +2,79 @@
 type: reference
 ---
 
+# Upgrading SwiftProyecto
+
+# Upgrading from SwiftProyecto 4.x to 5.0.0
+
+SwiftProyecto v5.0.0 removes the **entire cast surface** from the library and the PROJECT.md schema. A production's cast now lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto).
+
+## What Breaks at Compile Time
+
+If your code touches any of these, it will not compile against 5.0.0:
+
+| Removed in 5.0.0 | Use instead |
+|------------------|-------------|
+| `CastMember` (and `Gender`, `MergeStrategy`) | SwiftReparto's `CastMember` (`voicePrompt`, `voices`, `extraKeys`) |
+| `ProjectFrontMatter.cast` | Read `CAST.md` via SwiftReparto |
+| `ProjectFrontMatter.withCast(_:)` / `mergingCast(_:forProvider:)` / `mergeCast(...)` | SwiftReparto's gap-filling `[CastMember].merging(_:)` |
+| `SeasonDefinition.cast` | — (seasons no longer carry a roster) |
+| `VariantResolver` cast resolution | — |
+| `ProjectService.discoverCastList(for:)` / `mergeCastLists(discovered:existing:)` | Roster maintenance against `CAST.md` (SwiftReparto) |
+| `ProjectDiscovery.readCast(from:filterByProvider:)` | SwiftReparto's parser |
+| `ProjectMarkdownParser.renderCast(_:)` / `replacingCastBlock(in:with:)` | Only SwiftReparto serializes cast (`CastMarkdownParser.generate`/`write`) |
+| `proyecto roles` command | `reparto` CLI + `proyecto migrate` |
+
+Still present and unchanged: the generation-time types `CastMemberData` (LLM backend protocol), `GeneratedProjectMetadata.cast`, `DirectoryAnalysis.extractedCast`, and `CastExtractor` — these describe what a backend extracted from a directory, not the PROJECT.md schema.
+
+## The PROJECT.md File-Format Change
+
+- **Schema v5** (`ProjectSchemaVersion.current == 5`). History: no `schemaVersion:` key = v3 legacy; `4` = multi-season schema, with `cast:`; `5` = current, **no `cast:` key**.
+- Every write stamps `schemaVersion: 5`.
+- **v3 and v4 files still parse fine.** They normalize to `schemaVersion: 5` on their first write. A legacy `cast:` block is *not* lost or rejected — it parses into the unknown-key store, round-trips verbatim, and `proyecto validate` warns about it (without mutating anything, exit code still 0) until you migrate it out.
+
+## Migrating a Legacy `cast:` Block: `proyecto migrate`
+
+```bash
+# One-time: install reparto, CAST.md's owner
+brew install intrusive-memory/tap/reparto
+
+# Preview — verifies everything, writes nothing
+proyecto migrate /path/to/project --dry-run
+
+# Migrate
+proyecto migrate /path/to/project
+```
+
+`proyecto migrate` moves the top-level `cast:` block into `CAST.md` via `reparto import` and rewrites PROJECT.md without it, stamped `schemaVersion: 5`. PROJECT.md is only rewritten **after the transfer is verified**: `reparto import` exits 0, `reparto validate` passes on the produced `CAST.md`, and every `character:` name from the legacy block is present in it. A `PROJECT.md.bak` backup is written first, and the rewrite is byte-surgical — only the `cast:` span and the `schemaVersion:` line change.
+
+Refusal cases (each leaves PROJECT.md byte-for-byte untouched):
+
+- `reparto` is not installed.
+- `CAST.md` already exists — auto-migration never overwrites it; run `proyecto migrate --force` to let `reparto import` overwrite it deliberately.
+- A season-level `cast:` block is present — `reparto import` reads only the top-level key; migrate the season cast by hand, then re-run.
+
+`proyecto init --update` and `proyecto generate-project` auto-migrate first and **abort their rewrite** if migration can't complete — their full re-emit cannot preserve a legacy block, so they refuse to run until the cast is safely in `CAST.md`.
+
+Note: the `reparto` **binary** is a runtime dependency of the migration path only. SwiftProyecto declares no package dependency on SwiftReparto, in either direction.
+
+## Reading Cast After 5.0.0 (Consumers)
+
+Read the roster from `CAST.md` with SwiftReparto's parser, mutate the `CastDocument` value, and hand it back through SwiftReparto's `write` — never serialize `CAST.md` yourself (SwiftReparto's one-writer rule). This is the same contract SwiftEchada (writes back `voices.voxalta`) and Produciesta (writes back voice assignments) follow. SwiftProyecto itself is **not** a CAST.md consumer — it declares no dependency and retains no cast surface.
+
+## 4.x → 5.0.0 Checklist
+
+- [ ] Remove/replace uses of the compile-time-removed API above
+- [ ] `brew install intrusive-memory/tap/reparto`
+- [ ] `proyecto migrate` each project with a legacy `cast:` block (`--dry-run` first)
+- [ ] Point cast-reading code at `CAST.md` via SwiftReparto
+
+---
+
 # Upgrading from SwiftProyecto 3.x to 4.0
 
 SwiftProyecto v4.0 introduces **multi-season and per-character language support**, with full backward compatibility for v3.x projects.
+
+> **Note (v5.0.0)**: the `cast:` examples in this historical v4 guide predate schema v5, which removed `cast:` from PROJECT.md — see the 4.x → 5.0.0 section above.
 
 ## What's New in 4.0
 

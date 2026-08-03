@@ -2,12 +2,14 @@
 type: reference
 name: Variant Patterns and Best Practices — v4.0.0
 description: Comprehensive guide to using variant files for multi-season and multi-language projects
-updated: 2026-06-23
+updated: 2026-08-02
 ---
 
 # Variant Patterns and Best Practices — v4.0.0
 
 Comprehensive guide to designing and organizing variant files for multi-season and multi-language projects in SwiftProyecto v4.0.0.
+
+> **Schema v5 note (SwiftProyecto 5.0.0)**: variants themselves are unchanged in v5, but **cast is no longer part of PROJECT.md or variant resolution** — `VariantResolver` no longer resolves cast, `CastMember`/`MergeStrategy` were removed, and the roster lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto). The `cast:` examples and the [Cast Merging](#cast-merging) section below are v4 historical. The `schemaVersion: 4` examples still parse; files are stamped `schemaVersion: 5` on write.
 
 ---
 
@@ -36,7 +38,6 @@ Comprehensive guide to designing and organizing variant files for multi-season a
 Variants allow you to:
 - ✅ Define per-language metadata (voices, locales, descriptions)
 - ✅ Store language-specific episode files in organized directories
-- ✅ Maintain separate cast lists for different languages/regions
 - ✅ Create hierarchical relationships (master → variant inheritance)
 - ✅ Keep projects discoverable at multiple levels
 
@@ -48,7 +49,7 @@ Variants allow you to:
 | Single season, multiple languages | Master + language variants |
 | Multiple seasons, one language | Master + season variants, OR multi-season single file |
 | Multiple seasons, multiple languages | Master + season/language variants |
-| Same episodes, different voice casting | Language variants (different cast per language) |
+| Same episodes, different voice casting | Language variants (v4: different cast per language; v5: manage per-language voices in CAST.md via SwiftReparto) |
 | Regional distribution (same language, different regions) | Regional variants (e.g., en-US vs. en-UK) |
 
 ---
@@ -341,7 +342,7 @@ cast:
 **Benefits**:
 - Master file documents all seasons
 - Each season is independently navigable
-- Per-season customization (cast, TTS, descriptions)
+- Per-season customization (TTS, descriptions; cast too in v4)
 
 ---
 
@@ -505,7 +506,9 @@ When resolving a property for a variant, SwiftProyecto checks in order:
 3. **Master level**: Does the master file define this property?
 4. **Defaults**: Use built-in defaults
 
-### Example: Cast Resolution
+### Example: Cast Resolution (v4 only — removed in v5)
+
+In v4, cast resolved through the same hierarchy. In v5 there is no cast resolution — the roster lives in `CAST.md` (SwiftReparto).
 
 **Master file:**
 ```yaml
@@ -567,6 +570,8 @@ seasons:
 ---
 
 ## Cast Merging
+
+> **v4 only — removed in v5.** `CastMember`, `MergeStrategy`, and `CastMember.merge(_:with:strategy:)` no longer exist in SwiftProyecto. Cast merging is SwiftReparto's gap-filling `[CastMember].merging(_:)` against `CAST.md`. This section is historical.
 
 ### Lossless Merge Guarantee
 

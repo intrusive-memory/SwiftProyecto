@@ -2,7 +2,7 @@
 type: guide
 name: Intro and Outro File Patterns — v4.0.0
 description: Guide to using introFile and outroFile fields for text directions and segment files
-updated: 2026-06-23
+updated: 2026-08-02
 ---
 
 # Intro and Outro File Patterns — v4.0.0
@@ -474,14 +474,10 @@ seasons:
 
 introFile: intro.md
 outroFile: outro.md
-
-cast:
-  - character: NARRATOR
-    voices:
-      apple:
-        - com.apple.voice.compact.en-US.Aaron
 ---
 ```
+
+(The NARRATOR's voice mapping lives in the project's `CAST.md` — see SwiftReparto. Since schema v5, PROJECT.md carries no `cast:` key.)
 
 **intro.md:**
 ```markdown
@@ -623,13 +619,6 @@ seasons:
     episodesDir: .
     introFile: intro.en.fountain
     outroFile: outro.en.fountain
-
-cast:
-  - character: INSTRUCTOR
-    language: en-US
-    voices:
-      apple:
-        - com.apple.voice.compact.en-US.Aaron
 ---
 ```
 
@@ -647,15 +636,10 @@ seasons:
     episodesDir: .
     introFile: intro.es.fountain
     outroFile: outro.es.fountain
-
-cast:
-  - character: INSTRUCTOR
-    language: es-MX
-    voices:
-      apple:
-        - com.apple.voice.compact.es-MX.Juan
 ---
 ```
+
+(Each variant's INSTRUCTOR voice — en-US vs. es-MX — is recorded in `CAST.md` via SwiftReparto, not in these files.)
 
 **intro.en.fountain:**
 ```fountain
@@ -735,18 +719,12 @@ seasons:
     # No introFile specified → null (no intro for season 2)
 ```
 
-### 5. Coordinate with Cast
+### 5. Coordinate with the Cast
 
-Ensure intro/outro characters match cast list:
+Ensure intro/outro characters match the roster in the project's `CAST.md` (owned by SwiftReparto — since schema v5, cast is not part of PROJECT.md):
 
 ```yaml
-cast:
-  - character: NARRATOR
-    voices:
-      apple:
-        - com.apple.voice.compact.en-US.Aaron
-
-introFile: intro.fountain  # Should have NARRATOR dialogue
+introFile: intro.fountain  # Its dialogue characters (e.g. NARRATOR) should exist in CAST.md
 ```
 
 ### 6. Document Path Conventions

@@ -9,6 +9,51 @@ All notable changes to SwiftProyecto will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - Unreleased
+
+**BREAKING**: the cast surface is removed from SwiftProyecto. A production's cast now lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto) (the `reparto` CLI — `brew install intrusive-memory/tap/reparto`). SwiftReparto's `CastMember` (with `voicePrompt`, `voices`, `extraKeys`) is the replacement type for every consumer that used to read cast out of PROJECT.md. SwiftProyecto deliberately declares **no package dependency** on SwiftReparto — the `reparto` binary is a runtime dependency of the migration path only.
+
+### Removed
+
+Every removed symbol's replacement is SwiftReparto's `CastMember` / `CAST.md`, reached via the `reparto` CLI or `proyecto migrate`:
+
+- **`CastMember`** (and its nested `Gender` enum and `MergeStrategy`) — replaced by SwiftReparto's `CastMember`.
+- **`ProjectFrontMatter.cast`** — cast is no longer a declared PROJECT.md key (schema v5); read `CAST.md` via SwiftReparto instead.
+- **`ProjectFrontMatter.withCast(_:)`**, **`mergingCast(_:forProvider:)`**, and the static **`mergeCast(...)`** helper — SwiftReparto's `[CastMember].merging(_:)` is the gap-filling merge that replaces them.
+- **`SeasonDefinition.cast`** — seasons no longer carry a roster.
+- **`VariantResolver` cast resolution** — variants no longer resolve cast; nothing replaces this within SwiftProyecto.
+- **`ProjectService.discoverCastList(for:)`** and **`mergeCastLists(discovered:existing:)`** — screenplay-driven roster maintenance belongs to CAST.md's consumers, not PROJECT.md.
+- **`ProjectDiscovery.readCast(from:filterByProvider:)`** — read `CAST.md` via SwiftReparto's parser.
+- **`ProjectMarkdownParser.renderCast(_:)`** and **`replacingCastBlock(in:with:)`** — only SwiftReparto serializes cast (its one-writer rule, RQ-INV-2). The surgical *removal* primitive `removingCastBlock(in:)` is new (below) and is not a serializer.
+- **`proyecto roles`** command — replaced by the SwiftReparto toolchain (`reparto`) and `proyecto migrate`.
+
+**Retained, unchanged** (generation-time only — these describe what an LLM backend *extracted from a directory*, not the PROJECT.md schema): `LLMBackendProtocol`'s `CastMemberData`, `GeneratedProjectMetadata.cast`, `DirectoryAnalysis.extractedCast` (`[String]`), and `CastExtractor`.
+
+### Added
+
+- **PROJECT.md schema v5** and **`ProjectSchemaVersion`** — the new single source of truth for the front-matter schema version (`ProjectSchemaVersion.current == 5`). History: no `schemaVersion:` key = v3 legacy; `4` = multi-season schema, with `cast:`; `5` = current, no `cast:` key. Every write stamps `schemaVersion: 5`. Version gates (variants, `generate --list`, `info`, validator) are now `>= 4` instead of `== 4`.
+- **Legacy-cast preservation and helpers** — a `cast:` block in an older PROJECT.md is *not* lost: it parses into the unknown-key store and survives writes (structurally intact; a full re-emit reformats it and relocates it to the unknown-key tail — the migration path's surgical rewrite avoids even that). New API: `ProjectFrontMatter.hasLegacyCastKey`, `legacyCastCharacterNames` (the only reading SwiftProyecto ever does of a legacy block — just enough to verify a migration), and `removingLegacyCastKey()`.
+- **Surgical rewrite primitives** — `ProjectMarkdownParser.removingCastBlock(in:)` and `stampingSchemaVersion(in:to:)` edit only the `cast:` span and the `schemaVersion:` line; every other byte of the file survives (no full re-emit).
+- **`proyecto migrate`** (+ `--dry-run`, `--force`, `--quiet`) — moves a legacy `cast:` block into `CAST.md` via `reparto import` and rewrites PROJECT.md without it, stamped `schemaVersion: 5`, **only after verification** (see Migration below), with a `PROJECT.md.bak` backup.
+- **Auto-migration with a data-safety abort** — `proyecto init --update` and `proyecto generate-project` auto-migrate first and **abort their rewrite** if migration cannot complete: their full re-emit cannot guarantee a legacy block's shape survives, so proceeding un-migrated risks exactly the data loss the verify-then-strip rule forbids. The *command* is aborted, never the data.
+- **Validator warning** — `proyecto validate` warns about a legacy `cast:` block (pointing at `proyecto migrate`) but never mutates, and still exits 0.
+
+### Migration
+
+1. Install reparto: `brew install intrusive-memory/tap/reparto`.
+2. Run `proyecto migrate` (optionally `proyecto migrate /path/to/project`, or `--dry-run` first to see what would happen without writing anything).
+3. PROJECT.md is rewritten **only after the transfer is verified**, in this order: `reparto import` exits 0; `reparto validate` passes on the produced `CAST.md`; every `character:` name from the legacy block is present in `CAST.md`. Only then is `PROJECT.md.bak` written and the `cast:` span removed byte-surgically with `schemaVersion: 5` stamped.
+4. Refusal cases — each leaves PROJECT.md byte-for-byte untouched:
+   - `reparto` is not installed.
+   - `CAST.md` already exists (auto-migration never overwrites it; run `proyecto migrate --force` to let `reparto import` overwrite it deliberately — the auto path never passes `--force`).
+   - A season-level `cast:` block is present (`reparto import` reads only the top-level key; migrate the season cast by hand, then re-run).
+
+v3/v4 PROJECT.md files still parse fine; they normalize to `schemaVersion: 5` on their first write, and an un-migrated `cast:` block is preserved verbatim until `proyecto migrate` moves it.
+
+> **Note**: auto-migration supersedes the earlier "warn, never mutate" plan, by maintainer decision (2026-08-02). The migration itself is delegated to `reparto` — CAST.md's owner and sanctioned writer — and PROJECT.md is only rewritten after the transfer is verified, so the mutation never models or serializes cast data inside SwiftProyecto. (`proyecto validate` alone retains the warn-only behavior.)
+
+---
+
 ## [4.8.1] - 2026-07-31
 
 ### Fixed

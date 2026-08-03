@@ -70,48 +70,15 @@ The front matter is delimited by `---` markers and contains YAML key-value pairs
 | `preGenerateHook` | String | Shell command to run before generation |
 | `postGenerateHook` | String | Shell command to run after generation |
 
-### Cast List (Optional)
+### Schema Version
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `cast` | Array | Array of [CastMember](#castmember-structure) objects |
+| `schemaVersion` | Integer | Stamped automatically on every write (`5` is current). Absent = v3 legacy; `4` = multi-season schema, with `cast:`; `5` = current, no `cast:` key. |
 
----
+### Cast (Removed in Schema v5)
 
-## CastMember Structure
-
-Each entry in the `cast` array is a character-to-voice mapping:
-
-```yaml
-cast:
-  - character: MARCUS AURELIUS
-    actor: Tom Stovall
-    gender: M
-    voiceDescription: Deep, warm baritone with measured pacing
-    voices:
-      apple: com.apple.voice.compact.en-US.Aaron
-      elevenlabs: 21m00Tcm4TlvDq8ikWAM
-```
-
-### CastMember Fields
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `character` | String | ✅ Yes | Character name (screenplay role) |
-| `actor` | String | — | Actor/performer name |
-| `gender` | String | — | Gender specification: `M` (Male), `F` (Female), `NB` (Non-Binary), `NS` (Not Specified) |
-| `voiceDescription` | String | — | Descriptive guidance for voice selection (e.g., "warm baritone", "youthful female") |
-| `voices` | Object | — | Key-value mapping of TTS provider → voice identifier |
-
-### Voice Providers
-
-The `voices` object uses provider names as keys:
-
-| Provider | Key | Example Voice ID | Provider Name |
-|----------|-----|------------------|---------------|
-| Apple TTS | `apple` | `com.apple.voice.compact.en-US.Aaron` | System voices |
-| ElevenLabs | `elevenlabs` | `21m00Tcm4TlvDq8ikWAM` | ElevenLabs voice IDs |
-| VoxAlta | `voxalta` | `female-voice-1` | VoxAlta voice IDs |
+PROJECT.md declares **no `cast:` key**. A production's cast — characters, actors, voice prompts, and provider voice mappings — lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto) (`reparto` CLI). A legacy `cast:` block in an older file is preserved verbatim as an unknown key; move it into `CAST.md` with `proyecto migrate`.
 
 ---
 
@@ -128,7 +95,7 @@ created: 2026-01-15T10:30:00Z
 ---
 ```
 
-### Project with Metadata and Cast
+### Project with Metadata
 
 ```yaml
 ---
@@ -145,25 +112,10 @@ episodesDir: episodes
 audioDir: audio
 filePattern: "*.fountain"
 exportFormat: m4a
-cast:
-  - character: MARCUS AURELIUS
-    actor: Tom Stovall
-    gender: M
-    voiceDescription: Deep, measured baritone with gravitas
-    voices:
-      apple: com.apple.voice.compact.en-US.Aaron
-  - character: NARRATOR
-    actor: Jason Manino
-    gender: M
-    voices:
-      apple: com.apple.voice.compact.en-US.Daniel
-  - character: POETIC VOICE
-    actor: Sarah Mitchell
-    gender: F
-    voices:
-      apple: com.apple.voice.compact.en-US.Samantha
 ---
 ```
+
+(The roster for such a project lives in a sibling `CAST.md` — see [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto).)
 
 ### Project with Multiple File Patterns
 
@@ -237,41 +189,14 @@ myapp:
 
 ### Optional Fields
 - `season`, `episodes` must be positive integers if specified
-- `gender` must be one of: `M`, `F`, `NB`, `NS`
 - `filePattern` can be a single string or array of strings
-- Voice identifiers are NOT validated (validation happens at generation time)
 
-### Cast List
-- `character` names are case-sensitive
-- Character names must be unique within the cast array
-- `voices` object can be empty (no voices required)
-
-### Gender Enum Values
-
-| Symbol | Display Name | Description |
-|--------|--------------|-------------|
-| `M` | Male | Character is male |
-| `F` | Female | Character is female |
-| `NB` | Non-Binary | Character is non-binary |
-| `NS` | Not Specified | Gender not relevant to role |
+### Legacy `cast:` Block
+- A `cast:` block in an older file is **not** an error: `proyecto validate` warns (pointing at `proyecto migrate`) but never mutates, and still exits 0
 
 ---
 
 ## Common Patterns
-
-### Audio Project with All Providers
-
-```yaml
-cast:
-  - character: MAIN CHARACTER
-    actor: Voice Actor Name
-    gender: M
-    voiceDescription: Warm, authoritative tone
-    voices:
-      apple: com.apple.voice.compact.en-US.Aaron
-      elevenlabs: 21m00Tcm4TlvDq8ikWAM
-      voxalta: main-voice-1
-```
 
 ### Screenplay with Multiple File Types
 
@@ -296,11 +221,10 @@ audioDir: season-2/audio
 ## Tips for Agents
 
 1. **Always validate required fields** before parsing: `type`, `title`, `author`, `created`
-2. **Check for cast list** before attempting TTS voice selection
+2. **Cast lives in CAST.md** — read it via SwiftReparto, never from PROJECT.md front matter
 3. **Use resolved accessors** in code: `frontMatter.resolvedEpisodesDir`, `resolvedFilePatterns` (handle defaults)
-4. **Voice selection**: If multiple providers exist, the consuming app chooses which one to use
-5. **File patterns**: Normalize to array with `.patterns` property for consistent handling
-6. **App settings**: Use `frontMatter.settings(for: MySettings.self)` for type-safe access
+4. **File patterns**: Normalize to array with `.patterns` property for consistent handling
+5. **App settings**: Use `frontMatter.settings(for: MySettings.self)` for type-safe access
 
 ---
 
