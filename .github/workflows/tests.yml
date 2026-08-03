@@ -56,6 +56,12 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
+      # The `proyecto migrate` integration tests drive the external `reparto`
+      # binary (SwiftReparto CLI). Install it so those tests execute; if brew
+      # fails they skip cleanly via XCTSkipUnless rather than failing the job.
+      - name: Install reparto (SwiftReparto CLI)
+        run: brew install intrusive-memory/tap/reparto
+
       - name: Build library
         run: |
           xcodebuild build \

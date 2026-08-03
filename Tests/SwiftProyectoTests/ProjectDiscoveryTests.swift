@@ -34,14 +34,13 @@ import Testing
 private func makeTestProject(
   withEpisodesFolderName episodesFolderName: String? = nil,
   projectMdInParent: Bool = true,
-  projectMdInCurrent: Bool = false,
-  cast: [CastMember]? = nil
+  projectMdInCurrent: Bool = false
 ) throws -> (projectDir: URL, cleanUp: () -> Void) {
   let tempDir = FileManager.default.temporaryDirectory
     .appendingPathComponent("ProjectDiscoveryTests-\(UUID().uuidString)")
   try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
-  let projectMdContent = makeProjectMdContent(cast: cast)
+  let projectMdContent = makeProjectMdContent()
 
   if projectMdInParent {
     let projectMdURL = tempDir.appendingPathComponent("PROJECT.md")
@@ -69,35 +68,12 @@ private func makeTestProject(
   return (tempDir, cleanUp)
 }
 
-private func makeProjectMdContent(cast: [CastMember]? = nil) -> String {
+private func makeProjectMdContent() -> String {
   var content = "---\n"
   content += "type: project\n"
   content += "title: Test Project\n"
   content += "author: Test Author\n"
   content += "created: 2025-11-17T10:30:00Z\n"
-
-  if let cast, !cast.isEmpty {
-    content += "cast:\n"
-    for member in cast {
-      content += "  - character: \(member.character)\n"
-      if let actor = member.actor {
-        content += "    actor: \(actor)\n"
-      }
-      if let gender = member.gender {
-        content += "    gender: \(gender.rawValue)\n"
-      }
-      if let desc = member.voiceDescription {
-        content += "    voiceDescription: \"\(desc)\"\n"
-      }
-      if !member.voices.isEmpty {
-        content += "    voices:\n"
-        for (provider, voiceId) in member.voices.sorted(by: { $0.key < $1.key }) {
-          content += "      \(provider): \(voiceId)\n"
-        }
-      }
-    }
-  }
-
   content += "---\n\n# Test Project Notes\n"
   return content
 }
@@ -242,229 +218,6 @@ struct ProjectDiscoveryDirectoryTests {
   }
 }
 
-// MARK: - Cast Reading Tests
-
-@Suite("ProjectDiscovery - Cast Reading")
-struct ProjectDiscoveryCastReadingTests {
-
-  @Test("Read cast from PROJECT.md returns all members")
-  func readAllCast() throws {
-    let cast = [
-      CastMember(
-        character: "NARRATOR", actor: "Tom",
-        voices: ["apple": ["voice-1"], "elevenlabs": ["voice-2"]]),
-      CastMember(character: "LAO TZU", actor: "Jason", voices: ["apple": ["voice-3"]]),
-    ]
-    let (projectDir, cleanUp) = try makeTestProject(cast: cast)
-    defer { cleanUp() }
-
-    let discovery = ProjectDiscovery()
-    let projectMdURL = projectDir.appendingPathComponent("PROJECT.md")
-    let result = try discovery.readCast(from: projectMdURL)
-
-    #expect(result.count == 2)
-    #expect(result[0].character == "NARRATOR")
-    #expect(result[1].character == "LAO TZU")
-  }
-
-  @Test("Read cast filtered by provider")
-  func readCastFilteredByProvider() throws {
-    let cast = [
-      CastMember(character: "NARRATOR", voices: ["apple": ["voice-1"], "elevenlabs": ["voice-2"]]),
-      CastMember(character: "LAO TZU", voices: ["elevenlabs": ["voice-3"]]),
-    ]
-    let (projectDir, cleanUp) = try makeTestProject(cast: cast)
-    defer { cleanUp() }
-
-    let discovery = ProjectDiscovery()
-    let projectMdURL = projectDir.appendingPathComponent("PROJECT.md")
-
-    let appleOnly = try discovery.readCast(from: projectMdURL, filterByProvider: "apple")
-    #expect(appleOnly.count == 1)
-    #expect(appleOnly[0].character == "NARRATOR")
-
-    let elevenOnly = try discovery.readCast(from: projectMdURL, filterByProvider: "elevenlabs")
-    #expect(elevenOnly.count == 2)
-  }
-
-  @Test("Read cast returns empty array when no cast")
-  func readCastReturnsEmptyWhenNoCast() throws {
-    let (projectDir, cleanUp) = try makeTestProject(cast: nil)
-    defer { cleanUp() }
-
-    let discovery = ProjectDiscovery()
-    let projectMdURL = projectDir.appendingPathComponent("PROJECT.md")
-    let result = try discovery.readCast(from: projectMdURL)
-    #expect(result.isEmpty)
-  }
-
-  @Test("Read cast handles PROJECT.md with no cast key in YAML")
-  func readCastHandlesNoCastKey() throws {
-    let tempDir = FileManager.default.temporaryDirectory
-      .appendingPathComponent("ProjectDiscoveryTests-\(UUID().uuidString)")
-    try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: tempDir) }
-
-    let content = """
-      ---
-      type: project
-      title: Minimal Project
-      author: Test Author
-      created: 2025-11-17T10:30:00Z
-      ---
-
-      # Notes
-      """
-    let projectMdURL = tempDir.appendingPathComponent("PROJECT.md")
-    try content.write(to: projectMdURL, atomically: true, encoding: .utf8)
-
-    let discovery = ProjectDiscovery()
-    let result = try discovery.readCast(from: projectMdURL)
-    #expect(result.isEmpty)
-  }
-}
-
-// MARK: - Cast Merging Tests
-
-@Suite("ProjectFrontMatter - Cast Merging")
-struct ProjectFrontMatterCastMergingTests {
-
-  @Test("Merge cast preserves existing provider voices")
-  func mergePreservesOtherProviderVoices() {
-    let existingCast = [
-      CastMember(
-        character: "NARRATOR", actor: "Tom", gender: .male,
-        voiceDescription: "Deep baritone",
-        voices: ["elevenlabs": ["el-voice-1"]])
-    ]
-    let frontMatter = ProjectFrontMatter(
-      title: "Test", author: "Author", cast: existingCast
-    )
-
-    let newCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": ["apple-voice-1"]])
-    ]
-
-    let merged = frontMatter.mergingCast(newCast, forProvider: "apple")
-
-    #expect(merged.cast?.count == 1)
-    let narrator = merged.cast![0]
-    // ElevenLabs voice must be preserved
-    #expect(narrator.voices["elevenlabs"] == ["el-voice-1"])
-    // Apple voice must be added
-    #expect(narrator.voices["apple"] == ["apple-voice-1"])
-  }
-
-  @Test("Merge cast updates voices for specified provider")
-  func mergeUpdatesSpecifiedProvider() {
-    let existingCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": ["old-apple-voice"]])
-    ]
-    let frontMatter = ProjectFrontMatter(
-      title: "Test", author: "Author", cast: existingCast
-    )
-
-    let newCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": ["new-apple-voice"]])
-    ]
-
-    let merged = frontMatter.mergingCast(newCast, forProvider: "apple")
-    #expect(merged.cast?[0].voices["apple"] == ["new-apple-voice"])
-  }
-
-  @Test("Merge cast adds new characters not in existing cast")
-  func mergeAddsNewCharacters() {
-    let existingCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": ["voice-1"]])
-    ]
-    let frontMatter = ProjectFrontMatter(
-      title: "Test", author: "Author", cast: existingCast
-    )
-
-    let newCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": ["voice-1"]]),
-      CastMember(character: "LAO TZU", actor: "Jason", voices: ["apple": ["voice-2"]]),
-    ]
-
-    let merged = frontMatter.mergingCast(newCast, forProvider: "apple")
-    #expect(merged.cast?.count == 2)
-    #expect(merged.cast?[0].character == "NARRATOR")
-    #expect(merged.cast?[1].character == "LAO TZU")
-    #expect(merged.cast?[1].voices["apple"] == ["voice-2"])
-  }
-
-  @Test("Merge cast preserves character metadata from existing cast")
-  func mergePreservesExistingMetadata() {
-    let existingCast = [
-      CastMember(
-        character: "NARRATOR", actor: "Tom Stovall", gender: .male,
-        voiceDescription: "Deep, warm baritone",
-        voices: ["elevenlabs": ["el-voice-1"]])
-    ]
-    let frontMatter = ProjectFrontMatter(
-      title: "Test", author: "Author", cast: existingCast
-    )
-
-    let newCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": ["apple-voice-1"]])
-    ]
-
-    let merged = frontMatter.mergingCast(newCast, forProvider: "apple")
-    let narrator = merged.cast![0]
-
-    // Metadata must be preserved from existing cast
-    #expect(narrator.actor == "Tom Stovall")
-    #expect(narrator.gender == .male)
-    #expect(narrator.voiceDescription == "Deep, warm baritone")
-  }
-
-  @Test("Merge cast with empty existing cast")
-  func mergeWithEmptyExistingCast() {
-    let frontMatter = ProjectFrontMatter(
-      title: "Test", author: "Author", cast: nil
-    )
-
-    let newCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": ["voice-1"]])
-    ]
-
-    let merged = frontMatter.mergingCast(newCast, forProvider: "apple")
-    #expect(merged.cast?.count == 1)
-    #expect(merged.cast?[0].character == "NARRATOR")
-  }
-
-  @Test("withCast replaces entire cast")
-  func withCastReplaces() {
-    let existingCast = [
-      CastMember(character: "NARRATOR", voices: ["apple": ["voice-1"]]),
-      CastMember(character: "LAO TZU", voices: ["apple": ["voice-2"]]),
-    ]
-    let frontMatter = ProjectFrontMatter(
-      title: "Test", author: "Author", cast: existingCast
-    )
-
-    let newCast = [CastMember(character: "COMMENTATOR", voices: ["apple": ["voice-3"]])]
-    let updated = frontMatter.withCast(newCast)
-
-    #expect(updated.cast?.count == 1)
-    #expect(updated.cast?[0].character == "COMMENTATOR")
-    // Other fields preserved
-    #expect(updated.title == "Test")
-    #expect(updated.author == "Author")
-  }
-
-  @Test("withCast nil removes cast")
-  func withCastNilRemoves() {
-    let frontMatter = ProjectFrontMatter(
-      title: "Test", author: "Author",
-      cast: [CastMember(character: "NARRATOR")]
-    )
-
-    let updated = frontMatter.withCast(nil)
-    #expect(updated.cast == nil)
-  }
-}
-
 // MARK: - Write Tests
 
 @Suite("ProjectMarkdownParser - Write")
@@ -479,8 +232,7 @@ struct ProjectMarkdownParserWriteTests {
 
     let parser = ProjectMarkdownParser()
     let frontMatter = ProjectFrontMatter(
-      title: "Write Test", author: "Test Author",
-      cast: [CastMember(character: "NARRATOR", voices: ["apple": ["voice-1"]])]
+      title: "Write Test", author: "Test Author"
     )
 
     let url = tempDir.appendingPathComponent("PROJECT.md")
@@ -492,8 +244,6 @@ struct ProjectMarkdownParserWriteTests {
     let (readBack, body) = try parser.parse(fileURL: url)
     #expect(readBack.title == "Write Test")
     #expect(readBack.author == "Test Author")
-    #expect(readBack.cast?.count == 1)
-    #expect(readBack.cast?[0].character == "NARRATOR")
     #expect(body.contains("# Notes"))
   }
 }
