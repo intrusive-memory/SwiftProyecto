@@ -2,16 +2,16 @@
 type: reference
 name: AGENTS.md
 description: Quick reference for AI agents working with SwiftProyecto
-updated: 2026-07-25
+updated: 2026-08-02
 ---
 
 # SwiftProyecto — Agent Quick Reference
 
-SwiftProyecto is a Swift package providing **extensible, agentic discovery of content projects and project components** with machine-readable PROJECT.md front matter, file discovery, and cast list extraction.
+SwiftProyecto is a Swift package providing **extensible, agentic discovery of content projects and project components** with machine-readable PROJECT.md front matter and file discovery.
 
-**What it does**: Stores project metadata (title, author, season, episodes, cast lists) in structured YAML front matter for AI agent consumption. Parses/generates PROJECT.md files, discovers files recursively, extracts cast from screenplay files (.fountain, .fdx, .highland).
+**What it does**: Stores project metadata (title, author, seasons, episodes, generation config) in structured YAML front matter for AI agent consumption. Parses/generates PROJECT.md files, discovers files recursively. Character-name extraction from screenplays (.fountain, .fdx, .highland) survives only as a generation-time input to `proyecto generate-project` (`CastExtractor`, `DirectoryAnalysis.extractedCast`).
 
-**What it doesn't do**: Parse screenplay content, render content, store document models, or provide UI.
+**What it doesn't do**: Parse screenplay content, render content, store document models, provide UI — or **model a production's cast**. Since schema v5 (5.0.0), cast lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto) (`reparto` CLI). See "Schema v5 + Cast Migration" below.
 
 **Platforms**: iOS 26.0+, macOS 26.0+ (Apple Silicon only)
 
@@ -36,7 +36,7 @@ SwiftProyecto is a Swift package providing **extensible, agentic discovery of co
 - **[INTRO_OUTRO_GUIDE.md](Docs/INTRO_OUTRO_GUIDE.md)** — Intro/outro file configuration
 
 ### Tools & Visualization
-- **[graphify-out/graph.html](graphify-out/graph.html)** — Interactive visual map of codebase (1682 nodes · 2724 edges)
+- **[graphify-out/graph.html](graphify-out/graph.html)** — Interactive visual map of codebase (2082 nodes · 3589 edges)
 - **[graphify-out/GRAPH_REPORT.md](graphify-out/GRAPH_REPORT.md)** — God nodes and community analysis
 
 ---
@@ -89,15 +89,6 @@ print(frontMatter.season)     // Optional field
 print(body)                   // Content after front matter
 ```
 
-### Discovering Cast from Screenplays
-
-```swift
-let projectService = ProjectService(modelContext: context)
-let project = try await projectService.openProject(at: folderURL)
-let cast = try await projectService.discoverCastList(for: project)
-// Returns [CastMember(character: "NAME"), ...] with nil actors/voices
-```
-
 ### Batch Audio Generation
 
 ```swift
@@ -110,15 +101,20 @@ while let fileArgs = iterator.next() {
 }
 ```
 
-### Updating Cast with Voice Assignments
+### Cast: Not This Library's Job (Since 5.0.0)
 
-```swift
-// ✅ CORRECT: Preserves other provider voices
-let updated = frontMatter.mergingCast(newCast, forProvider: "apple")
+The cast APIs no longer exist. `CastMember`, `ProjectFrontMatter.cast`, `withCast(_:)`, `mergingCast(_:forProvider:)`, `discoverCastList(for:)`, `mergeCastLists(discovered:existing:)`, `readCast(from:filterByProvider:)`, `renderCast(_:)`/`replacingCastBlock(in:with:)`, and `proyecto roles` were all removed in 5.0.0.
 
-// ❌ WRONG: Loses other provider voices
-let updated = frontMatter.withCast(newCast)
-```
+`CAST.md` is **SwiftReparto's** — its `CastMember` (with `voicePrompt`, `voices`, `extraKeys`) is the type consumers use, its parser is the only sanctioned `CAST.md` writer, and its gap-filling `[CastMember].merging(_:)` replaces the old merge helpers. Do not read a `cast:` key out of PROJECT.md (v5 has none) and do not reintroduce cast types here.
+
+---
+
+## 🚚 Schema v5 + Cast Migration
+
+- **`ProjectSchemaVersion.current == 5`** (`Sources/SwiftProyecto/Models/ProjectSchemaVersion.swift`). History: no `schemaVersion:` key = v3 legacy; `4` = multi-season schema, with `cast:`; `5` = current, no `cast:` key. Every write stamps 5; version gates are `>= 4`.
+- **A legacy `cast:` block is preserved, never modeled.** It sweeps into the unknown-key store and round-trips verbatim. The only reading SwiftProyecto ever does of it is `ProjectFrontMatter.legacyCastCharacterNames` (plus `hasLegacyCastKey` / `removingLegacyCastKey()`), just enough to verify a migration.
+- **The verify-then-strip contract** (`Sources/proyecto/CastMigrator.swift`): `proyecto migrate` delegates extraction to `reparto import` and rewrites PROJECT.md **only after** (1) the import exits 0 — never `--force` on the auto path, (2) `reparto validate` passes on the produced `CAST.md`, and (3) every legacy `character:` name is present in it. Then: `PROJECT.md.bak` backup, byte-surgical rewrite via `removingCastBlock(in:)` + `stampingSchemaVersion(in:to:)`. Refusals (no `reparto` binary, existing `CAST.md`, season-level `cast:`) leave PROJECT.md byte-for-byte untouched. `init --update` and `generate-project` auto-migrate first and abort their rewrite if migration can't complete; `validate` warns but never mutates.
+- **The `reparto` binary is a runtime-only dependency** of the migration path. SwiftProyecto declares **no package dependency** on SwiftReparto — SwiftReparto is a leaf package and must stay one.
 
 ---
 
@@ -160,7 +156,7 @@ Supports 3 formats with format-agnostic parsing via SwiftCompartido:
 - **Final Draft** (`.fdx`) — XML-based
 - **Highland** (`.highland`) — TextBundle (ZIP)
 
-CastExtractor auto-detects format and extracts character names:
+CastExtractor auto-detects format and extracts character names — **generation-time only** (it feeds `proyecto generate-project`'s directory analysis; it does not write cast anywhere):
 
 ```swift
 let extractor = CastExtractor()

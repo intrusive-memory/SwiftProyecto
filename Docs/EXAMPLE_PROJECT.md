@@ -1,5 +1,6 @@
 ---
 type: project
+schemaVersion: 5
 title: Podcast Meditations: Mindfulness and Self-Care
 author: Tom Stovall
 created: 2025-01-25T00:00:00Z
@@ -12,22 +13,6 @@ episodesDir: episodes
 audioDir: audio
 filePattern: "*.fountain"
 exportFormat: m4a
-cast:
-  - character: MARCUS AURELIUS
-    actor: Tom Stovall
-    gender: M
-    voices:
-      apple: com.apple.voice.compact.en-US.Aaron
-  - character: NARRATOR
-    actor: Jason Manino
-    gender: M
-    voices:
-      apple: com.apple.voice.compact.en-US.Daniel
-  - character: POETIC VOICE
-    actor: Sarah Mitchell
-    gender: F
-    voices:
-      apple: com.apple.voice.compact.en-US.Samantha
 ---
 
 # Meditations Podcast
@@ -47,6 +32,8 @@ Each episode presents a reading from the Meditations, offering daily reflections
 - **MARCUS AURELIUS** - The narrator, voiced as the Emperor himself
 - **NARRATOR** - Contextual introductions and transitions
 - **POETIC VOICE** - Lyrical interpretations of key passages
+
+The full cast roster (actors, voice prompts, provider voice mappings) lives in the sibling `CAST.md`, owned by SwiftReparto — since schema v5 it is not part of PROJECT.md.
 
 ## Production
 

@@ -212,7 +212,7 @@ final class ProjectFrontMatterTests: XCTestCase {
     XCTAssertEqual(original.tags, decoded.tags)
     XCTAssertEqual(original.season, decoded.season)
     XCTAssertEqual(original.episodes, decoded.episodes)
-    XCTAssertEqual(decoded.schemaVersion, 4)
+    XCTAssertEqual(decoded.schemaVersion, ProjectSchemaVersion.current)
   }
 
   func testCodable_EncodeAndDecode_MinimalFields() throws {
@@ -245,148 +245,6 @@ final class ProjectFrontMatterTests: XCTestCase {
       // If this compiles, Sendable is working
       XCTAssertEqual(frontMatter.title, "Concurrent Project")
     }
-  }
-
-  // MARK: - Cast List Tests
-
-  func testCast_WithCastList() throws {
-    let yaml = """
-      ---
-      type: project
-      title: Test Project
-      author: Test Author
-      created: 2025-01-01T00:00:00Z
-      cast:
-        - character: NARRATOR
-          actor: Tom Stovall
-          voices:
-            apple: com.apple.voice.compact.en-US.Aaron
-            elevenlabs: 21m00Tcm4TlvDq8ikWAM
-        - character: LAO TZU
-          actor: Jason Manino
-          voices:
-            voxalta: narrative-1
-      ---
-      """
-
-    let parser = ProjectMarkdownParser()
-    let (frontMatter, _) = try parser.parse(content: yaml)
-
-    XCTAssertNotNil(frontMatter.cast)
-    XCTAssertEqual(frontMatter.cast?.count, 2)
-
-    let narrator = frontMatter.cast?.first { $0.character == "NARRATOR" }
-    XCTAssertEqual(narrator?.actor, "Tom Stovall")
-    XCTAssertEqual(narrator?.voices.count, 2)
-    XCTAssertEqual(narrator?.voices["apple"], ["com.apple.voice.compact.en-US.Aaron"])
-    XCTAssertEqual(narrator?.voices["elevenlabs"], ["21m00Tcm4TlvDq8ikWAM"])
-
-    let laoTzu = frontMatter.cast?.first { $0.character == "LAO TZU" }
-    XCTAssertEqual(laoTzu?.actor, "Jason Manino")
-    XCTAssertEqual(laoTzu?.voices.count, 1)
-    XCTAssertEqual(laoTzu?.voices["voxalta"], ["narrative-1"])
-  }
-
-  func testCast_WithoutCastList() throws {
-    let yaml = """
-      ---
-      type: project
-      title: Test Project
-      author: Test Author
-      created: 2025-01-01T00:00:00Z
-      ---
-      """
-
-    let parser = ProjectMarkdownParser()
-    let (frontMatter, _) = try parser.parse(content: yaml)
-
-    XCTAssertNil(frontMatter.cast)
-  }
-
-  func testCast_EmptyArray() throws {
-    let yaml = """
-      ---
-      type: project
-      title: Test Project
-      author: Test Author
-      created: 2025-01-01T00:00:00Z
-      cast: []
-      ---
-      """
-
-    let parser = ProjectMarkdownParser()
-    let (frontMatter, _) = try parser.parse(content: yaml)
-
-    XCTAssertNotNil(frontMatter.cast)
-    XCTAssertEqual(frontMatter.cast?.count, 0)
-  }
-
-  func testCast_MinimalMembers() throws {
-    let yaml = """
-      ---
-      type: project
-      title: Test Project
-      author: Test Author
-      created: 2025-01-01T00:00:00Z
-      cast:
-        - character: NARRATOR
-        - character: COMMENTATOR
-      ---
-      """
-
-    let parser = ProjectMarkdownParser()
-    let (frontMatter, _) = try parser.parse(content: yaml)
-
-    XCTAssertEqual(frontMatter.cast?.count, 2)
-
-    let narrator = frontMatter.cast?.first { $0.character == "NARRATOR" }
-    XCTAssertNil(narrator?.actor)
-    XCTAssertEqual(narrator?.voices.count, 0)
-  }
-
-  func testCast_RoundTrip() throws {
-    let original = ProjectFrontMatter(
-      title: "Test Project",
-      author: "Test Author",
-      created: Date(),
-      episodesDir: "episodes",
-      audioDir: "audio",
-      filePattern: FilePattern(["*.fountain"]),
-      exportFormat: "m4a",
-      cast: [
-        CastMember(
-          character: "NARRATOR",
-          actor: "Tom Stovall",
-          voices: [
-            "apple": ["com.apple.voice.compact.en-US.Aaron"],
-            "elevenlabs": ["21m00Tcm4TlvDq8ikWAM"],
-          ]
-        ),
-        CastMember(
-          character: "LAO TZU",
-          actor: "Jason Manino",
-          voices: [:]
-        ),
-      ]
-    )
-
-    let parser = ProjectMarkdownParser()
-    let generated = parser.generate(frontMatter: original, body: "")
-    let (parsed, _) = try parser.parse(content: generated)
-
-    XCTAssertEqual(parsed.cast?.count, original.cast?.count)
-    XCTAssertEqual(parsed.episodesDir, original.episodesDir)
-    XCTAssertEqual(parsed.audioDir, original.audioDir)
-    XCTAssertEqual(parsed.exportFormat, original.exportFormat)
-
-    let narrator = parsed.cast?.first { $0.character == "NARRATOR" }
-    XCTAssertEqual(narrator?.actor, "Tom Stovall")
-    XCTAssertEqual(
-      narrator?.voices,
-      [
-        "apple": ["com.apple.voice.compact.en-US.Aaron"],
-        "elevenlabs": ["21m00Tcm4TlvDq8ikWAM"],
-      ])
   }
 
   // MARK: - App Sections Tests
@@ -502,7 +360,7 @@ final class ProjectFrontMatterTests: XCTestCase {
     XCTAssertEqual(decoded.author, "Test Author")
     XCTAssertEqual(decoded.appSections.count, 1)
     XCTAssertNotNil(decoded.appSections["myapp"])
-    XCTAssertEqual(decoded.schemaVersion, 4)
+    XCTAssertEqual(decoded.schemaVersion, ProjectSchemaVersion.current)
     XCTAssertEqual(decoded.appSections.count, 1)
     XCTAssertNotNil(decoded.appSections["myapp"])
 
@@ -808,7 +666,7 @@ final class ProjectFrontMatterTests: XCTestCase {
 
     let generated = parser.generate(frontMatter: frontMatter, body: "")
 
-    XCTAssertTrue(generated.contains("schemaVersion: 4"))
+    XCTAssertTrue(generated.contains("schemaVersion: \(ProjectSchemaVersion.current)"))
     XCTAssertTrue(generated.contains("seasons:"))
     XCTAssertFalse(generated.contains("season: "))
     XCTAssertTrue(generated.contains("episodes: 10"))

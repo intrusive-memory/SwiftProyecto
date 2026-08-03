@@ -92,49 +92,37 @@ proyecto download --quiet
 
 **Note**: The model is downloaded from SwiftAcervo CDN (Cloudflare R2) for reliable validation and checksumming.
 
-### `proyecto roles`
+### `proyecto migrate`
 
-Discovers and extracts character lists from screenplay files in a project. Supports all three screenplay formats (.fountain, .fdx, .highland) with format auto-detection.
+Migrates a legacy PROJECT.md to the current schema (v5). Today that means one thing: a legacy `cast:` block is moved into `CAST.md` — via `reparto import`, the sanctioned CAST.md writer — and PROJECT.md is rewritten without it, stamped `schemaVersion: 5`.
+
+Requires the `reparto` binary: `brew install intrusive-memory/tap/reparto`.
 
 ```bash
-# Extract characters from all screenplay files in current directory
-proyecto roles
+# Migrate PROJECT.md in current directory
+proyecto migrate
 
-# Extract from specific directory
-proyecto roles /path/to/project
+# Migrate a specific project
+proyecto migrate /path/to/show
 
-# Process specific files or patterns
-proyecto roles episodes/*.fdx
-proyecto roles screenplay.highland
+# Report what would happen, write nothing
+proyecto migrate --dry-run
 
-# Show per-format breakdown
-proyecto roles --verbose
-
-# Quiet mode (minimal output)
-proyecto roles --quiet
+# Let reparto overwrite an existing CAST.md
+proyecto migrate --force
 ```
 
 **Options:**
-- `directory` (argument): Project directory or file pattern (default: current directory)
-- `--verbose, -v`: Show format-specific extraction details
-- `--quiet, -q`: Suppress progress output
+- `path` (argument): Project directory or PROJECT.md path (default: current directory)
+- `--dry-run`: Verify and report without writing anything
+- `--force`: Overwrite an existing CAST.md (forwarded to `reparto import`)
+- `--quiet, -q`: Suppress non-error output
 
-**Output:**
-```
-Project: My Screenplay Series
-Total characters: 42
+**Data safety**: PROJECT.md is only rewritten *after* the transfer is verified — the import must succeed, the produced CAST.md must pass `reparto validate`, and every character from the legacy block must be present in it. A `PROJECT.md.bak` backup is written first and the rewrite is surgical (only the `cast:` span and the `schemaVersion:` line change). Any failure or refusal — `reparto` not installed, `CAST.md` already exists (the auto path never passes `--force`), or a season-level `cast:` block — leaves PROJECT.md byte-for-byte untouched.
 
-Format Summary:
-  .fountain files: 12
-  .fdx files: 8
-  .highland files: 5
+`proyecto init --update` and `proyecto generate-project` run this migration automatically first, and abort their rewrite if it cannot complete. `proyecto validate` warns about a legacy `cast:` block but never mutates.
 
-Characters (sorted):
-  1. ADVISOR
-  2. ASTROLOGIST
-  3. BAKER
-  ...
-```
+**Removed command**: `proyecto roles` (screenplay character extraction) was removed in 5.0.0 along with the rest of the cast surface — cast tooling lives in the `reparto` CLI ([SwiftReparto](https://github.com/intrusive-memory/SwiftReparto)).
 
 ## Iterative LLM Architecture
 

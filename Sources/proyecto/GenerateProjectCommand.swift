@@ -318,6 +318,11 @@ struct GenerateProjectCommand: AsyncParsableCommand {
 
     // Step 7: Write file with backup
     if projectMdExists {
+      // A legacy `cast:` block must be safely in CAST.md before this command
+      // re-emits PROJECT.md — the full regenerate below cannot preserve it.
+      // Aborts (file untouched) when the migration cannot complete.
+      try CastMigrator(quiet: quiet).ensureMigratedBeforeRewrite(projectMdURL: projectMdURL)
+
       let backupURL = projectMdURL.appendingPathExtension("bak")
       do {
         if FileManager.default.fileExists(atPath: backupURL.path) {

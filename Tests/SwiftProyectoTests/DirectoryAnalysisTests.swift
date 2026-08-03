@@ -493,9 +493,9 @@ final class DirectoryAnalysisIntegrationTests: XCTestCase {
 
 }
 
-// MARK: - RolesCommand Integration Tests
+// MARK: - Screenplay Cast Discovery Integration Tests
 
-final class RolesCommandIntegrationTests: XCTestCase {
+final class ScreenplayCastDiscoveryIntegrationTests: XCTestCase {
   let castExtractor = CastExtractor()
 
   // MARK: - Test: Discover Fountain Files Only
@@ -734,7 +734,7 @@ final class RolesCommandIntegrationTests: XCTestCase {
     let fdxCast = try castExtractor.extractCast(from: fdxFile)
     let highlandCast = try castExtractor.extractCast(from: highlandFile)
 
-    // Simulate RolesCommand deduplication logic
+    // Simulate cast deduplication logic (formerly RolesCommand, removed in schema v5)
     var compiled: [String] = []
     var seen = Set<String>()
 
@@ -897,7 +897,7 @@ final class RolesCommandIntegrationTests: XCTestCase {
 
   // MARK: - Helper Method: Directory-Based Discovery
 
-  /// Mimics the private RolesCommand.discoverScreenplays(in:) method behavior
+  /// Discovers screenplay files recursively (formerly mirrored the removed RolesCommand)
   private static func discoverScreenplaysInDirectory(_ directory: URL) -> [URL] {
     let fm = FileManager.default
     guard

@@ -128,10 +128,21 @@ public struct ProjectValidator {
     validateTypeField(frontMatter, errors: &errors)
 
     // 3. Schema-specific validation
-    if metadata.schemaVersion == 4 {
+    if metadata.schemaVersion >= 4 {
       validateV4Structure(frontMatter, errors: &errors, warnings: &warnings, metadata: &metadata)
     } else {
       validateV3Structure(frontMatter, errors: &errors, warnings: &warnings, metadata: &metadata)
+    }
+
+    // 4. Legacy cast detection (schema v5 removed the `cast:` key)
+    if frontMatter.hasLegacyCastKey {
+      warnings.append(
+        """
+        `cast:` in PROJECT.md is no longer a recognized field (removed in schema v5). \
+        A production's cast lives in CAST.md, owned by SwiftReparto. The block is being \
+        preserved as an unknown key; run `proyecto migrate` to move it into CAST.md \
+        via `reparto import` and rewrite this file without it.
+        """)
     }
 
     return ValidationResult(

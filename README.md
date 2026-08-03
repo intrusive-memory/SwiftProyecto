@@ -12,7 +12,7 @@ type: reference
     <img src="https://img.shields.io/badge/Swift-6.2+-orange.svg" />
     <img src="https://img.shields.io/badge/Platform-iOS%2026.0+%20|%20macOS%2026.0+-lightgrey.svg" />
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-    <img src="https://img.shields.io/badge/Version-4.8.1-green.svg" />
+    <img src="https://img.shields.io/badge/Version-5.0.0-green.svg" />
 </p>
 
 **SwiftProyecto** is a Swift package providing **extensible, agentic discovery** of content projects and their components. It enables AI coding agents to understand project structure, intent, and composition in a single pass through structured metadata stored in PROJECT.md front matter.
@@ -25,7 +25,7 @@ This project exists to provide **extensible, agentic discovery of projects and p
 
 **Solution**: SwiftProyecto stores settings, utilities, project intent, and composition information in PROJECT.md front matter. This allows AI agents to:
 - Understand project structure in one pass (not multiple discovery iterations)
-- Access rendering settings, cast lists, and generation config immediately
+- Access rendering settings and generation config immediately
 - Know what utilities to invoke (hooks, TTS providers, export formats)
 - Comprehend project intent (genre, description, tags) without inference
 
@@ -78,7 +78,6 @@ SwiftProyecto provides AI agents and applications with comprehensive project und
 - **PROJECT.md Front Matter**: Machine-readable project intent, composition, and settings
   - Project metadata (title, author, genre, tags, description)
   - Generation config (episodes directory, audio output, file patterns, export format)
-  - Cast lists (character-to-voice mappings for TTS)
   - Hooks (pre/post-generation scripts for workflow automation)
   - App-specific settings (extensible via AppFrontMatterSettings protocol - **NEW in v2.6.0**)
   - All accessible via YAML front matter using UNIVERSAL library
@@ -302,6 +301,15 @@ let response = try await session.complete(
 
 ## Features
 
+### 🔥 v5.0.0: Cast Moves to CAST.md
+
+- **Schema v5**: PROJECT.md no longer declares a `cast:` key; every write stamps `schemaVersion: 5`
+- **Cast surface removed**: `CastMember`, `ProjectFrontMatter.cast`, cast discovery/merge APIs, and `proyecto roles` are gone — cast lives in [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto)'s `CAST.md`
+- **`proyecto migrate`**: moves a legacy `cast:` block into `CAST.md` via `reparto import`, rewriting PROJECT.md only after the transfer is verified (with a `PROJECT.md.bak` backup)
+- **Nothing lost**: v3/v4 files still parse; an un-migrated `cast:` block is preserved verbatim and `proyecto validate` warns about it
+
+**Migration**: See [UPGRADING.md](UPGRADING.md) § "Upgrading from SwiftProyecto 4.x to 5.0.0".
+
 ### ✨ v4.0.0: Multi-Season & Per-Character Language Support (June 2026)
 
 - **Multi-Season Schema**: `seasons[]` array replaces single `season` field
@@ -391,16 +399,16 @@ Add SwiftProyecto to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "3.5.4")
+    .package(url: "https://github.com/intrusive-memory/SwiftProyecto.git", from: "5.0.0")
 ]
 ```
 
 Or add it in Xcode:
 1. File > Add Package Dependencies
 2. Enter: `https://github.com/intrusive-memory/SwiftProyecto.git`
-3. Select version: `3.5.4` or later
+3. Select version: `5.0.0` or later
 
-**Note**: Version 3.0.0 has breaking changes (voice format migration). Version 2.6.0 added app-specific settings. If you're upgrading from v1.x or v2.x, see the migration sections below.
+**Note**: Version 5.0.0 has breaking changes (cast moved to CAST.md — see [UPGRADING.md](UPGRADING.md)). Version 3.0.0 changed the voice format. If you're upgrading from an earlier major, see the migration sections below.
 
 ## Usage
 
@@ -462,95 +470,19 @@ Additional notes and production information go here...
 - `audioDir`: Relative path for audio output (default: "audio")
 - `filePattern`: File discovery patterns (glob patterns or explicit files)
 - `exportFormat`: Audio export format (default: "m4a")
-- `cast`: Character-to-voice mappings for audio generation (see below)
+- `schemaVersion`: PROJECT.md schema version (stamped automatically on write; `5` is current)
 
-### Cast List for Audio Generation
+### Cast Lives in CAST.md (SwiftReparto)
 
-PROJECT.md supports inline character-to-voice mappings for TTS audio generation:
+Since schema v5 (SwiftProyecto 5.0.0), PROJECT.md has **no `cast:` key**. A production's cast — character-to-voice mappings, voice prompts, and everything else about the roster — lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto) (library + `reparto` CLI, `brew install intrusive-memory/tap/reparto`). Read and write the roster through SwiftReparto's `CastMember` and parser; SwiftReparto is `CAST.md`'s only writer.
 
-```yaml
----
-type: project
-title: Daily Dao Podcast
-author: Tom Stovall
-created: 2025-01-28T00:00:00Z
+A legacy `cast:` block in an older PROJECT.md still parses (into the unknown-key store) and round-trips verbatim — nothing is lost. Move it into `CAST.md` with:
 
-# Character-to-voice mappings
-cast:
-  - character: NARRATOR
-    actor: Tom Stovall
-    gender: M
-    voices:
-      apple: com.apple.voice.compact.en-US.Aaron
-      elevenlabs: 21m00Tcm4TlvDq8ikWAM
-  - character: LAO TZU
-    actor: Jason Manino
-    gender: M
-    voices:
-      voxalta: male-voice-1
-      apple: com.apple.voice.premium.en-US.Tom
----
+```bash
+proyecto migrate /path/to/project    # verifies the transfer via reparto, then rewrites PROJECT.md
 ```
 
-**Voice Format**: Key/value pairs where the key is the provider name and the value is the voice identifier.
-
-**Supported Providers & Voice ID Formats**:
-
-| Provider | Key | Voice ID Format | Example Voice ID |
-|----------|-----|-----------------|------------------|
-| **Apple TTS** | `apple` | `com.apple.voice.{quality}.{locale}.{VoiceName}` | `com.apple.voice.compact.en-US.Samantha` |
-| **ElevenLabs** | `elevenlabs` | Unique voice ID (alphanumeric) | `21m00Tcm4TlvDq8ikWAM` |
-| **VoxAlta** | `voxalta` | Voice name or ID | `female-voice-1` |
-
-**Apple Voice Quality Levels**:
-- `premium` - High-quality enhanced voices
-- `compact` - Standard quality voices (default)
-
-**Example Voice Configurations**:
-```yaml
-# Apple TTS voices
-voices:
-  apple: com.apple.voice.premium.en-US.Allison
-
-# ElevenLabs voices (voice ID from ElevenLabs dashboard)
-voices:
-  elevenlabs: 21m00Tcm4TlvDq8ikWAM
-
-# Multiple providers for fallback
-voices:
-  apple: com.apple.voice.compact.en-US.Samantha
-  elevenlabs: pNInz6obpgDQGcFmaJgB
-  voxalta: female-voice-1
-```
-
-**Voice Resolution**: During audio generation, voices are tried in order. The first voice matching an enabled provider is used. If no voices match or a voice URI is invalid, it is skipped and the next is tried. If all voices fail, the default voice is used.
-
-**Finding Voice IDs**:
-- **Apple**: Use `AVSpeechSynthesisVoice.speechVoices()` to list available voices and their identifiers
-- **ElevenLabs**: Find voice IDs in your ElevenLabs dashboard under "Voices"
-- **VoxAlta**: Run `hablare voices` CLI command to list available voices
-
-#### Automatic Cast List Discovery
-
-```swift
-import SwiftProyecto
-
-let projectService = ProjectService(modelContext: context)
-let project = try await projectService.openProject(at: projectURL)
-
-// Discover characters from .fountain files
-let discoveredCast = try await projectService.discoverCastList(for: project)
-// Returns: [CastMember(character: "NARRATOR"), CastMember(character: "LAO TZU")]
-
-// Merge with existing cast list (preserves actor/voice assignments)
-if let existingCast = frontMatter.cast {
-    let merged = projectService.mergeCastLists(
-        discovered: discoveredCast,
-        existing: existingCast
-    )
-    // Update PROJECT.md with merged cast
-}
-```
+See [UPGRADING.md](UPGRADING.md) for the full 4.x → 5.0.0 migration guide.
 
 ### Basic Usage
 
@@ -1042,6 +974,26 @@ proyecto download --force
 proyecto download --quiet
 ```
 
+#### `proyecto migrate`
+
+Moves a legacy `cast:` block out of PROJECT.md into `CAST.md` (via `reparto import`) and rewrites PROJECT.md without it, stamped `schemaVersion: 5`. Requires the `reparto` binary (`brew install intrusive-memory/tap/reparto`).
+
+```bash
+# Migrate PROJECT.md in current directory
+proyecto migrate
+
+# Migrate a specific project
+proyecto migrate /path/to/project
+
+# Report what would happen, write nothing
+proyecto migrate --dry-run
+
+# Let reparto overwrite an existing CAST.md
+proyecto migrate --force
+```
+
+PROJECT.md is only rewritten after the transfer is verified (import succeeds, the produced `CAST.md` validates, every character survived), with a `PROJECT.md.bak` backup; any failure or refusal leaves it byte-for-byte untouched. See [UPGRADING.md](UPGRADING.md) for details.
+
 ### LLM Analysis
 
 The `init` command analyzes:
@@ -1065,10 +1017,7 @@ And generates PROJECT.md frontmatter with:
 ### Building
 
 ```bash
-# Build library and CLI
-swift build
-
-# Or using Makefile (recommended)
+# Always build through the Makefile
 make install        # Debug build
 make release        # Release build
 ```
@@ -1076,7 +1025,7 @@ make release        # Release build
 ### Testing
 
 ```bash
-swift test
+make test
 ```
 
 **Status**: All tests passing. Test suite includes:
@@ -1088,6 +1037,8 @@ swift test
 - IterativeProjectGenerator tests with Foundation Models
 
 ## Migration from v2.x to v3.0
+
+> **Historical (superseded by v5.0.0)**: this section describes the v3.0 voice-format change to `CastMember` and the `cast:` block, both of which were removed from SwiftProyecto in 5.0.0 (schema v5). Cast now lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto) — see [UPGRADING.md](UPGRADING.md). It is kept for users upgrading old files through the version chain.
 
 SwiftProyecto v3.0 changes how voices are represented in `CastMember` and PROJECT.md files.
 
@@ -1295,7 +1246,11 @@ SwiftProyecto is released under the MIT License. See [LICENSE](./LICENSE) for de
 
 ## Status
 
-### ✨ v4.0.0 - Multi-Season & Per-Character Language (Current - June 2026)
+### 🔥 v5.0.0 - Cast Moves to CAST.md
+
+**BREAKING**: the cast surface is removed from SwiftProyecto (schema v5 has no `cast:` key). Cast lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto); `proyecto migrate` moves a legacy block over with verify-then-strip data safety. See [CHANGELOG.md](CHANGELOG.md) and [UPGRADING.md](UPGRADING.md).
+
+### ✨ v4.0.0 - Multi-Season & Per-Character Language (June 2026)
 
 **Major Features**:
 - ✅ Multi-season schema with `seasons[]` array

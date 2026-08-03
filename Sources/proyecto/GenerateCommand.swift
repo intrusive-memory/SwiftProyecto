@@ -128,7 +128,7 @@ struct GenerateCommand: AsyncParsableCommand {
       }
 
       // Detect schema version and get seasons to process
-      let isV4 = projectFrontMatter.schemaVersion == 4
+      let isV4 = projectFrontMatter.detectedSchemaVersion() >= 4
       let projectDirectory = projectMdURL.deletingLastPathComponent()
 
       // Get seasons to process
@@ -423,10 +423,10 @@ struct GenerateCommand: AsyncParsableCommand {
     do {
       let (projectFrontMatter, _) = try parser.parse(fileURL: projectMdURL)
 
-      // Verify this is a v4 schema project
-      guard projectFrontMatter.schemaVersion == 4 else {
+      // Verify this is a versioned (v4+) schema project
+      guard projectFrontMatter.detectedSchemaVersion() >= 4 else {
         throw GenerateError.parseError(
-          "--list is only available for v4.0.0 schema projects (schemaVersion: 4)")
+          "--list requires a versioned schema project (schemaVersion: 4 or later)")
       }
 
       // Print title and project info

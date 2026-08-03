@@ -141,8 +141,8 @@ public struct ProjectMarkdownParser {
       yaml += "tags: [\(tags.map { escapeYAMLString($0) }.joined(separator: ", "))]\n"
     }
 
-    // v4.0.0 fields
-    yaml += "schemaVersion: 4\n"
+    // Versioned schema fields
+    yaml += "schemaVersion: \(ProjectSchemaVersion.current)\n"
     if let projectType = frontMatter.projectType {
       yaml += "projectType: \(escapeYAMLString(projectType))\n"
     }
@@ -217,9 +217,6 @@ public struct ProjectMarkdownParser {
       yaml += "outroFile: \(escapeYAMLString(outroFile))\n"
     }
 
-    // Cast list
-    yaml += renderCast(frontMatter.cast ?? [])
-
     // Hook fields
     if let preGenerateHook = frontMatter.preGenerateHook {
       yaml += "preGenerateHook: \(escapeYAMLString(preGenerateHook))\n"
@@ -267,68 +264,22 @@ public struct ProjectMarkdownParser {
     return yaml
   }
 
-  /// Render the top-level `cast:` block for a list of cast members.
-  ///
-  /// This is the single source of truth for cast YAML emission, shared by both
-  /// ``generate(frontMatter:body:)`` (full-file generation) and
-  /// ``replacingCastBlock(in:with:)`` (surgical write-back). Keeping one
-  /// renderer guarantees the two paths never drift.
-  ///
-  /// - Parameter cast: The cast members to render.
-  /// - Returns: The `cast:` block as YAML text (each line newline-terminated),
-  ///   or an empty string when `cast` is empty (no block to emit).
-  public func renderCast(_ cast: [CastMember]) -> String {
-    guard !cast.isEmpty else { return "" }
-
-    var yaml = "cast:\n"
-    for member in cast {
-      yaml += "  - character: \(escapeYAMLString(member.character))\n"
-      if let actor = member.actor {
-        yaml += "    actor: \(escapeYAMLString(actor))\n"
-      }
-      if let gender = member.gender {
-        yaml += "    gender: \(gender.rawValue)\n"
-      }
-      if let voicePrompt = member.voiceDescription {
-        yaml += "    voicePrompt: \(escapeYAMLString(voicePrompt))\n"
-      }
-      if let language = member.language {
-        yaml += "    language: \(escapeYAMLString(language))\n"
-      }
-      if !member.voices.isEmpty {
-        yaml += "    voices:\n"
-        for (provider, voiceIds) in member.voices.sorted(by: { $0.key < $1.key }) {
-          if voiceIds.count == 1, let singleId = voiceIds.first {
-            // Single voice: render inline for readability
-            yaml += "      \(provider): \(escapeYAMLString(singleId))\n"
-          } else if !voiceIds.isEmpty {
-            // Multiple voices: render as array
-            yaml += "      \(provider):\n"
-            for voiceId in voiceIds {
-              yaml += "        - \(escapeYAMLString(voiceId))\n"
-            }
-          }
-        }
-      }
-      // Re-emit any unknown, user-maintained per-member keys (e.g. `bio:`) so
-      // they survive PROJECT.md write-back rather than being silently dropped.
-      for (key, value) in member.extraKeys.sorted(by: { $0.key < $1.key }) {
-        yaml += try! generateCastMemberExtraYAML(key: key, value: value)
-      }
-    }
-    return yaml
-  }
-
-  /// Surgically replace ONLY the top-level `cast:` block in existing PROJECT.md
+  /// Surgically remove the top-level `cast:` block from existing PROJECT.md
   /// text, leaving every other byte untouched.
   ///
-  /// This is the lossless write-back path. Rather than re-emitting the whole
-  /// frontmatter from the typed model — which reorders keys, drops comments, and
-  /// (historically) silently deleted any key the hand-rolled emitter forgot
-  /// (issue intrusive-memory/SwiftEchada#55, #44) — it performs a line-span
-  /// splice of just the `cast:` subtree. Introductory/outro keys, inline
-  /// comments, unknown top-level keys, key ordering, and spacing are all
-  /// byte-identical by construction.
+  /// This is the lossless removal path used by cast migration (schema v5).
+  /// Rather than re-emitting the whole frontmatter from the typed model —
+  /// which reorders keys, drops comments, and (historically) silently deleted
+  /// any key the hand-rolled emitter forgot (issue
+  /// intrusive-memory/SwiftEchada#55, #44) — it performs a line-span deletion
+  /// of just the `cast:` subtree. Intro/outro keys, inline comments, unknown
+  /// top-level keys, key ordering, and spacing are all byte-identical by
+  /// construction.
+  ///
+  /// **Callers must only invoke this after the cast data has been verifiably
+  /// migrated to CAST.md** (via `reparto import`). Removing the block without
+  /// that verification is exactly the data loss the preservation mechanism
+  /// exists to prevent.
   ///
   /// Algorithm:
   /// 1. Locate the `---` … `---` frontmatter delimiters.
@@ -336,23 +287,101 @@ public struct ProjectMarkdownParser {
   ///    more-indented lines belonging to it. Blank lines and column-0 comments
   ///    interior to the block are consumed too — only the next column-0 key (or
   ///    the closing `---`) ends it. Trailing blanks/comments stay outside.
-  /// 3. Replace exactly those lines with a freshly rendered cast block.
-  /// 4. If there is no existing `cast:` block, insert the rendered block at the
-  ///    end of the frontmatter (just before the closing `---`).
+  /// 3. Delete exactly those lines.
   ///
-  /// One limitation is inherent to re-rendering the block: comments *inside*
-  /// `cast:` do not survive, because the replacement is generated from the typed
-  /// model. Comments anywhere else in the file are untouched.
+  /// - Parameter original: The complete, original PROJECT.md file text.
+  /// - Returns: New file text identical to `original` except the `cast:` block
+  ///   is gone. If there is no top-level `cast:` key, `original` is returned
+  ///   unchanged.
+  /// - Throws: ``ParserError/noFrontMatter`` if no `---` … `---` block is found.
+  public func removingCastBlock(in original: String) throws -> String {
+    var lines = original.components(separatedBy: "\n")
+
+    let (firstDelim, secondDelim) = try frontMatterDelimiters(in: lines)
+
+    // Find the top-level `cast:` key at column 0 within the frontmatter.
+    var castStart: Int?
+    for index in (firstDelim + 1)..<secondDelim {
+      let line = lines[index]
+      guard let first = line.first, first != " ", first != "\t" else { continue }
+      let key = line.prefix(while: { $0 != ":" })
+      if key == "cast" {
+        castStart = index
+        break
+      }
+    }
+
+    guard let start = castStart else { return original }
+
+    // Consume the run of lines belonging to the block.
+    //
+    // A blank line does NOT end the block. Hand-maintained project files
+    // routinely separate cast entries with one, and treating a blank as the
+    // terminator left every entry after it in place but still indented — YAML
+    // then parsed the orphans as a malformed document. Column-0 comments are
+    // treated the same way, for the same reason.
+    //
+    // Blanks and comments are therefore scanned past *tentatively*: `end`
+    // only advances to cover them once a further indented line proves they
+    // were interior to the block. Trailing blanks and comments stay outside,
+    // since they separate `cast:` from whatever follows rather than belonging
+    // to it.
+    var end = start + 1
+    var scan = end
+    while scan < secondDelim {
+      let line = lines[scan]
+      let trimmed = line.trimmingCharacters(in: .whitespaces)
+      if trimmed.isEmpty || trimmed.hasPrefix("#") {
+        scan += 1
+        continue
+      }
+      guard let first = line.first, first == " " || first == "\t" else { break }
+      scan += 1
+      end = scan
+    }
+    lines.removeSubrange(start..<end)
+
+    return lines.joined(separator: "\n")
+  }
+
+  /// Surgically set the top-level `schemaVersion:` line in existing PROJECT.md
+  /// text, leaving every other byte untouched.
+  ///
+  /// Used by cast migration to stamp ``ProjectSchemaVersion/current`` onto a
+  /// legacy document without paying the full re-emit's costs (key reordering,
+  /// comment loss). If the document already declares a `schemaVersion:`, that
+  /// line is replaced in place; otherwise the line is inserted immediately
+  /// after the opening `---`.
   ///
   /// - Parameters:
   ///   - original: The complete, original PROJECT.md file text.
-  ///   - cast: The updated cast members to write back.
-  /// - Returns: New file text identical to `original` except for the `cast:` block.
+  ///   - version: The version to stamp (defaults to
+  ///     ``ProjectSchemaVersion/current``).
+  /// - Returns: New file text identical to `original` except for the
+  ///   `schemaVersion:` line.
   /// - Throws: ``ParserError/noFrontMatter`` if no `---` … `---` block is found.
-  public func replacingCastBlock(in original: String, with cast: [CastMember]) throws -> String {
+  public func stampingSchemaVersion(
+    in original: String, to version: Int = ProjectSchemaVersion.current
+  ) throws -> String {
     var lines = original.components(separatedBy: "\n")
 
-    // Locate frontmatter delimiters.
+    let (firstDelim, secondDelim) = try frontMatterDelimiters(in: lines)
+
+    for index in (firstDelim + 1)..<secondDelim {
+      let line = lines[index]
+      guard let first = line.first, first != " ", first != "\t" else { continue }
+      if line.prefix(while: { $0 != ":" }) == "schemaVersion" {
+        lines[index] = "schemaVersion: \(version)"
+        return lines.joined(separator: "\n")
+      }
+    }
+
+    lines.insert("schemaVersion: \(version)", at: firstDelim + 1)
+    return lines.joined(separator: "\n")
+  }
+
+  /// Locate the `---` … `---` front-matter delimiter line indices.
+  private func frontMatterDelimiters(in lines: [String]) throws -> (Int, Int) {
     guard
       let firstDelim = lines.firstIndex(where: {
         $0.trimmingCharacters(in: .whitespaces) == "---"
@@ -367,61 +396,7 @@ public struct ProjectMarkdownParser {
     else {
       throw ParserError.noFrontMatter
     }
-
-    // Render the replacement cast block as discrete lines (drop the trailing
-    // empty element produced by the block's final newline).
-    var castLines = renderCast(cast).components(separatedBy: "\n")
-    if castLines.last == "" {
-      castLines.removeLast()
-    }
-
-    // Find the top-level `cast:` key at column 0 within the frontmatter.
-    var castStart: Int?
-    for index in (firstDelim + 1)..<secondDelim {
-      let line = lines[index]
-      guard let first = line.first, first != " ", first != "\t" else { continue }
-      let key = line.prefix(while: { $0 != ":" })
-      if key == "cast" {
-        castStart = index
-        break
-      }
-    }
-
-    if let start = castStart {
-      // Consume the run of lines belonging to the block.
-      //
-      // A blank line does NOT end the block. Hand-maintained project files
-      // routinely separate cast entries with one, and treating a blank as the
-      // terminator left every entry after it unreplaced but still indented —
-      // so the re-render was appended *above* the survivors and YAML parsed
-      // them back as duplicate cast members. Column-0 comments are treated the
-      // same way, for the same reason.
-      //
-      // Blanks and comments are therefore scanned past *tentatively*: `end`
-      // only advances to cover them once a further indented line proves they
-      // were interior to the block. Trailing blanks and comments stay outside,
-      // since they separate `cast:` from whatever follows rather than belonging
-      // to it.
-      var end = start + 1
-      var scan = end
-      while scan < secondDelim {
-        let line = lines[scan]
-        let trimmed = line.trimmingCharacters(in: .whitespaces)
-        if trimmed.isEmpty || trimmed.hasPrefix("#") {
-          scan += 1
-          continue
-        }
-        guard let first = line.first, first == " " || first == "\t" else { break }
-        scan += 1
-        end = scan
-      }
-      lines.replaceSubrange(start..<end, with: castLines)
-    } else if !castLines.isEmpty {
-      // No existing cast block: insert before the closing delimiter.
-      lines.insert(contentsOf: castLines, at: secondDelim)
-    }
-
-    return lines.joined(separator: "\n")
+    return (firstDelim, secondDelim)
   }
 
   /// Generate YAML for an app section.
@@ -445,25 +420,6 @@ public struct ProjectMarkdownParser {
     }
   }
 
-  /// Generate YAML for an unknown per-member key nested under a cast member.
-  ///
-  /// Cast member fields are indented four spaces (indent level 2), so scalars
-  /// render inline (`    bio: "..."`) and nested collections descend from there.
-  private func generateCastMemberExtraYAML(key: String, value: AnyCodable) throws -> String {
-    let encoder = JSONEncoder()
-    encoder.dateEncodingStrategy = .iso8601
-    let data = try encoder.encode(value)
-    let jsonObject = try JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])
-
-    if jsonObject is [String: Any] || jsonObject is [Any] {
-      var yaml = "    \(key):\n"
-      yaml += generateYAMLValue(jsonObject, indent: 3)
-      return yaml
-    } else {
-      return "    \(key): \(formatYAMLPrimitive(jsonObject))\n"
-    }
-  }
-
   /// Recursively generate YAML for a value with proper indentation.
   private func generateYAMLValue(_ value: Any, indent: Int) -> String {
     let indentStr = String(repeating: "  ", count: indent)
@@ -476,25 +432,43 @@ public struct ProjectMarkdownParser {
           yaml += generateYAMLValue(nestedDict, indent: indent + 1)
         } else if let array = val as? [Any] {
           yaml += "\(indentStr)\(key):\n"
-          for item in array {
-            if let itemDict = item as? [String: Any] {
-              yaml += "\(indentStr)  -\n"
-              for (k, v) in itemDict.sorted(by: { $0.key < $1.key }) {
-                yaml += "\(indentStr)    \(k): \(formatYAMLPrimitive(v))\n"
-              }
-            } else {
-              yaml += "\(indentStr)  - \(formatYAMLPrimitive(item))\n"
-            }
-          }
+          yaml += generateYAMLValue(array, indent: indent + 1)
         } else {
           yaml += "\(indentStr)\(key): \(formatYAMLPrimitive(val))\n"
         }
       }
       return yaml
     } else if let array = value as? [Any] {
+      // Array items recurse so an array of maps (e.g. a legacy `cast:` block
+      // held as an unknown key) keeps its structure instead of collapsing to
+      // a stringified dictionary. The first key of a map item rides the `- `
+      // marker; subsequent keys align under it.
       var yaml = ""
       for item in array {
-        yaml += "\(indentStr)- \(formatYAMLPrimitive(item))\n"
+        if let itemDict = item as? [String: Any] {
+          var isFirstKey = true
+          for (k, v) in itemDict.sorted(by: { $0.key < $1.key }) {
+            let prefix = isFirstKey ? "\(indentStr)- " : "\(indentStr)  "
+            isFirstKey = false
+            if let nestedDict = v as? [String: Any] {
+              yaml += "\(prefix)\(k):\n"
+              yaml += generateYAMLValue(nestedDict, indent: indent + 2)
+            } else if let nestedArray = v as? [Any] {
+              yaml += "\(prefix)\(k):\n"
+              yaml += generateYAMLValue(nestedArray, indent: indent + 2)
+            } else {
+              yaml += "\(prefix)\(k): \(formatYAMLPrimitive(v))\n"
+            }
+          }
+          if isFirstKey {
+            yaml += "\(indentStr)- {}\n"
+          }
+        } else if let itemArray = item as? [Any] {
+          yaml += "\(indentStr)-\n"
+          yaml += generateYAMLValue(itemArray, indent: indent + 1)
+        } else {
+          yaml += "\(indentStr)- \(formatYAMLPrimitive(item))\n"
+        }
       }
       return yaml
     } else {
