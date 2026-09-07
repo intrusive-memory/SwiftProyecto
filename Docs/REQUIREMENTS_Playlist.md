@@ -103,6 +103,7 @@ A new `Codable, Sendable, Equatable` model parallel to `ProjectFrontMatter`, par
 | `track` | `Int?` | no | Explicit ordering key (§6). |
 | `description` | `String?` | no | Track annotation. |
 | `kind` | `String?` | no | Editorial role — `scene`, `bumper`, `intro`, `outro`. Defaults to `scene`. |
+| `image` | `String?` | no | Artwork path relative to the project root, overriding the `<stem>.jpg` convention (§4.5). |
 | `excludeFromPlaylist` | `Bool?` | no | When true, the episode is skipped even though its audio exists. Defaults to false. |
 
 Unknown keys must round-trip unchanged, matching `ProjectFrontMatter`'s existing `extraKeys` behavior. `daily-dao`'s `source:` block (per-character Chinese glosses) is unknown to this model and must survive a parse/serialize cycle untouched.
@@ -112,6 +113,19 @@ Unknown keys must round-trip unchanged, matching `ProjectFrontMatter`'s existing
 For each episode file, the audio is `<audioDir>/<stem>.<exportFormat>` — the existing `resolvedAudioDir` / `resolvedExportFormat` convention, with `EpisodePathResolver` doing the work. An episode whose audio is missing is **omitted from the playlist and reported as a warning**, never a hard failure: partially-generated projects are a normal working state. This is the only condition under which an episode is silently absent from the output — a missing *title* stops the run instead (§8.2).
 
 A WebVTT sidecar at `<audioDir>/<stem>.vtt`, when present, becomes the track's `transcript` extension (§5.2).
+
+### 4.5 Artwork resolution
+
+Artwork is a sidecar on the same stem, exactly like the transcript:
+
+| Asset | Path | Becomes |
+|---|---|---|
+| Track artwork | `<audioDir>/<stem>.jpg` (then `.png`) | `track.image` |
+| Show artwork | `<audioDir>/cover.jpg` (then `.png`) | `playlist.image` |
+
+An episode's `image` front-matter key overrides the convention with an explicit path relative to the project root; `PROJECT.md` may carry the same key for the show. Convention first, override only where needed.
+
+**Generation does not create or composite artwork.** It references files that already exist, exactly as it does for audio and transcripts. Producing the art — and compositing any title treatment onto it — belongs to whatever tool made it, on the same reasoning that keeps screenplay parsing out of this package (§3). A missing image is a warning, never a failure (§8.2).
 
 ---
 
@@ -126,6 +140,7 @@ Playlist level, from `ProjectFrontMatter`:
 | `playlist.title` | `title` |
 | `playlist.creator` | `author` |
 | `playlist.annotation` | `description` |
+| `playlist.image` | `<audioDir>/cover.jpg` when present (§5.3) |
 | `playlist.date` | `created` (ISO 8601) |
 | `playlist.meta` | `genre`, and the project slug (directory name) under the Sonido namespace |
 
@@ -137,6 +152,7 @@ Track level, from `EpisodeFrontMatter` with `ProjectFrontMatter` fallbacks:
 | `track.title` | `title` |
 | `track.creator` | `artist` ?? project `author` |
 | `track.album` | `album` ?? project `title` |
+| `track.image` | `<audioDir>/<stem>.jpg` when present — **omitted when absent** (§5.3) |
 | `track.trackNum` | 1-based position in final playlist order (§6) |
 | `track.annotation` | `description` |
 | `track.duration` | Probed audio duration in **milliseconds** (§7) |
@@ -156,7 +172,32 @@ Per-track data JSPF has no field for goes under `https://sonido.intrusive-memory
 
 `transcript` is a relative path resolved by the same §2 rule. Omitted when no sidecar exists. Consumers ignore unrecognized keys and namespaces.
 
-### 5.3 Serialization
+### 5.3 Artwork — use the standard, and know where it stops
+
+`image` is a standard XSPF/JSPF element at both levels. Nothing here is invented; the only local rules are the two the standard explicitly leaves open.
+
+**What XSPF v1 defines** (quoted normatively):
+
+- Playlist level: *"URI of an image to display in the absence of a `//playlist/trackList/image` element. `xspf:playlist` elements MAY contain exactly one."*
+- Track level: *"URI of an image to display for the duration of the track. `xspf:track` elements MAY contain exactly one."*
+
+Three consequences, all of them the standard's and not ours:
+
+1. **Cardinality is zero-or-one.** In JSPF `image` is a plain **string**, not an array — unlike `location` and `identifier`, which are arrays at track level. Emitting an array is malformed.
+2. **Fallback is specified.** The playlist image exists precisely to be shown *in the absence of* a track image. Consumers inherit; generators do not duplicate.
+3. **Therefore: never emit a `track.image` identical to `playlist.image`.** A track with no artwork of its own omits the key entirely and the standard supplies the show image. Writing it on every track would be redundant, would inflate the file, and would defeat the one piece of behaviour the format actually specifies.
+
+**What XSPF does not define**, and is therefore ours to state:
+
+| Concern | Standard | This project |
+|---|---|---|
+| Format | unspecified | JPEG preferred; PNG accepted. Progressive JPEG for anything shipped. |
+| Dimensions | unspecified | Square, ≥ 1400 px (Apple Podcasts' floor; 3000 px recommended for submission) |
+| Relative URIs | §6.2 defers to XML Base / RFC 2396 — **and JSPF has no XML Base** | Resolved against the playlist's own URL, per §2 |
+
+That last row is the load-bearing one: `image` is a URI and inherits §2's resolution rule exactly as `location` does. A relative `audio/cover.jpg` beside the playlist resolves correctly in the repository and at the origin; an absolute URL is the same defect there as anywhere else.
+
+### 5.4 Serialization
 
 - Pretty-printed with sorted keys, LF endings, trailing newline. The output is committed to git; a stable byte-for-byte serialization is required so that regenerating an unchanged project produces an empty diff.
 - UTF-8, unescaped non-ASCII. Titles legitimately contain em dashes and typographic quotes.
@@ -231,6 +272,8 @@ Warning (exit zero, file written):
 
 - An episode's audio is missing → track omitted
 - No `.vtt` sidecar → `transcript` omitted
+- No artwork sidecar → `image` omitted; the standard's playlist fallback covers it (§5.3)
+- An `image` override naming a file that does not exist → warning, key omitted
 - A duration could not be probed → `duration` omitted
 
 The line between the two is whether the missing thing can be **authored** or
@@ -254,6 +297,8 @@ one would notice until a listener saw them.
 - No duplicate `track` numbers.
 - Every included episode has corresponding audio in `audioDir`.
 - `PLAYLIST.jspf`, if present, matches what would be generated — the `--check` comparison, surfaced as a validation warning.
+- Artwork that is present is square and at least 1400 px on a side (§5.3); anything smaller is a warning naming the file, since it cannot be submitted to Apple Podcasts.
+- No `track.image` duplicates `playlist.image` — a redundant write that defeats the standard's fallback.
 
 ### 9.2 Layout warning
 
@@ -282,17 +327,20 @@ Three conventions exist across `podcasts/*` today. Only the first conforms.
 1. Running `proyecto playlist` in `granville`, after its episode front matter is authored, byte-for-byte reproduces the hand-written `PLAYLIST.jspf` that Sonido was verified against on 2026-09-06.
 2. Running it twice produces no diff on the second run.
 3. `daily-dao` (81 chapters, glob `filePattern`, existing front matter) generates a correctly ordered 81-track playlist with no schema changes to its episode files.
-4. Every `track.location` is relative; no absolute URL appears in any output.
-5. `daily-dao`'s `source:` front matter block survives a parse/serialize cycle byte-identical.
-6. An episode whose audio is missing is omitted with a warning and exit code 0; the remaining tracks are correct.
-7. An episode with `type: episode` and no `title` fails the run with a message naming the file, and no file is written.
-8. An episode matching `filePattern` with **no front matter block at all** fails the run identically — it is not skipped, and no partial playlist is produced.
-9. A project with several untitled episodes reports **all** of them in a single run.
-10. `granville` in its current state (centered-text headings, no front matter) fails generation — proving the block is real and not merely documented.
-11. Duplicate `track` numbers fail the run naming both files.
-12. `--check` exits non-zero on a stale `PLAYLIST.jspf` and zero on a current one.
-13. Generation reads no byte of any episode file below its closing front matter delimiter — asserted by a test whose fixture contains a screenplay body that would produce a different playlist if parsed.
-14. `proyecto validate` warns on a workflow whose `DEST_DIR` would flatten `audioDir`.
+4. Every `track.location` **and every `image`** is relative; no absolute URL appears in any output.
+5. `image` is emitted as a JSPF **string**, never an array, at both playlist and track level.
+6. An episode with no artwork sidecar omits `track.image` entirely rather than repeating `playlist.image`, and a consumer rendering that track falls back to the show image per XSPF.
+7. `granville`, whose nine tracks each have their own artwork plus a show cover, round-trips to exactly nine `track.image` values and one `playlist.image`.
+8. `daily-dao`'s `source:` front matter block survives a parse/serialize cycle byte-identical.
+9. An episode whose audio is missing is omitted with a warning and exit code 0; the remaining tracks are correct.
+10. An episode with `type: episode` and no `title` fails the run with a message naming the file, and no file is written.
+11. An episode matching `filePattern` with **no front matter block at all** fails the run identically — it is not skipped, and no partial playlist is produced.
+12. A project with several untitled episodes reports **all** of them in a single run.
+13. `granville` in its current state (centered-text headings, no front matter) fails generation — proving the block is real and not merely documented.
+14. Duplicate `track` numbers fail the run naming both files.
+15. `--check` exits non-zero on a stale `PLAYLIST.jspf` and zero on a current one.
+16. Generation reads no byte of any episode file below its closing front matter delimiter — asserted by a test whose fixture contains a screenplay body that would produce a different playlist if parsed.
+17. `proyecto validate` warns on a workflow whose `DEST_DIR` would flatten `audioDir`.
 
 ---
 
