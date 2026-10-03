@@ -631,4 +631,38 @@ extension ProjectMarkdownParser {
     let content = generate(frontMatter: frontMatter, body: body)
     try content.write(to: url, atomically: true, encoding: .utf8)
   }
+
+  /// Performs a coordinated write to a PROJECT.md file, preserving non-owned fields.
+  ///
+  /// This method uses NSFileCoordinator to serialize writes across multiple applications,
+  /// ensuring that each app's changes don't overwrite fields owned by other apps.
+  ///
+  /// - Parameters:
+  ///   - url: URL to the PROJECT.md file
+  ///   - ownedFields: Fields this application is allowed to modify
+  ///   - block: Closure that receives a mutable ProjectFrontMatter to modify
+  /// - Throws: Coordination, parsing, or writing errors
+  ///
+  /// ## Example
+  ///
+  /// ```swift
+  /// let parser = ProjectMarkdownParser()
+  /// let owned = FileCoordinationManager.OwnedFields(
+  ///   appName: "personaje",
+  ///   keys: ["personaje"],
+  ///   nestedPaths: ["style.artStyle"]
+  /// )
+  /// try parser.coordinatedWrite(url: projectURL, ownedFields: owned) { mutable in
+  ///   mutable.description = "New description"
+  ///   // style.artStyle can be modified; other style fields are preserved
+  /// }
+  /// ```
+  public func coordinatedWrite(
+    url: URL,
+    ownedFields: FileCoordinationManager.OwnedFields,
+    updatingOwnedFields block: (inout ProjectFrontMatter) throws -> Void
+  ) throws {
+    let coordinator = FileCoordinationManager()
+    try coordinator.coordinatedWrite(fileURL: url, ownedFields: ownedFields, block: block)
+  }
 }
