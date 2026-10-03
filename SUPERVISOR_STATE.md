@@ -21,13 +21,15 @@ updated: 2026-10-03
 
 ## Work Unit: ProjectBrowser Enhancements
 
+**Work Unit Status**: ✅ COMPLETED (All v5.1.0 sorties finished)
+
 | Sortie | Requirement | State | Attempts | Dispatch Time | Notes |
 |--------|-------------|-------|----------|---------------|-------|
 | 1 | PY-P1 (foundation) | ✅ COMPLETED | 1 | 2026-10-03 | Expected files parameter |
 | 2 | PY-P1 (UI) | ✅ COMPLETED | 1 | 2026-10-03 | Missing file visual state |
 | 3 | PY-P2 | ✅ COMPLETED | 1 | 2026-10-03 | Per-file handler lookup |
 | 4 | PY-P3 (foundational) | ✅ COMPLETED | 1 | 2026-10-03 | `style:` block |
-| 5 | PY-P4 | DISPATCHED | 1 | 2026-10-03 | NSFileCoordinator wrapper |
+| 5 | PY-P4 | ✅ COMPLETED | 1 | 2026-10-03 | NSFileCoordinator wrapper |
 | 6 | PY-P5 (optional) | DEFERRED | 0 | — | Deferred to v5.2.0 |
 
 ## Sortie Details
@@ -65,10 +67,13 @@ updated: 2026-10-03
 - **Layer**: 1 (parallel eligible); foundation for Sortie 5
 
 ### Sortie 5: NSFileCoordinator Wrapper
-- **Status**: 🔄 IN FLIGHT
+- **Status**: ✅ COMPLETED
 - **Dependency**: Sortie 4 (✅)
-- **Exit Criteria**: Coordinated writes serialize; field preservation works; no data loss
-- **Layer**: 2 (waits for Layer 1)
+- **Exit Criteria**: ✓ All satisfied
+- **Changes**: FileCoordinationManager created; selective field preservation implemented; coordinated writes serialize
+- **Tests**: 8 tests passing (serialization, field preservation, style merging, write cycles)
+- **Commit**: 07e8586
+- **Layer**: 2 (depends on Layer 1)
 
 ### Sortie 6: Move Recents Infrastructure
 - **Status**: DEFERRED
@@ -88,10 +93,10 @@ updated: 2026-10-03
 
 ## Execution State
 
-- **Current Layer**: 2 (in flight)
-- **Next Action**: Await Sortie 5 completion notification
-- **Active Sorties**: 5 (NSFileCoordinator wrapper)
-- **Completed Sorties**: 1 (expectedFiles), 2 (missing file UI), 3 (handlers), 4 (style)
+- **Current Phase**: Post-Mission Chain
+- **Next Action**: Run test-cleanup → brief → clean
+- **Active Sorties**: None (all 5 v5.1.0 sorties complete)
+- **Completed Sorties**: 1, 2, 3, 4, 5 (all PY-P1 through PY-P4 requirements met)
 
 ---
 
