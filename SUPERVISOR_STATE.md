@@ -24,10 +24,10 @@ updated: 2026-10-03
 | Sortie | Requirement | State | Attempts | Dispatch Time | Notes |
 |--------|-------------|-------|----------|---------------|-------|
 | 1 | PY-P1 (foundation) | ✅ COMPLETED | 1 | 2026-10-03 | Expected files parameter |
-| 2 | PY-P1 (UI) | PENDING | 0 | — | Waits for Sortie 1 |
+| 2 | PY-P1 (UI) | READY → DISPATCHING | 0 | 2026-10-03 | Waits for Sortie 1 (now ready) |
 | 3 | PY-P2 | ✅ COMPLETED | 1 | 2026-10-03 | Per-file handler lookup |
-| 4 | PY-P3 (foundational) | DISPATCHED | 1 | 2026-10-03 | `style:` block |
-| 5 | PY-P4 | PENDING | 0 | — | Waits for Sortie 4 |
+| 4 | PY-P3 (foundational) | ✅ COMPLETED | 1 | 2026-10-03 | `style:` block |
+| 5 | PY-P4 | READY → DISPATCHING | 0 | 2026-10-03 | Waits for Sortie 4 (now ready) |
 | 6 | PY-P5 (optional) | DEFERRED | 0 | — | Deferred to v5.2.0 |
 
 ## Sortie Details
@@ -56,11 +56,12 @@ updated: 2026-10-03
 - **Layer**: 1 (parallel eligible)
 
 ### Sortie 4: Add `style:` Block
-- **Status**: PENDING
+- **Status**: ✅ COMPLETED
 - **Dependency**: None
-- **Entry Criteria Met**: Awaiting ritual + branch creation
-- **Exit Criteria**: YAML round-trip works; no mutation without `style:`
-- **Layer**: 1 (parallel eligible)
+- **Exit Criteria**: ✓ All satisfied
+- **Changes**: Style struct added; YAML parsing/writing; round-trip compatibility verified
+- **Tests**: 11 new tests passing; 157/157 existing tests passing
+- **Layer**: 1 (parallel eligible); foundation for Sortie 5
 
 ### Sortie 5: NSFileCoordinator Wrapper
 - **Status**: PENDING
@@ -87,10 +88,10 @@ updated: 2026-10-03
 
 ## Execution State
 
-- **Current Layer**: 1 (in flight)
-- **Next Action**: Await Layer 1 completion notifications
-- **Active Sorties**: 1 (expectedFiles foundation), 3 (handler lookup), 4 (style block)
-- **Completed Sorties**: None
+- **Current Layer**: 2 (ready for dispatch)
+- **Next Action**: Dispatch Layer 2 sorties (2, 5)
+- **Active Sorties**: None (Layer 1 complete, Layer 2 ready)
+- **Completed Sorties**: 1 (expectedFiles), 3 (handlers), 4 (style)
 
 ---
 
