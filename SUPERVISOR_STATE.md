@@ -23,11 +23,11 @@ updated: 2026-10-03
 
 | Sortie | Requirement | State | Attempts | Dispatch Time | Notes |
 |--------|-------------|-------|----------|---------------|-------|
-| 1 | PY-P1 (foundation) | PENDING | 0 | — | Expected files parameter |
-| 2 | PY-P1 (UI) | PENDING | 0 | — | Missing file visual state |
-| 3 | PY-P2 | PENDING | 0 | — | Per-file handler lookup |
-| 4 | PY-P3 (foundational) | PENDING | 0 | — | `style:` block |
-| 5 | PY-P4 | PENDING | 0 | — | NSFileCoordinator wrapper |
+| 1 | PY-P1 (foundation) | DISPATCHED | 1 | 2026-10-03 | Expected files parameter |
+| 2 | PY-P1 (UI) | PENDING | 0 | — | Waits for Sortie 1 |
+| 3 | PY-P2 | DISPATCHED | 1 | 2026-10-03 | Per-file handler lookup |
+| 4 | PY-P3 (foundational) | DISPATCHED | 1 | 2026-10-03 | `style:` block |
+| 5 | PY-P4 | PENDING | 0 | — | Waits for Sortie 4 |
 | 6 | PY-P5 (optional) | DEFERRED | 0 | — | Deferred to v5.2.0 |
 
 ## Sortie Details
@@ -85,16 +85,18 @@ updated: 2026-10-03
 
 ## Execution State
 
-- **Current Layer**: 1 (ready for dispatch)
-- **Next Action**: Dispatch Layer 1 sorties (1, 3, 4)
-- **Active Sorties**: None (awaiting dispatch)
+- **Current Layer**: 1 (in flight)
+- **Next Action**: Await Layer 1 completion notifications
+- **Active Sorties**: 1 (expectedFiles foundation), 3 (handler lookup), 4 (style block)
 - **Completed Sorties**: None
 
 ---
 
-## Next Steps
+## Dispatch Timeline
 
-1. ✅ Execute THE RITUAL: Operation Persona
+1. ✅ Execute THE RITUAL: Operation Persona (2026-10-03 11:45 UTC)
 2. ✅ Create mission branch: mission/persona/01
-3. → Dispatch Layer 1 sorties: 1, 3, 4 (parallel)
-4. Monitor and advance to Layer 2 when Layer 1 complete
+3. ✅ Dispatch Layer 1 sorties: 1, 3, 4 (parallel, 2026-10-03 11:48 UTC)
+4. → Monitor and await Layer 1 completion (ETA ~0.75 dev-days, ~4 hours wall-clock)
+5. Dispatch Layer 2 sorties: 2, 5 (serial sequence)
+6. Conclude with Layer 2 completion and mission brief
