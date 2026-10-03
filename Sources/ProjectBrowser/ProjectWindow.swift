@@ -67,6 +67,10 @@ public struct ProjectWindow: View {
   /// Invoked whenever the user selects a file in the sidebar.
   private let onFileSelection: FileSelectionCallback?
 
+  /// Invoked when the user selects a file marked as ``ProjectFile/isExpectedButMissing``.
+  /// Receives the file's `relativePath`. When `nil`, no callback is invoked for missing files.
+  private let onMissingFileSelected: ((String) -> Void)?
+
   /// Invoked whenever a file action (reload, delete, show in Finder,
   /// custom) is triggered, *after* `ProjectWindow` has performed its own
   /// built-in handling (see ``handleFileAction(_:action:)``). Every action,
@@ -177,6 +181,9 @@ public struct ProjectWindow: View {
   ///     (all files fall back to ``UnsupportedFileView``).
   ///   - projectTitle: An explicit title overriding `PROJECT.md`'s title.
   ///   - onFileSelection: Invoked when the user selects a file.
+  ///   - onMissingFileSelected: Invoked when the user selects a file marked
+  ///     as missing (``ProjectFile/isExpectedButMissing``). Receives the file's
+  ///     `relativePath`. When `nil`, no special handling occurs for missing files.
   ///   - onFileAction: Invoked when a file action is triggered (reload,
   ///     delete, show in Finder, custom).
   ///   - contentLoader: A custom content loader, used for lazy
@@ -206,6 +213,7 @@ public struct ProjectWindow: View {
     textEditorBuilder: TextEditorBuilder? = nil,
     fileFilter: ((ProjectFile) -> Bool)? = nil,
     expectedFiles: [String]? = nil,
+    onMissingFileSelected: ((String) -> Void)? = nil,
     sidebarMinWidth: CGFloat = 250,
     sidebarIdealWidth: CGFloat = 300,
     sidebarMaxWidth: CGFloat = 400
@@ -214,6 +222,7 @@ public struct ProjectWindow: View {
     self.handlers = handlers
     self.projectTitle = projectTitle
     self.onFileSelection = onFileSelection
+    self.onMissingFileSelected = onMissingFileSelected
     self.onFileAction = onFileAction
     self.contentLoader = contentLoader
     self.fileWriter = fileWriter
@@ -416,11 +425,17 @@ public struct ProjectWindow: View {
 
   /// Updates selection state, forwards the selection to the consumer, and
   /// kicks off a lazy content load for `file` if one is needed (see
-  /// ``loadContentIfNeeded(for:)``).
+  /// ``loadContentIfNeeded(for:)``). If the file is marked as missing,
+  /// invokes the `onMissingFileSelected` callback instead of attempting
+  /// to load its contents.
   private func selectFile(_ file: ProjectFile) {
     selectedFile = file
     onFileSelection?(file)
-    Task { await loadContentIfNeeded(for: file) }
+    if file.isExpectedButMissing {
+      onMissingFileSelected?(file.relativePath)
+    } else {
+      Task { await loadContentIfNeeded(for: file) }
+    }
   }
 
   // MARK: - File Actions
@@ -657,7 +672,8 @@ public struct ProjectWindow: View {
           fileSize: nil,
           isLoaded: false,
           loadingState: .notLoaded,
-          error: nil
+          error: nil,
+          isExpectedButMissing: true
         )
         result.append(expectedFile)
       }
@@ -698,7 +714,10 @@ extension ProjectFile {
   /// ``isLoaded``/``error`` derived from it), used by `ProjectWindow` to
   /// keep a file's tree-visible state in sync as its contents are lazily
   /// loaded or reloaded. All other properties are preserved unchanged.
-  fileprivate func withLoadingState(_ state: FileLoadingState) -> ProjectFile {
+  ///
+  /// This method preserves the ``isExpectedButMissing`` flag so file state
+  /// doesn't change during state updates.
+  package func withLoadingState(_ state: FileLoadingState) -> ProjectFile {
     let errorMessage: String?
     if case .error(let message) = state {
       errorMessage = message
@@ -715,7 +734,8 @@ extension ProjectFile {
       fileSize: fileSize,
       isLoaded: state == .loaded ? true : isLoaded,
       loadingState: state,
-      error: errorMessage
+      error: errorMessage,
+      isExpectedButMissing: isExpectedButMissing
     )
   }
 }
