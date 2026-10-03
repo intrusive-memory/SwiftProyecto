@@ -222,7 +222,16 @@ public struct ProjectDetailPane: View {
   /// the bytes as UTF-8 (`contents.text != nil`) — the same test that has always
   /// gated ``EditableTextContentView``. Supplying a builder changes only where
   /// that branch goes, never what falls into it.
+  ///
+  /// Handler lookup is two-tiered: first check by filename (e.g., "PROJECT.md",
+  /// "CAST.md"), then fall back to file extension (e.g., "md", "fountain").
+  /// This allows specific files like "PROJECT.md" and "CAST.md" to have their
+  /// own handlers while still allowing extension-based handlers to work for
+  /// other files with the same extension.
   func contentRoute(for file: ProjectFile) -> ContentRoute {
+    if handlers[file.name] != nil {
+      return .handler
+    }
     if handlers[file.fileExtension ?? ""] != nil {
       return .handler
     }
@@ -254,7 +263,8 @@ public struct ProjectDetailPane: View {
   func contentView(for file: ProjectFile) -> some View {
     switch contentRoute(for: file) {
     case .handler:
-      handlers[file.fileExtension ?? ""]?(file)
+      // Look up handler by filename first, then by extension.
+      (handlers[file.name] ?? handlers[file.fileExtension ?? ""])?(file)
 
     case .loading:
       LoadingView(filename: file.displayName)

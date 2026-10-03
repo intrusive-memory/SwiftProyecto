@@ -59,6 +59,11 @@ public struct ProjectFile: Identifiable, Codable, Hashable, Equatable, Sendable 
   /// failed, otherwise `nil`.
   public let error: String?
 
+  /// Whether this file was expected but is missing from the filesystem.
+  /// Used to distinguish placeholder entries for expected-but-missing files
+  /// (e.g., CAST.md) from discovered files.
+  public let isExpectedButMissing: Bool
+
   public init(
     id: UUID = UUID(),
     name: String,
@@ -69,7 +74,8 @@ public struct ProjectFile: Identifiable, Codable, Hashable, Equatable, Sendable 
     fileSize: Int64? = nil,
     isLoaded: Bool = false,
     loadingState: FileLoadingState = .notLoaded,
-    error: String? = nil
+    error: String? = nil,
+    isExpectedButMissing: Bool = false
   ) {
     self.id = id
     self.name = name
@@ -81,6 +87,7 @@ public struct ProjectFile: Identifiable, Codable, Hashable, Equatable, Sendable 
     self.isLoaded = isLoaded
     self.loadingState = loadingState
     self.error = error
+    self.isExpectedButMissing = isExpectedButMissing
   }
 
   /// Whether a registered `FileTypeHandler` is known to exist for this

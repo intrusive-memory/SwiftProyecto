@@ -25,6 +25,38 @@
 
 import Foundation
 
+/// Style configuration for project visual and aesthetic representation.
+///
+/// Holds optional style directives used by consuming apps (Personaje for art style,
+/// Vinetas for palette and wardrobe). Each field is a free string with no validation.
+/// Validation, if needed, is the responsibility of consuming applications.
+public struct Style: Codable, Sendable, Equatable {
+  /// Optional art style (e.g., "watercolor", "digital", "3D")
+  public let artStyle: String?
+
+  /// Optional color palette identifier or description
+  public let palette: String?
+
+  /// Optional wardrobe or costume configuration
+  public let wardrobe: String?
+
+  /// Create a new Style instance.
+  ///
+  /// - Parameters:
+  ///   - artStyle: Optional art style string
+  ///   - palette: Optional palette string
+  ///   - wardrobe: Optional wardrobe string
+  public init(
+    artStyle: String? = nil,
+    palette: String? = nil,
+    wardrobe: String? = nil
+  ) {
+    self.artStyle = artStyle
+    self.palette = palette
+    self.wardrobe = wardrobe
+  }
+}
+
 /// Project type classification for PROJECT.md files.
 ///
 /// Distinguishes between individual season projects and multi-season
@@ -130,6 +162,11 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
   /// Optional text-to-speech generation configuration
   public let tts: TTSConfig?
 
+  // MARK: - Style Configuration
+
+  /// Optional style configuration for visual and aesthetic representation
+  public let style: Style?
+
   // MARK: - v4.0.0 Multi-Season / Multi-Language Fields
 
   /// Schema version identifier as declared by the parsed document
@@ -180,6 +217,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
   ///   - preGenerateHook: Shell command to run before generation
   ///   - postGenerateHook: Shell command to run after generation
   ///   - tts: Optional TTS generation configuration
+  ///   - style: Optional style configuration
   ///   - schemaVersion: Schema version identifier (4 for v4.0.0, nil for v3.x)
   ///   - projectType: Project type ("project" or "overview")
   ///   - seasons: Array of season definitions
@@ -207,6 +245,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     preGenerateHook: String? = nil,
     postGenerateHook: String? = nil,
     tts: TTSConfig? = nil,
+    style: Style? = nil,
     schemaVersion: Int? = nil,
     projectType: String? = nil,
     seasons: [SeasonDefinition]? = nil,
@@ -232,6 +271,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     self.preGenerateHook = preGenerateHook
     self.postGenerateHook = postGenerateHook
     self.tts = tts
+    self.style = style
     self.schemaVersion = schemaVersion
     self.projectType = projectType
 
@@ -259,7 +299,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     case type, title, author, created, updated, description, season
     case episodes, genre, tags, episodesDir, audioDir
     case filePattern, exportFormat, introFile, outroFile
-    case preGenerateHook, postGenerateHook, tts
+    case preGenerateHook, postGenerateHook, tts, style
     case schemaVersion, projectType, seasons, languages, variants, episodePath
   }
 
@@ -297,6 +337,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     try container.encodeIfPresent(preGenerateHook, forKey: .preGenerateHook)
     try container.encodeIfPresent(postGenerateHook, forKey: .postGenerateHook)
     try container.encodeIfPresent(tts, forKey: .tts)
+    try container.encodeIfPresent(style, forKey: .style)
 
     try container.encode(ProjectSchemaVersion.current, forKey: .schemaVersion)
     try container.encodeIfPresent(projectType, forKey: .projectType)
@@ -334,6 +375,7 @@ public struct ProjectFrontMatter: Codable, Sendable, Equatable {
     preGenerateHook = try container.decodeIfPresent(String.self, forKey: .preGenerateHook)
     postGenerateHook = try container.decodeIfPresent(String.self, forKey: .postGenerateHook)
     tts = try container.decodeIfPresent(TTSConfig.self, forKey: .tts)
+    style = try container.decodeIfPresent(Style.self, forKey: .style)
 
     let decodedSchemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion)
     schemaVersion = decodedSchemaVersion
@@ -520,6 +562,7 @@ extension ProjectFrontMatter {
       preGenerateHook: preGenerateHook,
       postGenerateHook: postGenerateHook,
       tts: tts,
+      style: style,
       schemaVersion: schemaVersion,
       projectType: projectType,
       seasons: seasons,

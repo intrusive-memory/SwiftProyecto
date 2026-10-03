@@ -218,15 +218,30 @@ private struct FileTreeNodeRow: View {
 }
 
 /// The icon + name label shared by both folder and file rows, including
-/// loading/error state indicators for files.
+/// loading/error state indicators for files. Missing expected files (marked
+/// with ``ProjectFile/isExpectedButMissing``) render in grey with a "missing"
+/// indicator badge.
 private struct FileTreeRowLabel: View {
   let file: ProjectFile
 
   var body: some View {
     Label {
-      Text(file.displayName)
-        .lineLimit(1)
-        .truncationMode(.middle)
+      HStack(spacing: 8) {
+        Text(file.displayName)
+          .lineLimit(1)
+          .truncationMode(.middle)
+          .foregroundStyle(file.isExpectedButMissing ? Color.secondary : Color.primary)
+
+        if file.isExpectedButMissing {
+          Text("missing")
+            .font(.caption2)
+            .foregroundStyle(.orange)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Color.orange.opacity(0.15))
+            .cornerRadius(3)
+        }
+      }
     } icon: {
       Image(systemName: iconName)
         .foregroundStyle(iconColor)
@@ -234,6 +249,9 @@ private struct FileTreeRowLabel: View {
   }
 
   private var iconName: String {
+    if file.isExpectedButMissing {
+      return "doc.questionmark"
+    }
     if file.isDirectory {
       return "folder.fill"
     }
@@ -249,6 +267,9 @@ private struct FileTreeRowLabel: View {
   }
 
   private var iconColor: Color {
+    if file.isExpectedButMissing {
+      return .secondary
+    }
     switch file.loadingState {
     case .error:
       return .orange
