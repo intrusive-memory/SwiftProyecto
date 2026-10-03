@@ -24,10 +24,10 @@ updated: 2026-10-03
 | Sortie | Requirement | State | Attempts | Dispatch Time | Notes |
 |--------|-------------|-------|----------|---------------|-------|
 | 1 | PY-P1 (foundation) | ✅ COMPLETED | 1 | 2026-10-03 | Expected files parameter |
-| 2 | PY-P1 (UI) | READY → DISPATCHING | 0 | 2026-10-03 | Waits for Sortie 1 (now ready) |
+| 2 | PY-P1 (UI) | DISPATCHED | 1 | 2026-10-03 | Missing file visual state |
 | 3 | PY-P2 | ✅ COMPLETED | 1 | 2026-10-03 | Per-file handler lookup |
 | 4 | PY-P3 (foundational) | ✅ COMPLETED | 1 | 2026-10-03 | `style:` block |
-| 5 | PY-P4 | READY → DISPATCHING | 0 | 2026-10-03 | Waits for Sortie 4 (now ready) |
+| 5 | PY-P4 | DISPATCHED | 1 | 2026-10-03 | NSFileCoordinator wrapper |
 | 6 | PY-P5 (optional) | DEFERRED | 0 | — | Deferred to v5.2.0 |
 
 ## Sortie Details
@@ -88,9 +88,9 @@ updated: 2026-10-03
 
 ## Execution State
 
-- **Current Layer**: 2 (ready for dispatch)
-- **Next Action**: Dispatch Layer 2 sorties (2, 5)
-- **Active Sorties**: None (Layer 1 complete, Layer 2 ready)
+- **Current Layer**: 2 (in flight)
+- **Next Action**: Await Layer 2 completion notifications
+- **Active Sorties**: 2 (missing file UI), 5 (NSFileCoordinator wrapper)
 - **Completed Sorties**: 1 (expectedFiles), 3 (handlers), 4 (style)
 
 ---
