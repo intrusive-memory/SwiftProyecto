@@ -5,7 +5,7 @@ mission_slug: projectbrowser-personaje
 operation_name: Operation Persona
 starting_point_commit: ad8bf9e4e699cb3509a25d20091421f70f54b36c
 mission_branch: mission/persona/01
-state: RUNNING
+state: COMPLETED
 created: 2026-10-03
 updated: 2026-10-03
 ---
