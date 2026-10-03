@@ -248,6 +248,23 @@ public struct ProjectMarkdownParser {
       }
     }
 
+    // Style configuration
+    if let style = frontMatter.style {
+      // Only emit style: block if at least one field is present
+      if style.artStyle != nil || style.palette != nil || style.wardrobe != nil {
+        yaml += "style:\n"
+        if let artStyle = style.artStyle {
+          yaml += "  artStyle: \(escapeYAMLString(artStyle))\n"
+        }
+        if let palette = style.palette {
+          yaml += "  palette: \(escapeYAMLString(palette))\n"
+        }
+        if let wardrobe = style.wardrobe {
+          yaml += "  wardrobe: \(escapeYAMLString(wardrobe))\n"
+        }
+      }
+    }
+
     // App-specific settings sections (at root level)
     if !frontMatter.appSections.isEmpty {
       for (key, value) in frontMatter.appSections.sorted(by: { $0.key < $1.key }) {

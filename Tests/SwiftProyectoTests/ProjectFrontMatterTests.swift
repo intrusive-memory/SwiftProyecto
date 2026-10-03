@@ -763,6 +763,235 @@ final class ProjectFrontMatterTests: XCTestCase {
     XCTAssertFalse(ProjectDiscovery.isVariantFile(frontMatter))
   }
 
+  // MARK: - Style Configuration Tests
+
+  func testStyle_Initialization_AllFields() {
+    let style = Style(artStyle: "watercolor", palette: "pastel", wardrobe: "victorian")
+
+    XCTAssertEqual(style.artStyle, "watercolor")
+    XCTAssertEqual(style.palette, "pastel")
+    XCTAssertEqual(style.wardrobe, "victorian")
+  }
+
+  func testStyle_Initialization_PartialFields() {
+    let style = Style(artStyle: "digital")
+
+    XCTAssertEqual(style.artStyle, "digital")
+    XCTAssertNil(style.palette)
+    XCTAssertNil(style.wardrobe)
+  }
+
+  func testStyle_Initialization_Empty() {
+    let style = Style()
+
+    XCTAssertNil(style.artStyle)
+    XCTAssertNil(style.palette)
+    XCTAssertNil(style.wardrobe)
+  }
+
+  func testStyle_Equatable() {
+    let style1 = Style(artStyle: "watercolor", palette: "pastel", wardrobe: "victorian")
+    let style2 = Style(artStyle: "watercolor", palette: "pastel", wardrobe: "victorian")
+    let style3 = Style(artStyle: "digital", palette: "pastel", wardrobe: "victorian")
+
+    XCTAssertEqual(style1, style2)
+    XCTAssertNotEqual(style1, style3)
+  }
+
+  func testStyle_Codable() throws {
+    let original = Style(artStyle: "watercolor", palette: "pastel", wardrobe: "victorian")
+
+    let encoder = JSONEncoder()
+    let data = try encoder.encode(original)
+
+    let decoder = JSONDecoder()
+    let decoded = try decoder.decode(Style.self, from: data)
+
+    XCTAssertEqual(decoded, original)
+  }
+
+  func testProjectFrontMatter_WithStyle() throws {
+    let style = Style(artStyle: "watercolor", palette: "pastel")
+    let frontMatter = ProjectFrontMatter(
+      title: "Styled Project",
+      author: "Author",
+      style: style
+    )
+
+    XCTAssertEqual(frontMatter.style?.artStyle, "watercolor")
+    XCTAssertEqual(frontMatter.style?.palette, "pastel")
+    XCTAssertNil(frontMatter.style?.wardrobe)
+  }
+
+  func testProjectFrontMatter_WithoutStyle() throws {
+    let frontMatter = ProjectFrontMatter(
+      title: "Project Without Style",
+      author: "Author"
+    )
+
+    XCTAssertNil(frontMatter.style)
+  }
+
+  func testProjectFrontMatter_StyleRoundTrip() throws {
+    let style = Style(artStyle: "watercolor", palette: "pastel", wardrobe: "victorian")
+    let original = ProjectFrontMatter(
+      title: "Styled Project",
+      author: "Tom Stovall",
+      created: Date(timeIntervalSince1970: 0),
+      style: style
+    )
+
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    let data = try encoder.encode(original)
+
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let decoded = try decoder.decode(ProjectFrontMatter.self, from: data)
+
+    XCTAssertEqual(decoded.style?.artStyle, "watercolor")
+    XCTAssertEqual(decoded.style?.palette, "pastel")
+    XCTAssertEqual(decoded.style?.wardrobe, "victorian")
+  }
+
+  func testProjectFrontMatter_StyleYAMLRoundTrip() throws {
+    let yaml = """
+      ---
+      type: project
+      title: Styled Project
+      author: Tom Stovall
+      created: 2025-01-01T00:00:00Z
+      style:
+        artStyle: watercolor
+        palette: pastel
+        wardrobe: victorian
+      ---
+      """
+
+    let parser = ProjectMarkdownParser()
+    let (frontMatter, _) = try parser.parse(content: yaml)
+
+    XCTAssertEqual(frontMatter.style?.artStyle, "watercolor")
+    XCTAssertEqual(frontMatter.style?.palette, "pastel")
+    XCTAssertEqual(frontMatter.style?.wardrobe, "victorian")
+
+    // Round-trip: generate YAML and parse again
+    let generated = parser.generate(frontMatter: frontMatter, body: "")
+    let (reparsed, _) = try parser.parse(content: generated)
+
+    XCTAssertEqual(reparsed.style?.artStyle, "watercolor")
+    XCTAssertEqual(reparsed.style?.palette, "pastel")
+    XCTAssertEqual(reparsed.style?.wardrobe, "victorian")
+  }
+
+  func testProjectFrontMatter_StyleYAMLRoundTrip_PartialFields() throws {
+    let yaml = """
+      ---
+      type: project
+      title: Styled Project
+      author: Tom Stovall
+      created: 2025-01-01T00:00:00Z
+      style:
+        artStyle: digital
+      ---
+      """
+
+    let parser = ProjectMarkdownParser()
+    let (frontMatter, _) = try parser.parse(content: yaml)
+
+    XCTAssertEqual(frontMatter.style?.artStyle, "digital")
+    XCTAssertNil(frontMatter.style?.palette)
+    XCTAssertNil(frontMatter.style?.wardrobe)
+
+    // Round-trip
+    let generated = parser.generate(frontMatter: frontMatter, body: "")
+    let (reparsed, _) = try parser.parse(content: generated)
+
+    XCTAssertEqual(reparsed.style?.artStyle, "digital")
+    XCTAssertNil(reparsed.style?.palette)
+    XCTAssertNil(reparsed.style?.wardrobe)
+  }
+
+  func testProjectFrontMatter_StyleYAMLNoMutation() throws {
+    // Verify that a PROJECT.md without style: remains unchanged
+    let yaml = """
+      ---
+      type: project
+      title: Project Without Style
+      author: Tom Stovall
+      created: 2025-01-01T00:00:00Z
+      ---
+      """
+
+    let parser = ProjectMarkdownParser()
+    let (frontMatter, _) = try parser.parse(content: yaml)
+
+    XCTAssertNil(frontMatter.style)
+
+    // Generate YAML and verify no style: key is added
+    let generated = parser.generate(frontMatter: frontMatter, body: "")
+
+    XCTAssertFalse(generated.contains("style:"))
+  }
+
+  func testProjectFrontMatter_StyleYAMLEmptyBlock() throws {
+    // Verify that style: {} is handled correctly
+    let yaml = """
+      ---
+      type: project
+      title: Project With Empty Style
+      author: Tom Stovall
+      created: 2025-01-01T00:00:00Z
+      style: {}
+      ---
+      """
+
+    let parser = ProjectMarkdownParser()
+    let (frontMatter, _) = try parser.parse(content: yaml)
+
+    XCTAssertNotNil(frontMatter.style)
+    XCTAssertNil(frontMatter.style?.artStyle)
+    XCTAssertNil(frontMatter.style?.palette)
+    XCTAssertNil(frontMatter.style?.wardrobe)
+  }
+
+  func testProjectFrontMatter_StyleWithOtherFields() throws {
+    // Verify style coexists with other optional fields
+    let yaml = """
+      ---
+      type: project
+      title: Complex Project
+      author: Tom Stovall
+      created: 2025-01-01T00:00:00Z
+      description: A complex project
+      genre: Drama
+      tags: [tag1, tag2]
+      style:
+        artStyle: 3D
+        palette: cyberpunk
+      ---
+      """
+
+    let parser = ProjectMarkdownParser()
+    let (frontMatter, _) = try parser.parse(content: yaml)
+
+    XCTAssertEqual(frontMatter.description, "A complex project")
+    XCTAssertEqual(frontMatter.genre, "Drama")
+    XCTAssertEqual(frontMatter.tags, ["tag1", "tag2"])
+    XCTAssertEqual(frontMatter.style?.artStyle, "3D")
+    XCTAssertEqual(frontMatter.style?.palette, "cyberpunk")
+
+    // Round-trip
+    let generated = parser.generate(frontMatter: frontMatter, body: "")
+    let (reparsed, _) = try parser.parse(content: generated)
+
+    XCTAssertEqual(reparsed.description, "A complex project")
+    XCTAssertEqual(reparsed.genre, "Drama")
+    XCTAssertEqual(reparsed.tags, ["tag1", "tag2"])
+    XCTAssertEqual(reparsed.style?.artStyle, "3D")
+    XCTAssertEqual(reparsed.style?.palette, "cyberpunk")
+  }
+
 }
 
 // MARK: - Test Settings Types
