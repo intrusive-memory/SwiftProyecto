@@ -170,7 +170,7 @@ final class ProjectDetailPaneHandlerLookupTests: XCTestCase {
       },
       "fountain": { file in
         AnyView(Text(verbatim: "Screenplay handler"))
-      }
+      },
     ]
 
     // PROJECT.md → PROJECT.md handler (name match)
@@ -216,7 +216,7 @@ final class ProjectDetailPaneHandlerLookupTests: XCTestCase {
         "md": { file in
           extensionHandlerInvoked = true
           return AnyView(Text(verbatim: "Markdown handler"))
-        }
+        },
       ]
     )
 
@@ -249,7 +249,7 @@ final class ProjectDetailPaneHandlerLookupTests: XCTestCase {
         "md": { file in
           extensionHandlerInvoked = true
           return AnyView(Text(verbatim: "Markdown handler"))
-        }
+        },
       ]
     )
 
@@ -287,7 +287,7 @@ final class ProjectDetailPaneHandlerLookupTests: XCTestCase {
       },
       "txt": { file in
         AnyView(Text(verbatim: "Text"))
-      }
+      },
     ]
 
     let mdPane = ProjectDetailPane(selectedFile: mdFile, handlers: handlers)
@@ -318,7 +318,7 @@ final class ProjectDetailPaneHandlerLookupTests: XCTestCase {
         },
         "md": { file in
           AnyView(Text(verbatim: "Markdown"))
-        }
+        },
       ]
     )
 

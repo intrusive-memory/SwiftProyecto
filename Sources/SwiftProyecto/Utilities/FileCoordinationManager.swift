@@ -144,7 +144,6 @@ public struct FileCoordinationManager {
     }
   }
 
-
   // MARK: - Private Helpers
 
   /// Merge a modified ProjectFrontMatter with an existing one,

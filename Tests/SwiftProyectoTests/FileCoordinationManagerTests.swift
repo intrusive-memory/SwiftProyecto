@@ -25,6 +25,7 @@
 
 import Foundation
 import XCTest
+
 @testable import SwiftProyecto
 
 /// Tests for FileCoordinationManager and coordinated writes with field preservation.
@@ -110,8 +111,9 @@ final class FileCoordinationManagerTests: XCTestCase {
     // Verify: Personaje field updated, projects field preserved
     let (after, _) = try parser.parse(fileURL: projectURL)
     XCTAssertNotNil(after.appSections["personaje"])
-    XCTAssertNotNil(after.appSections["projects"],
-                    "projects field should be preserved after Personaje write")
+    XCTAssertNotNil(
+      after.appSections["projects"],
+      "projects field should be preserved after Personaje write")
   }
 
   /// Test that Vinetas preserves Personaje's personaje field during coordinated write.
@@ -143,8 +145,9 @@ final class FileCoordinationManagerTests: XCTestCase {
 
     // Verify: projects updated, personaje preserved
     let (after, _) = try parser.parse(fileURL: projectURL)
-    XCTAssertNotNil(after.appSections["personaje"],
-                    "personaje field should be preserved after Vinetas write")
+    XCTAssertNotNil(
+      after.appSections["personaje"],
+      "personaje field should be preserved after Vinetas write")
     XCTAssertNotNil(after.appSections["projects"])
   }
 
@@ -240,7 +243,8 @@ final class FileCoordinationManagerTests: XCTestCase {
 
     // Verify: style field is fully preserved
     let (after, _) = try parser.parse(fileURL: projectURL)
-    XCTAssertEqual(after.style?.artStyle, "watercolor", "Full style should be preserved when not owned")
+    XCTAssertEqual(
+      after.style?.artStyle, "watercolor", "Full style should be preserved when not owned")
     XCTAssertEqual(after.style?.palette, "warm")
     XCTAssertEqual(after.style?.wardrobe, "period")
   }

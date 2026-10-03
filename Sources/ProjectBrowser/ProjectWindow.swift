@@ -652,7 +652,9 @@ public struct ProjectWindow: View {
   ///   - discovered: The flat array of discovered files from the filesystem.
   /// - Returns: The discovered files plus placeholder entries for any expected
   ///   files not found in the discovery results.
-  private func mergeExpectedFiles(_ expected: [String], into discovered: [ProjectFile]) -> [ProjectFile] {
+  private func mergeExpectedFiles(_ expected: [String], into discovered: [ProjectFile])
+    -> [ProjectFile]
+  {
     var result = discovered
     let discoveredPaths = Set(discovered.map { $0.relativePath })
 
