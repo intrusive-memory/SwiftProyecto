@@ -94,6 +94,7 @@ final class MissingFileVisualStateAndSelectionTests: XCTestCase {
 
     let _window = ProjectWindow(
       directoryURL: FileManager.default.temporaryDirectory,
+      onFileAction: nil,
       onMissingFileSelected: { path in
         callbackInvoked = true
         callbackPath = path
@@ -134,6 +135,7 @@ final class MissingFileVisualStateAndSelectionTests: XCTestCase {
 
     let window = ProjectWindow(
       directoryURL: FileManager.default.temporaryDirectory,
+      onFileAction: nil,
       expectedFiles: ["CAST.md"],
       onMissingFileSelected: { _ in }
     )
@@ -192,6 +194,7 @@ final class MissingFileVisualStateAndSelectionTests: XCTestCase {
 
     let window = ProjectWindow(
       directoryURL: FileManager.default.temporaryDirectory,
+      onFileAction: nil,
       onMissingFileSelected: { _ in
         callbackInvoked = true
       }
@@ -208,9 +211,9 @@ final class MissingFileVisualStateAndSelectionTests: XCTestCase {
       handlers: ["md": { _ in AnyView(Text("md")) }],
       projectTitle: "Test",
       onFileSelection: { _ in },
-      onMissingFileSelected: { _ in },
       onFileAction: { _, _ in },
-      expectedFiles: ["CAST.md"]
+      expectedFiles: ["CAST.md"],
+      onMissingFileSelected: { _ in }
     )
 
     XCTAssertNotNil(window)
