@@ -106,6 +106,13 @@ public struct ProjectWindow: View {
   /// which this returns `false` are hidden from the sidebar.
   private let fileFilter: ((ProjectFile) -> Bool)?
 
+  /// Optional file paths (relative to the project root, e.g. "CAST.md")
+  /// that should appear in the file tree whether or not they exist on disk.
+  /// Used to ensure expected project files are visible for user interaction
+  /// even before they are created. When `nil` or empty, only discovered files
+  /// are shown.
+  private let expectedFiles: [String]?
+
   /// Sidebar column minimum width (macOS).
   private let sidebarMinWidth: CGFloat
 
@@ -183,6 +190,8 @@ public struct ProjectWindow: View {
   ///     `nil`, the built-in editor is used exactly as before. Supplying one
   ///     also transfers ownership of saving those files to the consumer.
   ///   - fileFilter: A predicate hiding files for which it returns `false`.
+  ///   - expectedFiles: Optional file paths (e.g., `["CAST.md"]`) that should
+  ///     appear in the tree whether or not they exist on disk. Defaults to `nil`.
   ///   - sidebarMinWidth: Sidebar minimum width (macOS). Defaults to `250`.
   ///   - sidebarIdealWidth: Sidebar ideal width (macOS). Defaults to `300`.
   ///   - sidebarMaxWidth: Sidebar maximum width (macOS). Defaults to `400`.
@@ -196,6 +205,7 @@ public struct ProjectWindow: View {
     fileWriter: FileWriterCallback? = nil,
     textEditorBuilder: TextEditorBuilder? = nil,
     fileFilter: ((ProjectFile) -> Bool)? = nil,
+    expectedFiles: [String]? = nil,
     sidebarMinWidth: CGFloat = 250,
     sidebarIdealWidth: CGFloat = 300,
     sidebarMaxWidth: CGFloat = 400
@@ -209,6 +219,7 @@ public struct ProjectWindow: View {
     self.fileWriter = fileWriter
     self.textEditorBuilder = textEditorBuilder
     self.fileFilter = fileFilter
+    self.expectedFiles = expectedFiles
     self.sidebarMinWidth = sidebarMinWidth
     self.sidebarIdealWidth = sidebarIdealWidth
     self.sidebarMaxWidth = sidebarMaxWidth
@@ -592,7 +603,14 @@ public struct ProjectWindow: View {
 
     do {
       let discovered = try await ProjectFileDiscovery.discover(at: directoryURL)
-      files = fileFilter.map { predicate in discovered.filter(predicate) } ?? discovered
+      var mergedFiles = discovered
+
+      // Merge expected files that aren't already discovered
+      if let expectedFiles = expectedFiles, !expectedFiles.isEmpty {
+        mergedFiles = mergeExpectedFiles(expectedFiles, into: mergedFiles)
+      }
+
+      files = fileFilter.map { predicate in mergedFiles.filter(predicate) } ?? mergedFiles
     } catch {
       errorMessage = error.localizedDescription
     }
@@ -608,6 +626,44 @@ public struct ProjectWindow: View {
     }
 
     isLoading = false
+  }
+
+  /// Merges expected file paths with discovered files, creating placeholder
+  /// entries for any expected files that don't exist on disk. Expected files
+  /// appear below all discovered files in the returned array.
+  ///
+  /// - Parameters:
+  ///   - expected: Relative file paths (e.g., `["CAST.md"]`) expected to exist.
+  ///   - discovered: The flat array of discovered files from the filesystem.
+  /// - Returns: The discovered files plus placeholder entries for any expected
+  ///   files not found in the discovery results.
+  private func mergeExpectedFiles(_ expected: [String], into discovered: [ProjectFile]) -> [ProjectFile] {
+    var result = discovered
+    let discoveredPaths = Set(discovered.map { $0.relativePath })
+
+    for expectedPath in expected {
+      if !discoveredPaths.contains(expectedPath) {
+        // Create a placeholder ProjectFile for the expected-but-missing file
+        let url = URL(fileURLWithPath: expectedPath)
+        let fileName = url.lastPathComponent
+        let fileExt = url.pathExtension.isEmpty ? nil : url.pathExtension
+
+        let expectedFile = ProjectFile(
+          name: fileName,
+          relativePath: expectedPath,
+          fileExtension: fileExt,
+          isDirectory: false,
+          modifiedDate: Date(timeIntervalSince1970: 0),
+          fileSize: nil,
+          isLoaded: false,
+          loadingState: .notLoaded,
+          error: nil
+        )
+        result.append(expectedFile)
+      }
+    }
+
+    return result
   }
 
   // MARK: - Title resolution
