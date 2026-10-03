@@ -24,7 +24,7 @@ updated: 2026-10-03
 | Sortie | Requirement | State | Attempts | Dispatch Time | Notes |
 |--------|-------------|-------|----------|---------------|-------|
 | 1 | PY-P1 (foundation) | ✅ COMPLETED | 1 | 2026-10-03 | Expected files parameter |
-| 2 | PY-P1 (UI) | DISPATCHED | 1 | 2026-10-03 | Missing file visual state |
+| 2 | PY-P1 (UI) | ✅ COMPLETED | 1 | 2026-10-03 | Missing file visual state |
 | 3 | PY-P2 | ✅ COMPLETED | 1 | 2026-10-03 | Per-file handler lookup |
 | 4 | PY-P3 (foundational) | ✅ COMPLETED | 1 | 2026-10-03 | `style:` block |
 | 5 | PY-P4 | DISPATCHED | 1 | 2026-10-03 | NSFileCoordinator wrapper |
@@ -41,11 +41,12 @@ updated: 2026-10-03
 - **Layer**: 1 (parallel eligible)
 
 ### Sortie 2: Missing File Visual State
-- **Status**: PENDING
-- **Dependency**: Sortie 1
-- **Entry Criteria Met**: Awaiting Sortie 1 completion
-- **Exit Criteria**: Missing files render distinctly; callback fires
-- **Layer**: 2 (waits for Layer 1)
+- **Status**: ✅ COMPLETED
+- **Dependency**: Sortie 1 (✅)
+- **Exit Criteria**: ✓ All satisfied
+- **Changes**: `isExpectedButMissing` on ProjectFile; grey text + "missing" badge; callback wired
+- **Tests**: 15 tests passing (visual state, callback invocation, backward compatibility)
+- **Layer**: 2 (depends on Layer 1)
 
 ### Sortie 3: Per-File Handler Disambiguation
 - **Status**: ✅ COMPLETED
@@ -64,10 +65,9 @@ updated: 2026-10-03
 - **Layer**: 1 (parallel eligible); foundation for Sortie 5
 
 ### Sortie 5: NSFileCoordinator Wrapper
-- **Status**: PENDING
-- **Dependency**: Sortie 4
-- **Entry Criteria Met**: Awaiting Sortie 4 completion
-- **Exit Criteria**: Coordinated writes serialize; no data loss
+- **Status**: 🔄 IN FLIGHT
+- **Dependency**: Sortie 4 (✅)
+- **Exit Criteria**: Coordinated writes serialize; field preservation works; no data loss
 - **Layer**: 2 (waits for Layer 1)
 
 ### Sortie 6: Move Recents Infrastructure
@@ -89,9 +89,9 @@ updated: 2026-10-03
 ## Execution State
 
 - **Current Layer**: 2 (in flight)
-- **Next Action**: Await Layer 2 completion notifications
-- **Active Sorties**: 2 (missing file UI), 5 (NSFileCoordinator wrapper)
-- **Completed Sorties**: 1 (expectedFiles), 3 (handlers), 4 (style)
+- **Next Action**: Await Sortie 5 completion notification
+- **Active Sorties**: 5 (NSFileCoordinator wrapper)
+- **Completed Sorties**: 1 (expectedFiles), 2 (missing file UI), 3 (handlers), 4 (style)
 
 ---
 
