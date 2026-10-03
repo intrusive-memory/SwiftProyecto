@@ -25,7 +25,7 @@ updated: 2026-10-03
 |--------|-------------|-------|----------|---------------|-------|
 | 1 | PY-P1 (foundation) | ✅ COMPLETED | 1 | 2026-10-03 | Expected files parameter |
 | 2 | PY-P1 (UI) | PENDING | 0 | — | Waits for Sortie 1 |
-| 3 | PY-P2 | DISPATCHED | 1 | 2026-10-03 | Per-file handler lookup |
+| 3 | PY-P2 | ✅ COMPLETED | 1 | 2026-10-03 | Per-file handler lookup |
 | 4 | PY-P3 (foundational) | DISPATCHED | 1 | 2026-10-03 | `style:` block |
 | 5 | PY-P4 | PENDING | 0 | — | Waits for Sortie 4 |
 | 6 | PY-P5 (optional) | DEFERRED | 0 | — | Deferred to v5.2.0 |
@@ -48,10 +48,11 @@ updated: 2026-10-03
 - **Layer**: 2 (waits for Layer 1)
 
 ### Sortie 3: Per-File Handler Disambiguation
-- **Status**: PENDING
+- **Status**: ✅ COMPLETED
 - **Dependency**: None
-- **Entry Criteria Met**: Awaiting ritual + branch creation
-- **Exit Criteria**: Filename lookup takes precedence
+- **Exit Criteria**: ✓ All satisfied
+- **Changes**: Updated ProjectDetailPane handler lookup to check filename first, then extension
+- **Tests**: 10/10 passing (name-based routing, extension fallback, backward compatibility)
 - **Layer**: 1 (parallel eligible)
 
 ### Sortie 4: Add `style:` Block
