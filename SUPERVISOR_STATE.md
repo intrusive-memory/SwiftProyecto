@@ -23,7 +23,7 @@ updated: 2026-10-03
 
 | Sortie | Requirement | State | Attempts | Dispatch Time | Notes |
 |--------|-------------|-------|----------|---------------|-------|
-| 1 | PY-P1 (foundation) | DISPATCHED | 1 | 2026-10-03 | Expected files parameter |
+| 1 | PY-P1 (foundation) | ✅ COMPLETED | 1 | 2026-10-03 | Expected files parameter |
 | 2 | PY-P1 (UI) | PENDING | 0 | — | Waits for Sortie 1 |
 | 3 | PY-P2 | DISPATCHED | 1 | 2026-10-03 | Per-file handler lookup |
 | 4 | PY-P3 (foundational) | DISPATCHED | 1 | 2026-10-03 | `style:` block |
@@ -33,10 +33,11 @@ updated: 2026-10-03
 ## Sortie Details
 
 ### Sortie 1: Add Expected Files Foundation
-- **Status**: PENDING
+- **Status**: ✅ COMPLETED
 - **Dependency**: None
-- **Entry Criteria Met**: Awaiting ritual + branch creation
-- **Exit Criteria**: ProjectWindow accepts expectedFiles; discovery merge works
+- **Exit Criteria**: ✓ All satisfied
+- **Commit**: 783b0df
+- **Notes**: mergeExpectedFiles() implemented; 157/157 tests passing; ready for Sortie 2
 - **Layer**: 1 (parallel eligible)
 
 ### Sortie 2: Missing File Visual State
