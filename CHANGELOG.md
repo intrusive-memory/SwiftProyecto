@@ -9,6 +9,15 @@ All notable changes to SwiftProyecto will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Package bundles in `ProjectBrowser`.** A directory whose extension is in `ProjectFileDiscovery.defaultBundleExtensions` (`dossier`, `textbundle`), or that the filesystem flags as a package (`URLResourceValues.isPackage`), is now discovered as one leaf `ProjectFile` with the new `isBundle` flag: `isDirectory` is `false`, its extension is kept, nothing inside it is listed, and it sorts with the files at its level. The sidebar shows it with a package icon (`person.crop.rectangle` for `.dossier`, `shippingbox` otherwise) and no disclosure chevron. Because the extension is kept, a handler registered for `"dossier"` renders `SHANE.dossier` when it is selected, exactly as a handler renders a file.
+- **`ProjectFileDiscovery.discover(at:bundleExtensions:)`** and a matching **`bundleExtensions:`** parameter on `ProjectWindow`, both defaulting to `defaultBundleExtensions`. Pass `[]` to rely on the filesystem's package flag alone.
+- **`BundleContentView`**, the detail pane's fallback for a bundle with no handler (`ProjectDetailPane.ContentRoute.bundle`). Bundles are never lazily loaded (`ProjectFileContentLoader.shouldLoad` returns `false`), and a default-loader `.reload` on one throws a clear error instead of trying to read a directory as text.
+- `ProjectFile` gains `isBundle` (default `false`); payloads encoded before it existed still decode.
+
 ## [5.0.0] - 2026-08-02
 
 **BREAKING**: the cast surface is removed from SwiftProyecto. A production's cast now lives in `CAST.md`, owned by [SwiftReparto](https://github.com/intrusive-memory/SwiftReparto) (the `reparto` CLI — `brew install intrusive-memory/tap/reparto`). SwiftReparto's `CastMember` (with `voicePrompt`, `voices`, `extraKeys`) is the replacement type for every consumer that used to read cast out of PROJECT.md. SwiftProyecto deliberately declares **no package dependency** on SwiftReparto — the `reparto` binary is a runtime dependency of the migration path only.

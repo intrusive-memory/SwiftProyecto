@@ -35,13 +35,15 @@ public enum ProjectFileContentLoader {
   /// Returns `false` (skip) when any of the following hold:
   /// - `hasHandler` is `true` — a registered `FileTypeHandler` owns fetching
   ///   this file's content itself.
+  /// - `file.isBundle` is `true` — a package bundle is a directory on disk
+  ///   with no bytes of its own; only a handler can render one.
   /// - `cache` already has an entry for `file.id` — a cache hit; the
   ///   previously-loaded contents are still good enough to display.
   /// - `loadingFiles` already contains `file.id` — a load is already in
   ///   flight; don't start a second, redundant one.
   ///
-  /// Otherwise returns `true` (load): the file has no handler, isn't
-  /// cached, and isn't already loading.
+  /// Otherwise returns `true` (load): the file has no handler, isn't a
+  /// bundle, isn't cached, and isn't already loading.
   public static func shouldLoad(
     file: ProjectFile,
     hasHandler: Bool,
@@ -49,6 +51,7 @@ public enum ProjectFileContentLoader {
     loadingFiles: Set<UUID>
   ) -> Bool {
     guard !hasHandler else { return false }
+    guard !file.isBundle else { return false }
     guard cache[file.id] == nil else { return false }
     guard !loadingFiles.contains(file.id) else { return false }
     return true

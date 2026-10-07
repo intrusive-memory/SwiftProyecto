@@ -117,6 +117,10 @@ public struct ProjectWindow: View {
   /// are shown.
   private let expectedFiles: [String]?
 
+  /// Directory extensions that ``ProjectFileDiscovery`` presents as single
+  /// package bundles instead of expandable folders.
+  private let bundleExtensions: Set<String>
+
   /// Sidebar column minimum width (macOS).
   private let sidebarMinWidth: CGFloat
 
@@ -199,6 +203,12 @@ public struct ProjectWindow: View {
   ///   - fileFilter: A predicate hiding files for which it returns `false`.
   ///   - expectedFiles: Optional file paths (e.g., `["CAST.md"]`) that should
   ///     appear in the tree whether or not they exist on disk. Defaults to `nil`.
+  ///   - bundleExtensions: Directory extensions shown as single package
+  ///     bundles rather than expandable folders (see
+  ///     ``ProjectFileDiscovery/discover(at:bundleExtensions:)``). A bundle
+  ///     keeps its extension, so a handler registered for `"dossier"` renders
+  ///     `SHANE.dossier` when it is selected. Defaults to
+  ///     ``ProjectFileDiscovery/defaultBundleExtensions``.
   ///   - sidebarMinWidth: Sidebar minimum width (macOS). Defaults to `250`.
   ///   - sidebarIdealWidth: Sidebar ideal width (macOS). Defaults to `300`.
   ///   - sidebarMaxWidth: Sidebar maximum width (macOS). Defaults to `400`.
@@ -214,12 +224,14 @@ public struct ProjectWindow: View {
     fileFilter: ((ProjectFile) -> Bool)? = nil,
     expectedFiles: [String]? = nil,
     onMissingFileSelected: ((String) -> Void)? = nil,
+    bundleExtensions: Set<String> = ProjectFileDiscovery.defaultBundleExtensions,
     sidebarMinWidth: CGFloat = 250,
     sidebarIdealWidth: CGFloat = 300,
     sidebarMaxWidth: CGFloat = 400
   ) {
     self.directoryURL = directoryURL
     self.handlers = handlers
+    self.bundleExtensions = bundleExtensions
     self.projectTitle = projectTitle
     self.onFileSelection = onFileSelection
     self.onMissingFileSelected = onMissingFileSelected
@@ -617,7 +629,8 @@ public struct ProjectWindow: View {
     errorMessage = nil
 
     do {
-      let discovered = try await ProjectFileDiscovery.discover(at: directoryURL)
+      let discovered = try await ProjectFileDiscovery.discover(
+        at: directoryURL, bundleExtensions: bundleExtensions)
       var mergedFiles = discovered
 
       // Merge expected files that aren't already discovered
@@ -737,7 +750,8 @@ extension ProjectFile {
       isLoaded: state == .loaded ? true : isLoaded,
       loadingState: state,
       error: errorMessage,
-      isExpectedButMissing: isExpectedButMissing
+      isExpectedButMissing: isExpectedButMissing,
+      isBundle: isBundle
     )
   }
 }

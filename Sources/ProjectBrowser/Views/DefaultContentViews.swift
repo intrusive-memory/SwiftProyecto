@@ -99,6 +99,64 @@ public struct UnsupportedFileView: View {
   }
 }
 
+// MARK: - BundleContentView
+
+/// Fallback shown when a selected ``ProjectFile`` is a package bundle
+/// (``ProjectFile/isBundle``) and no handler is registered for its
+/// extension.
+///
+/// A bundle is a directory presented as one file, so there are no bytes to
+/// show as text and nothing to lazily load. The only useful thing to say is
+/// which handler would render it.
+///
+/// ## Example
+///
+/// ```swift
+/// BundleContentView(file: selectedFile)
+/// ```
+public struct BundleContentView: View {
+
+  /// The bundle for which no handler was found.
+  private let file: ProjectFile
+
+  public init(file: ProjectFile) {
+    self.file = file
+  }
+
+  private var handlerHint: String {
+    if let ext = file.fileExtension, !ext.isEmpty {
+      return "\(file.displayName) is a .\(ext) package"
+    }
+    return "\(file.displayName) is a package"
+  }
+
+  private var registrationHint: String {
+    if let ext = file.fileExtension, !ext.isEmpty {
+      return "Register a handler for \"\(ext)\" to view its contents"
+    }
+    return "Register a handler for this package type to view its contents"
+  }
+
+  public var body: some View {
+    VStack(spacing: 12) {
+      Image(systemName: "shippingbox")
+        .font(.system(size: 40))
+        .foregroundStyle(.secondary)
+
+      Text(handlerHint)
+        .font(.headline)
+        .multilineTextAlignment(.center)
+
+      Text(registrationHint)
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .padding()
+  }
+}
+
 // MARK: - LoadingView
 
 /// A centered loading indicator shown while a file's contents are being
