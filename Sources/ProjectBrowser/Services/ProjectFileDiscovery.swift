@@ -43,25 +43,71 @@ public enum ProjectFileDiscovery {
     ".swiftdeps",
   ]
 
+  /// Directory extensions (without the leading dot) that discovery presents
+  /// as **package bundles** by default: a single leaf ``ProjectFile`` with
+  /// ``ProjectFile/isBundle`` set, never descended into.
+  ///
+  /// - `dossier`: a Personaje character dossier (`characters/SHANE.dossier/`).
+  /// - `textbundle`: the TextBundle package format.
+  ///
+  /// Independently of this list, any directory the filesystem itself marks
+  /// as a package (`URLResourceValues.isPackage`, which macOS sets for
+  /// directories whose extension an installed app has registered as a
+  /// package type) is also treated as a bundle. Pass your own set to
+  /// ``discover(at:bundleExtensions:)`` to widen or narrow the default.
+  public static let defaultBundleExtensions: Set<String> = [
+    "dossier",
+    "textbundle",
+  ]
+
   /// Recursively scans `rootURL` and returns every file and directory found
   /// beneath it, excluding default-ignored paths and symlinks.
   ///
-  /// - Parameter rootURL: The directory to scan. Must exist and be a
-  ///   directory; `rootURL` itself is not included in the result, only its
-  ///   contents.
+  /// Directories whose extension is in `bundleExtensions`, or that the
+  /// filesystem reports as packages, are returned as one leaf entry each —
+  /// ``ProjectFile/isBundle`` is `true`, ``ProjectFile/isDirectory`` is
+  /// `false`, the extension is kept — and their contents are not scanned.
+  /// They sort with the files at their level, not with the folders.
+  ///
+  /// - Parameters:
+  ///   - rootURL: The directory to scan. Must exist and be a directory;
+  ///     `rootURL` itself is not included in the result, only its contents.
+  ///   - bundleExtensions: Directory extensions to present as bundles.
+  ///     Defaults to ``defaultBundleExtensions``; pass `[]` to rely on the
+  ///     filesystem's package flag alone. Matching ignores case.
   /// - Returns: A flat array of ``ProjectFile``, directories before files at
   ///   each level, alphabetical within each group, in depth-first order.
   /// - Throws: Any error `FileManager` throws while reading `rootURL`
   ///   itself (for example, if it does not exist or is not a directory).
-  public static func discover(at rootURL: URL) async throws -> [ProjectFile] {
+  public static func discover(
+    at rootURL: URL,
+    bundleExtensions: Set<String> = defaultBundleExtensions
+  ) async throws -> [ProjectFile] {
     let standardizedRoot = rootURL.standardizedFileURL
-    return try scanDirectory(at: standardizedRoot, root: standardizedRoot)
+    let normalizedBundleExtensions = Set(bundleExtensions.map { $0.lowercased() })
+    return try scanDirectory(
+      at: standardizedRoot, root: standardizedRoot, bundleExtensions: normalizedBundleExtensions)
+  }
+
+  /// Whether a directory at `url` should be presented as a package bundle,
+  /// given the filesystem's own package flag and the configured extensions.
+  ///
+  /// Only directories can be bundles; a plain file whose extension happens
+  /// to be in `bundleExtensions` is still a file.
+  static func isBundle(
+    _ url: URL, values: URLResourceValues, bundleExtensions: Set<String>
+  ) -> Bool {
+    guard values.isDirectory == true else { return false }
+    if values.isPackage == true { return true }
+    let ext = url.pathExtension.lowercased()
+    return !ext.isEmpty && bundleExtensions.contains(ext)
   }
 
   // MARK: - Private
 
   private static let resourceKeys: [URLResourceKey] = [
     .isDirectoryKey,
+    .isPackageKey,
     .isSymbolicLinkKey,
     .contentModificationDateKey,
     .fileSizeKey,
@@ -76,7 +122,9 @@ public enum ProjectFileDiscovery {
   ///   with concurrent deletion, etc.) are swallowed and treated as "no
   ///   children" so one unreadable folder doesn't abort the whole scan.
   ///   Failures reading `rootURL` itself are not swallowed by ``discover``.
-  private static func scanDirectory(at directoryURL: URL, root: URL) throws -> [ProjectFile] {
+  private static func scanDirectory(
+    at directoryURL: URL, root: URL, bundleExtensions: Set<String>
+  ) throws -> [ProjectFile] {
     let fileManager = FileManager.default
 
     let children = try fileManager.contentsOfDirectory(
@@ -86,7 +134,7 @@ public enum ProjectFileDiscovery {
     )
 
     var directoryEntries: [(url: URL, values: URLResourceValues)] = []
-    var fileEntries: [(url: URL, values: URLResourceValues)] = []
+    var fileEntries: [(url: URL, values: URLResourceValues, isBundle: Bool)] = []
 
     for childURL in children {
       guard let values = try? childURL.resourceValues(forKeys: resourceKeySet) else {
@@ -102,10 +150,13 @@ public enum ProjectFileDiscovery {
         continue
       }
 
-      if values.isDirectory == true {
+      if isBundle(childURL, values: values, bundleExtensions: bundleExtensions) {
+        // A package is a leaf: it sorts with the files and is never scanned.
+        fileEntries.append((childURL, values, true))
+      } else if values.isDirectory == true {
         directoryEntries.append((childURL, values))
       } else {
-        fileEntries.append((childURL, values))
+        fileEntries.append((childURL, values, false))
       }
     }
 
@@ -116,14 +167,19 @@ public enum ProjectFileDiscovery {
     results.reserveCapacity(directoryEntries.count + fileEntries.count)
 
     for (childURL, values) in directoryEntries {
-      results.append(makeProjectFile(url: childURL, values: values, root: root, isDirectory: true))
-      if let childResults = try? scanDirectory(at: childURL, root: root) {
+      results.append(
+        makeProjectFile(url: childURL, values: values, root: root, isDirectory: true))
+      if let childResults = try? scanDirectory(
+        at: childURL, root: root, bundleExtensions: bundleExtensions)
+      {
         results.append(contentsOf: childResults)
       }
     }
 
-    for (childURL, values) in fileEntries {
-      results.append(makeProjectFile(url: childURL, values: values, root: root, isDirectory: false))
+    for (childURL, values, isBundle) in fileEntries {
+      results.append(
+        makeProjectFile(
+          url: childURL, values: values, root: root, isDirectory: false, isBundle: isBundle))
     }
 
     return results
@@ -148,13 +204,15 @@ public enum ProjectFileDiscovery {
     url: URL,
     values: URLResourceValues,
     root: URL,
-    isDirectory: Bool
+    isDirectory: Bool,
+    isBundle: Bool = false
   ) -> ProjectFile {
     let name = url.lastPathComponent
     let relative = relativePath(of: url, relativeTo: root)
     let ext = isDirectory ? nil : (url.pathExtension.isEmpty ? nil : url.pathExtension)
     let modified = values.contentModificationDate ?? Date(timeIntervalSince1970: 0)
-    let size = isDirectory ? nil : values.fileSize.map(Int64.init)
+    // A bundle is a directory on disk; `fileSize` is meaningless for it.
+    let size = (isDirectory || isBundle) ? nil : values.fileSize.map(Int64.init)
 
     return ProjectFile(
       name: name,
@@ -162,7 +220,8 @@ public enum ProjectFileDiscovery {
       fileExtension: ext,
       isDirectory: isDirectory,
       modifiedDate: modified,
-      fileSize: size
+      fileSize: size,
+      isBundle: isBundle
     )
   }
 

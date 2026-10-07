@@ -177,8 +177,11 @@ When `ProjectWindow` appears, it discovers all files and directories beneath `di
 - Alphabetically sorted (case-insensitive)
 - Symlinks ignored
 - Common build artifacts ignored (`.build`, `node_modules`, `.git`, `.xcodeproj`, `.swiftpm`, `.DS_Store`)
+- Package bundles collapsed to one row: a directory whose extension is in `bundleExtensions` (default `dossier`, `textbundle`), or that the filesystem flags as a package, becomes a single leaf `ProjectFile` with `isBundle == true`. Nothing inside it is listed, it keeps its extension, and it sorts with the files. Pass `bundleExtensions:` to `ProjectWindow` to change the set.
 
 **Result:** A flat `[ProjectFile]` array that `ProjectBrowserSidebar` transforms into a hierarchical tree view.
+
+**Bundles and handlers:** because a bundle keeps its extension, a handler registered for `"dossier"` renders `SHANE.dossier` when it is selected, and the handler resolves whatever it needs inside the bundle directory itself (for example `dossier.html`). A bundle with no handler shows `BundleContentView`; it is never lazily read as text.
 
 ### Handler Registry
 
@@ -400,12 +403,14 @@ public struct ProjectFile: Identifiable, Codable, Equatable {
   public let name: String                    // Last path component
   public let relativePath: String            // Path from root
   public let fileExtension: String?          // Extension without dot
-  public let isDirectory: Bool               // True if directory
+  public let isDirectory: Bool               // True if directory (false for bundles)
   public let modifiedDate: Date              // Last modified time
-  public let fileSize: Int64?                // Size in bytes (nil for directories)
+  public let fileSize: Int64?                // Size in bytes (nil for directories and bundles)
   public let isLoaded: Bool                  // Content loaded?
   public let loadingState: FileLoadingState  // loading/loaded/error/etc
   public let error: String?                  // Error message if load failed
+  public let isExpectedButMissing: Bool      // Placeholder for an expected file not on disk
+  public let isBundle: Bool                  // A package directory shown as one file
 }
 ```
 
@@ -512,11 +517,15 @@ let handlers: [String: (ProjectFile) -> AnyView] = [
 
 ```swift
 public enum ProjectFileDiscovery {
-  public static func discover(at rootURL: URL) async throws -> [ProjectFile]
+  public static let defaultBundleExtensions: Set<String>   // ["dossier", "textbundle"]
+  public static func discover(
+    at rootURL: URL,
+    bundleExtensions: Set<String> = defaultBundleExtensions
+  ) async throws -> [ProjectFile]
 }
 ```
 
-Recursively scans `rootURL` and returns a flat, depth-first array of all files and directories found. Ignores common build artifacts (`.build`, `.git`, `node_modules`, `.xcodeproj`, etc.) and symlinks.
+Recursively scans `rootURL` and returns a flat, depth-first array of all files and directories found. Ignores common build artifacts (`.build`, `.git`, `node_modules`, `.xcodeproj`, etc.) and symlinks. Directories in `bundleExtensions`, or flagged as packages by the filesystem, are returned as single leaf entries with `isBundle == true` and are not scanned.
 
 ---
 

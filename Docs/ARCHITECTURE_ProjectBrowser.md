@@ -281,12 +281,16 @@ ProjectBrowser is a reusable, generic file-browsing library for macOS and iOS th
 
 **Public API**:
 ```swift
-public static func discover(at rootURL: URL) async throws -> [ProjectFile]
+public static func discover(
+  at rootURL: URL,
+  bundleExtensions: Set<String> = defaultBundleExtensions
+) async throws -> [ProjectFile]
 ```
 
 **Key Features**:
 - **Flat, depth-first ordering**: Directories first, then files, all alphabetical (case-insensitive)
 - **Recursive scanning**: Descends into subdirectories
+- **Package bundles**: A directory whose extension is in `bundleExtensions` (default `dossier`, `textbundle`), or that the filesystem flags as a package, becomes one leaf `ProjectFile` with `isBundle == true`, `isDirectory == false`, and its extension kept. It is never descended into and sorts with the files. Handlers, icons and selection treat it like a file of that extension; `ProjectFileContentLoader` never lazily reads one.
 - **Ignore patterns**: Skips `.git`, `.build`, `node_modules`, `*.xcodeproj`, etc.
 - **Symlink handling**: Never follows symbolic links
 - **Resource keys**: Only fetches needed metadata (name, type, modification date, size)

@@ -207,6 +207,11 @@ public struct ProjectDetailPane: View {
 
     /// Nothing has loaded and nothing else applies.
     case unsupported
+
+    /// A package bundle with no handler for its extension. Bundles have no
+    /// bytes of their own to load, so this is terminal: ``BundleContentView``
+    /// explains that a handler is needed rather than showing a spinner.
+    case bundle
   }
 
   /// Chooses the rendering destination for `file`.
@@ -234,6 +239,9 @@ public struct ProjectDetailPane: View {
     }
     if handlers[file.fileExtension ?? ""] != nil {
       return .handler
+    }
+    if file.isBundle {
+      return .bundle
     }
     if isLoadingContent {
       return .loading
@@ -296,6 +304,9 @@ public struct ProjectDetailPane: View {
 
     case .unsupported:
       UnsupportedFileView(file: file)
+
+    case .bundle:
+      BundleContentView(file: file)
     }
   }
 

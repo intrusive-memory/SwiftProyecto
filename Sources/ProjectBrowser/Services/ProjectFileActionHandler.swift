@@ -166,6 +166,14 @@ public enum ProjectFileActionHandler {
       throw ProjectFileActionError.fileNotFound(file.relativePath)
     }
 
+    // A package bundle is a directory; there are no bytes to read. Without a
+    // consumer loader the only honest answer is that a handler is required.
+    if file.isBundle {
+      let ext = file.fileExtension.map { ".\($0)" } ?? ""
+      throw ProjectFileActionError.underlying(
+        "\(file.relativePath) is a\(ext) package; register a handler for its extension to view it")
+    }
+
     do {
       let data = try Data(contentsOf: url)
       let text = String(data: data, encoding: .utf8)

@@ -221,7 +221,10 @@ private struct FileTreeNodeRow: View {
 /// loading/error state indicators for files. Missing expected files (marked
 /// with ``ProjectFile/isExpectedButMissing``) render in grey with a "missing"
 /// indicator badge.
-private struct FileTreeRowLabel: View {
+///
+/// Internal rather than private so the icon mapping can be asserted from
+/// tests without rendering the view.
+struct FileTreeRowLabel: View {
   let file: ProjectFile
 
   var body: some View {
@@ -262,6 +265,9 @@ private struct FileTreeRowLabel: View {
     case .error:
       return "exclamationmark.triangle.fill"
     case .notLoaded, .loaded, .stale:
+      if file.isBundle {
+        return FileTreeRowLabel.bundleIconName(forExtension: file.fileExtension)
+      }
       return FileTreeRowLabel.fileIconName(forExtension: file.fileExtension)
     }
   }
@@ -304,6 +310,19 @@ private struct FileTreeRowLabel: View {
       return "doc.zipper"
     default:
       return "doc"
+    }
+  }
+
+  /// Maps a package bundle's extension to a representative SF Symbol name.
+  /// A character dossier gets a person; anything else gets a generic package.
+  static func bundleIconName(forExtension fileExtension: String?) -> String {
+    switch fileExtension?.lowercased() {
+    case "dossier":
+      return "person.crop.rectangle"
+    case "textbundle":
+      return "doc.richtext"
+    default:
+      return "shippingbox"
     }
   }
 }

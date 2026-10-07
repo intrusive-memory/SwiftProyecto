@@ -64,6 +64,23 @@ public struct ProjectFile: Identifiable, Codable, Hashable, Equatable, Sendable 
   /// (e.g., CAST.md) from discovered files.
   public let isExpectedButMissing: Bool
 
+  /// Whether this entry is a **package bundle**: a directory on disk that the
+  /// browser presents as a single, opaque file (the way Finder shows a
+  /// `.textbundle` or an `.app`).
+  ///
+  /// A bundle is a leaf. ``isDirectory`` is `false`, nothing inside it is
+  /// discovered, and ``fileExtension`` carries the bundle's extension (for
+  /// example `"dossier"`), so the `handlers` registry, the sidebar icon and
+  /// selection all treat it exactly like a file of that type. The one place
+  /// the distinction matters is content loading: a bundle has no bytes of
+  /// its own, so ``ProjectFileContentLoader`` never lazily reads one — a
+  /// consumer that wants to show a bundle registers a handler for its
+  /// extension and resolves the contents it needs inside the bundle itself.
+  ///
+  /// Decoding a ``ProjectFile`` encoded before this property existed yields
+  /// `false`.
+  public let isBundle: Bool
+
   public init(
     id: UUID = UUID(),
     name: String,
@@ -75,7 +92,8 @@ public struct ProjectFile: Identifiable, Codable, Hashable, Equatable, Sendable 
     isLoaded: Bool = false,
     loadingState: FileLoadingState = .notLoaded,
     error: String? = nil,
-    isExpectedButMissing: Bool = false
+    isExpectedButMissing: Bool = false,
+    isBundle: Bool = false
   ) {
     self.id = id
     self.name = name
@@ -88,6 +106,32 @@ public struct ProjectFile: Identifiable, Codable, Hashable, Equatable, Sendable 
     self.loadingState = loadingState
     self.error = error
     self.isExpectedButMissing = isExpectedButMissing
+    self.isBundle = isBundle
+  }
+
+  // MARK: - Codable
+
+  private enum CodingKeys: String, CodingKey {
+    case id, name, relativePath, fileExtension, isDirectory, modifiedDate, fileSize
+    case isLoaded, loadingState, error, isExpectedButMissing, isBundle
+  }
+
+  /// Decodes a file, tolerating payloads written before ``isBundle`` existed
+  /// (which decode with `isBundle == false`). Encoding stays synthesized.
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.id = try container.decode(UUID.self, forKey: .id)
+    self.name = try container.decode(String.self, forKey: .name)
+    self.relativePath = try container.decode(String.self, forKey: .relativePath)
+    self.fileExtension = try container.decodeIfPresent(String.self, forKey: .fileExtension)
+    self.isDirectory = try container.decode(Bool.self, forKey: .isDirectory)
+    self.modifiedDate = try container.decode(Date.self, forKey: .modifiedDate)
+    self.fileSize = try container.decodeIfPresent(Int64.self, forKey: .fileSize)
+    self.isLoaded = try container.decode(Bool.self, forKey: .isLoaded)
+    self.loadingState = try container.decode(FileLoadingState.self, forKey: .loadingState)
+    self.error = try container.decodeIfPresent(String.self, forKey: .error)
+    self.isExpectedButMissing = try container.decode(Bool.self, forKey: .isExpectedButMissing)
+    self.isBundle = try container.decodeIfPresent(Bool.self, forKey: .isBundle) ?? false
   }
 
   /// Whether a registered `FileTypeHandler` is known to exist for this
