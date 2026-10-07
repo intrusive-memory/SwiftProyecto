@@ -69,7 +69,7 @@ let package = Package(
     sibling(
       "SwiftCompartido",
       remote: "https://github.com/intrusive-memory/SwiftCompartido.git",
-      from: "7.2.4"),
+      from: "7.2.5"),
     // NOTE: SwiftBruja is deliberately NOT a dependency. `proyecto roles` runs
     // its casting/role extraction on-device via Apple's Foundation Models
     // (guided generation), so the library and CLI stay free of SwiftBruja's
