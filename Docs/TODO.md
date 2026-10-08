@@ -4,6 +4,64 @@ name: SwiftProyecto TODO
 description: Active backlog and completed-work log for SwiftProyecto.
 ---
 
+# TODO: Let a host select a file in `ProjectWindow` 🚧
+
+**Requested by:** Escribir, for its Markdown preview. A link in the preview of
+`chapter1.md` to `chapter2.md` must be able to show `chapter2.md` in the project
+window. Escribir's requirements: `docs/REQUIREMENTS-markdown-preview.md` § 7 on its
+`feature/markdown-preview` branch. That work cannot build file links until this
+ships in a release.
+
+**The gap (verified at v5.2.0, `bbb1235`):** `ProjectWindow` keeps selection in
+`@State private var selectedFile` (`Sources/ProjectBrowser/ProjectWindow.swift:139`)
+and exposes it only through the outbound `onFileSelection` callback. A host has no
+binding, method, environment action or notification to request a selection. There is
+also no public lookup of a `ProjectFile` by path, and a host-built `ProjectFile`
+never equals the window's own, because `id` is a fresh `UUID` per construction.
+
+**Behaviour required** (the API shape is this package's call: a binding, a request
+value, or an action):
+
+- The host identifies the file by its path relative to `directoryURL`.
+- The sidebar highlights the file and expands its ancestor folders.
+- The detail pane shows it through the same path a click takes: the private
+  `selectFile(_:)` at `ProjectWindow.swift:443`, so lazy loading and
+  `onMissingFileSelected` behave identically.
+- `onFileSelection` fires, as for a click.
+- A path that is not in the discovered tree, or that names a directory, is ignored
+  and the current selection stands. No error, no crash.
+- It works in both layouts: `splitLayout`, and the compact `stackLayout`, where it
+  pushes the detail through `navigationDestination(item:)`.
+- Requesting the already-selected file is a no-op that does not reload its content.
+- Source-compatible: every existing `ProjectWindow(...)` call site compiles unchanged.
+
+**Open work:**
+- [x] **Decided: environment action.** `\.selectProjectFile` (`ProjectFileSelectionAction`)
+      is installed on the detail pane in both layouts. The request comes from inside
+      the detail pane, so an environment action fits. No binding was added.
+      (`Sources/ProjectBrowser/Models/ProjectFileSelectionRequest.swift`)
+- [x] Resolve a relative path to the window's own `ProjectFile` in its `files` array,
+      matching exactly on `relativePath` (`ProjectFileSelectionResolver`).
+- [x] Ancestor expansion: every ancestor folder id is unioned into `expandedFolders`.
+- [x] **Decided: no sidebar scroll in this release.** Scrolling the revealed row into
+      view is deferred to a follow-up. It is documented as not implemented in
+      `Docs/ARCHITECTURE_ProjectBrowser.md` §6.5.
+- [x] Route through `selectFile(_:)` so there is one selection path.
+- [ ] Tests for each bullet under "Behaviour required", in both layouts. **Partial.**
+      `ProjectFileSelectionRequestTests` covers resolution, ancestors, rejection of
+      unknown and directory paths, and the action. The window-level bullets (highlight,
+      detail load, `onFileSelection`, no-op on the selected file, both layouts) have no
+      test: selection lives in the window's private `@State`, and no seam exposes it.
+- [x] Fix the doc comment at `ProjectWindow.swift:41`, which called a nonexistent
+      `file.url(in:)`.
+- [ ] Ship in the next minor release. The CHANGELOG and architecture doc are updated
+      under Unreleased. The release itself is still pending, and so is the item above.
+
+**Not in scope:** a public by-path lookup on `ProjectFileDiscovery`, host ownership
+of the file list, or any change to security scoping (the host keeps that).
+
+---
+
 # TODO: Required `type` property in episode/intro/outro front matter 🚧
 
 **Decision:** `type` (`episode` | `intro` | `outro`) is a **write-time
@@ -29,22 +87,25 @@ rejecting hand-authored or third-party files that omit it.
 docs/comments were corrected to match. Example value: `episodes/intro.fountain`.
 
 **Open work:**
-- [ ] **Write-side normalization (the core change).** Every code path that writes
-      a screenplay file must emit `type`, inferring the value and rewriting it
-      (set if absent, correct if wrong). Inference by writer role: intro → `type:
-      intro`, outro → `type: outro`, episode generation → `type: episode`.
-- [ ] Do **NOT** add intake validation/enforcement. Parsing stays permissive
-      (FountainParser already tolerates missing/arbitrary keys; `.fountain` front
-      matter isn't schema-validated). No "type required" error on read.
-- [ ] **Test our generation prompt against the required `type` property.** The
-      LLM generation path (`Sources/proyecto/IterativeProjectGenerator.swift`)
-      and the intro/outro writers (`Sources/proyecto/GenerateCommand.swift`
-      `generateIntroFile`/`generateOutroFile`) must emit the inferred `type`, with
-      tests asserting the produced front matter carries the correct value.
-- [ ] Fix the placeholder writers: they currently emit `type: fountain` — change
-      to the inferred intro/outro/episode value.
-- [ ] Add fixtures + round-trip tests asserting written files carry the inferred
-      `type` (and that reading a file WITHOUT `type` still succeeds).
+- [x] **Write-side normalization.** The only screenplay writers in this repo are the
+      intro and outro placeholders in `GenerateCommand.swift`. Both now render through
+      `ScreenplayFileType.placeholderDocument(...)` (`Sources/SwiftProyecto/Models/ScreenplayFileType.swift`),
+      which always writes `type:`. Each writer overwrites its file wholesale, so a
+      written file always carries the inferred value.
+- [x] **Episode generation: nothing to change here.** This repo has no writer that
+      produces episode screenplays. `episode` exists as a case so a future writer can
+      use it.
+- [x] Do **NOT** add intake validation/enforcement. Nothing in this change reads or
+      rejects `type`.
+- [x] **Generation prompt: nothing to change.** `IterativeProjectGenerator` writes only
+      PROJECT.md, never a screenplay, so it has no `type` to emit.
+- [x] Fix the placeholder writers: `type: fountain` is now `type: intro` or `type: outro`.
+- [ ] Fixtures and round-trip tests. **Partial.** `ScreenplayFileTypeTests` asserts the
+      rendered `type:` value, that it sits inside the front matter, and the full output.
+      Still missing: a test that the CLI writer actually uses the helper (CLI tests drive
+      the binary, and no end-to-end test covers `generate` output), and a test that
+      reading a file WITHOUT `type` still succeeds. The fountain reader is in
+      SwiftCompartido, not this package.
 
 ---
 

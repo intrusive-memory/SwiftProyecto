@@ -316,16 +316,12 @@ struct GenerateCommand: AsyncParsableCommand {
     let introURL = projectDirectory.appendingPathComponent(path)
 
     // For now, create placeholder. Real implementation would use LLM or external tool
-    let placeholderContent = """
-      ---
-      type: fountain
-      title: \(project.title) - Season \(season.number) Intro
-      ---
-
-      # Season \(season.number) Intro
-
-      [Intro content will be generated here]
-      """
+    // Always declare `type`, inferred from the writer's role (intro).
+    let placeholderContent = ScreenplayFileType.intro.placeholderDocument(
+      title: "\(project.title) - Season \(season.number) Intro",
+      heading: "Season \(season.number) Intro",
+      body: "[Intro content will be generated here]"
+    )
 
     // Create parent directories if needed
     try FileManager.default.createDirectory(
@@ -349,16 +345,12 @@ struct GenerateCommand: AsyncParsableCommand {
     let outroURL = projectDirectory.appendingPathComponent(path)
 
     // For now, create placeholder. Real implementation would use LLM or external tool
-    let placeholderContent = """
-      ---
-      type: fountain
-      title: \(project.title) - Season \(season.number) Outro
-      ---
-
-      # Season \(season.number) Outro
-
-      [Outro content will be generated here]
-      """
+    // Always declare `type`, inferred from the writer's role (outro).
+    let placeholderContent = ScreenplayFileType.outro.placeholderDocument(
+      title: "\(project.title) - Season \(season.number) Outro",
+      heading: "Season \(season.number) Outro",
+      body: "[Outro content will be generated here]"
+    )
 
     // Create parent directories if needed
     try FileManager.default.createDirectory(
