@@ -38,7 +38,7 @@ import SwiftUI
 ///   onFileAction: { file, action in
 ///     switch action {
 ///     case .showInFinder:
-///       NSWorkspace.shared.activateFileViewerSelecting([file.url(in: projectFolderURL)])
+///       NSWorkspace.shared.activateFileViewerSelecting([projectFolderURL.appendingPathComponent(file.relativePath)])
 ///     default:
 ///       break
 ///     }
@@ -329,6 +329,7 @@ public struct ProjectWindow: View {
         )
     } detail: {
       detailPane(for: selectedFile)
+        .environment(\.selectProjectFile, selectProjectFileAction)
         .overlay {
           if isLoading && files.isEmpty {
             ProgressView("Discovering files…")
@@ -360,6 +361,7 @@ public struct ProjectWindow: View {
           }
           .navigationDestination(item: $selectedFile) { file in
             detailPane(for: file)
+              .environment(\.selectProjectFile, selectProjectFileAction)
               .navigationTitle(file.displayName)
               .navigationBarTitleDisplayMode(.inline)
           }
@@ -433,6 +435,31 @@ public struct ProjectWindow: View {
     } else {
       expandedFolders.insert(id)
     }
+  }
+
+  /// The action installed in the detail pane's environment, so views the host
+  /// renders there can request a selection by relative path. See
+  /// ``ProjectFileSelectionAction``.
+  private var selectProjectFileAction: ProjectFileSelectionAction {
+    ProjectFileSelectionAction { relativePath in
+      requestSelection(relativePath: relativePath)
+    }
+  }
+
+  /// Selects the file at `relativePath` as a sidebar click would: expands its
+  /// ancestor folders, then routes through ``selectFile(_:)``. Ignores paths
+  /// that are not in the discovered tree or that name a directory, and does
+  /// nothing when the file is already selected, so its content is not reloaded.
+  private func requestSelection(relativePath: String) {
+    guard
+      let resolution = ProjectFileSelectionResolver.resolve(
+        relativePath: relativePath, in: files)
+    else {
+      return
+    }
+    guard selectedFile?.relativePath != resolution.file.relativePath else { return }
+    expandedFolders.formUnion(resolution.ancestorFolderIDs)
+    selectFile(resolution.file)
   }
 
   /// Updates selection state, forwards the selection to the consumer, and

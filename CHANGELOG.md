@@ -11,12 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.3.0] - 2026-10-08
+
 ### Added
 
 - **Package bundles in `ProjectBrowser`.** A directory whose extension is in `ProjectFileDiscovery.defaultBundleExtensions` (`dossier`, `textbundle`), or that the filesystem flags as a package (`URLResourceValues.isPackage`), is now discovered as one leaf `ProjectFile` with the new `isBundle` flag: `isDirectory` is `false`, its extension is kept, nothing inside it is listed, and it sorts with the files at its level. The sidebar shows it with a package icon (`person.crop.rectangle` for `.dossier`, `shippingbox` otherwise) and no disclosure chevron. Because the extension is kept, a handler registered for `"dossier"` renders `SHANE.dossier` when it is selected, exactly as a handler renders a file.
 - **`ProjectFileDiscovery.discover(at:bundleExtensions:)`** and a matching **`bundleExtensions:`** parameter on `ProjectWindow`, both defaulting to `defaultBundleExtensions`. Pass `[]` to rely on the filesystem's package flag alone.
 - **`BundleContentView`**, the detail pane's fallback for a bundle with no handler (`ProjectDetailPane.ContentRoute.bundle`). Bundles are never lazily loaded (`ProjectFileContentLoader.shouldLoad` returns `false`), and a default-loader `.reload` on one throws a clear error instead of trying to read a directory as text.
 - `ProjectFile` gains `isBundle` (default `false`); payloads encoded before it existed still decode.
+- **Host-requested file selection in `ProjectBrowser`.** A view rendered in `ProjectWindow`'s detail pane can select a file by its path relative to `directoryURL` through `@Environment(\.selectProjectFile)`. The request runs the same path as a sidebar click: the file is highlighted, its ancestor folders expand, `onFileSelection` fires, and missing placeholders reach `onMissingFileSelected`. A path that is not in the tree, or that names a directory, is ignored. Requesting the file that is already selected does nothing. Works in both the split and stack layouts. The API is source-compatible: no existing `ProjectWindow` call site changes.
+
+### Fixed
+
+- Intro and outro placeholder screenplays declared `type: fountain`. They now declare `type: intro` and `type: outro`, and the new `ScreenplayFileType` (`episode`, `intro`, `outro`) renders them. Reading a screenplay without `type:` still works; nothing requires the key.
+- The `ProjectWindow` doc comment called a `ProjectFile.url(in:)` helper that does not exist. The example now builds the URL from `directoryURL` and `relativePath`.
 
 ## [5.0.0] - 2026-08-02
 
