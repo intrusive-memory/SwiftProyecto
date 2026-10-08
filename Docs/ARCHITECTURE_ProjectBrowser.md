@@ -977,6 +977,19 @@ loadingFiles.remove(file.id)              // Hide spinner
 
 ---
 
+### 6.5 Host-Requested Selection
+
+A host can select a file without a sidebar click. `ProjectWindow` installs a ``ProjectFileSelectionAction`` in the environment of its detail pane under `\.selectProjectFile`. Views rendered there call it with a path relative to `directoryURL`.
+
+The request runs `requestSelection(relativePath:)`, which:
+
+1. Resolves the path against the window's own `files` array with `ProjectFileSelectionResolver`. The match is exact on `relativePath`, and a directory or an unknown path returns `nil` and the request is dropped.
+2. Returns without effect if the resolved file is already selected, so its content is not reloaded.
+3. Unions the resolved file's ancestor folder ids into `expandedFolders`, so the row is visible.
+4. Calls the private `selectFile(_:)`, the same path a click takes, so lazy loading and `onMissingFileSelected` behave identically.
+
+The action is installed on both the `splitLayout` detail column and the `stackLayout` `navigationDestination`, so the request behaves the same in both. Scrolling the sidebar to the revealed row is not implemented yet.
+
 ## 7. Error Handling Architecture
 
 ### 7.1 Error Categories & Responses
