@@ -6,6 +6,8 @@ operation_number: 01
 branch: mission/persona/01
 starting_point_commit: ad8bf9e4e699cb3509a25d20091421f70f54b36c
 state: completed
+mission: persona-01
+updated: 2026-10-12
 completed: 2026-10-03
 ---
 

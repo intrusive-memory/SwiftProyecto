@@ -11,6 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.3.1] - 2026-10-13
+
+### Fixed
+
+- `ProjectBundleTests` no longer depend on what is installed on the host. An installed app can register `io.intrusive-memory.dossier` as a macOS package, and the OS package flag then overrides the configured extension set. The tests now use an unregistered fixture extension. The `ProjectFileDiscovery` doc comment that said the set could narrow the default now says the OS flag cannot be turned off.
+- Fenced Claude output no longer drops every line that contains the word "json". A description such as "A JSON-based show" used to break decoding. Only fence lines are removed now.
+- `CastExtractor`'s regex fallback no longer rejects names that start with `CUT`, `FADE`, or `DISSOLVE` (for example `CUTHBERT`). `#` is now a valid name character, as the existing comment described (`DOCTOR #2`).
+- `ProjectModel.parseBatchConfig(with:)` delegates to the tested `ParseBatchConfig` helpers instead of a duplicate private copy of the glob logic. Its public signature is unchanged.
+
+### Changed
+
+- CI gates the unit-test step on `xcodebuild`'s exit status instead of a `grep` for "Test Suite … passed", and runs `ProjectBrowserTests` alongside `SwiftProyectoTests`.
+- `ProjectFileDiscoveryIntegrationTests` fails, rather than skips, when the source root is missing.
+- Removed `AcervoDownloadIntegrationTests`, whose assertions were all `XCTAssertTrue(true)`.
+
 ## [5.3.0] - 2026-10-08
 
 ### Added
