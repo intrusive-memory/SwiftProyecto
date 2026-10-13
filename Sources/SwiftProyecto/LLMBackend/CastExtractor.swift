@@ -254,7 +254,7 @@ public final class CastExtractor {
   ///
   /// This method implements the original regex-based character extraction
   /// algorithm. It is used as a fallback when SwiftCompartido parsing fails.
-  private func extractCastRegex(from fountainText: String) -> [String] {
+  func extractCastRegex(from fountainText: String) -> [String] {
     var characters = Set<String>()
     let lines = fountainText.split(separator: "\n", omittingEmptySubsequences: false)
 
@@ -293,7 +293,7 @@ public final class CastExtractor {
   @available(
     *, deprecated, message: "Replaced by SwiftCompartido parsing; retained for fallback use only"
   )
-  private func removeParentheticals(from line: String) -> String {
+  func removeParentheticals(from line: String) -> String {
     line.replacingOccurrences(
       of: "\\s*\\([^)]*\\)\\s*",
       with: "",
@@ -318,7 +318,7 @@ public final class CastExtractor {
   @available(
     *, deprecated, message: "Replaced by SwiftCompartido parsing; retained for fallback use only"
   )
-  private func isLikelyCharacterName(_ text: String) -> Bool {
+  func isLikelyCharacterName(_ text: String) -> Bool {
     // Must be entirely uppercase
     guard text == text.uppercased() else { return false }
 
@@ -341,8 +341,9 @@ public final class CastExtractor {
       return false
     }
 
-    // Filter out lines that look like metadata
-    if text.hasPrefix("FADE") || text.hasPrefix("CUT") || text.hasPrefix("DISSOLVE") {
+    // Filter out lines that look like metadata. The trailing space matters: a bare
+    // "CUT" prefix would also drop real character names such as CUTHBERT or FADERS.
+    if text.hasPrefix("FADE ") || text.hasPrefix("CUT ") || text.hasPrefix("DISSOLVE ") {
       return false
     }
 
@@ -354,7 +355,7 @@ public final class CastExtractor {
 
     // Character names contain only letters, spaces, hyphens, apostrophes
     // (and possibly numbers for names like "ROBOT-3", "DOCTOR #2")
-    let validCharacters = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZ - '1234567890")
+    let validCharacters = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZ - '1234567890#")
     let textSet = CharacterSet(charactersIn: text)
     guard textSet.isSubset(of: validCharacters) else { return false }
 

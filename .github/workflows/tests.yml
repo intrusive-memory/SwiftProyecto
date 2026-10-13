@@ -72,17 +72,21 @@ jobs:
 
       - name: Run unit tests on macOS
         run: |
+          # Gate on xcodebuild's own exit status. Without pipefail, $? reports
+          # tee, and a "Test Suite ... passed" line from a passing suite can mask
+          # a failing one, so the grep must not decide the result.
           set +e
+          set -o pipefail
           xcodebuild test \
             -scheme SwiftProyecto-Package \
             -destination 'platform=macOS' \
             -only-testing:SwiftProyectoTests \
+            -only-testing:ProjectBrowserTests \
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee test_output_macos.txt
           TEST_EXIT_CODE=$?
 
-          # Check if tests passed
-          if grep -q "Test Suite.*passed\|TEST SUCCEEDED" test_output_macos.txt; then
+          if [ "$TEST_EXIT_CODE" -eq 0 ]; then
             echo "All unit tests passed"
             exit 0
           else

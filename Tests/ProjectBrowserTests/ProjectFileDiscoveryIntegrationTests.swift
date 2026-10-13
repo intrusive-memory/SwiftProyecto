@@ -331,8 +331,10 @@ final class ProjectFileDiscoveryIntegrationTests: XCTestCase {
     let sourcesRoot = repoRoot.appendingPathComponent(
       "Sources/ProjectBrowser", isDirectory: true)
 
+    // Fail rather than skip: a silent skip here would hide the whole source-tree check.
     guard FileManager.default.fileExists(atPath: sourcesRoot.path) else {
-      throw XCTSkip("Sources/ProjectBrowser not found relative to test file; skipping.")
+      XCTFail("Sources/ProjectBrowser not found at \(sourcesRoot.path)")
+      return
     }
 
     let discoveredFiles = try await ProjectFileDiscovery.discover(at: sourcesRoot)

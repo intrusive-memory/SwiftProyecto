@@ -53,8 +53,10 @@ public enum ProjectFileDiscovery {
   /// Independently of this list, any directory the filesystem itself marks
   /// as a package (`URLResourceValues.isPackage`, which macOS sets for
   /// directories whose extension an installed app has registered as a
-  /// package type) is also treated as a bundle. Pass your own set to
-  /// ``discover(at:bundleExtensions:)`` to widen or narrow the default.
+  /// package type) is also treated as a bundle. That flag cannot be turned
+  /// off: passing your own set to ``discover(at:bundleExtensions:)`` adds
+  /// bundle extensions, and leaving a built-in extension out only stops it
+  /// from being recognized by extension, not by the filesystem flag.
   public static let defaultBundleExtensions: Set<String> = [
     "dossier",
     "textbundle",
