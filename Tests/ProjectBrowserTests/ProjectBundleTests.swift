@@ -49,8 +49,10 @@ final class ProjectBundleTests: XCTestCase {
   }
 
   /// A Personaje-shaped character bundle: manifest, bible, page, images, voice.
-  private func makeDossier(_ name: String, under parent: String = "characters") throws {
-    let base = "\(parent)/\(name).dossier"
+  private func makeDossier(
+    _ name: String, under parent: String = "characters", extension ext: String = "dossier"
+  ) throws {
+    let base = "\(parent)/\(name).\(ext)"
     try makeFile("\(base)/manifest.json", contents: "{}")
     try makeFile("\(base)/CHARACTER.md", contents: "# \(name)")
     try makeFile("\(base)/dossier.html", contents: "<html></html>")
@@ -139,8 +141,14 @@ final class ProjectBundleTests: XCTestCase {
     XCTAssertFalse(files.contains { $0.name == "manifest.json" })
   }
 
+  // `.dossier` is registered as a macOS package on machines with the Personaje
+  // app installed, and the OS package flag always wins over the configured set.
+  // These tests therefore use an extension no app registers, so their outcome
+  // does not depend on what is installed on the host.
+  private static let unregisteredExtension = "zzfixture"
+
   func testCustomBundleExtensionsReplaceTheDefault() async throws {
-    try makeDossier("KEVIN")
+    try makeDossier("KEVIN", extension: Self.unregisteredExtension)
     try makeFile("scenes/porch.scene/shots.json", contents: "{}")
 
     let files = try await ProjectFileDiscovery.discover(
@@ -150,24 +158,25 @@ final class ProjectBundleTests: XCTestCase {
     XCTAssertTrue(scene.isBundle)
     XCTAssertFalse(files.contains { $0.name == "shots.json" })
 
-    // `.dossier` is no longer in the set, so it is a plain folder again.
-    let dossier = try XCTUnwrap(files.first { $0.name == "KEVIN.dossier" })
-    XCTAssertFalse(dossier.isBundle)
-    XCTAssertTrue(dossier.isDirectory)
-    XCTAssertTrue(files.contains { $0.relativePath == "characters/KEVIN.dossier/manifest.json" })
+    // The fixture extension is not in the set, so it is a plain folder.
+    let fixture = try XCTUnwrap(files.first { $0.name == "KEVIN.zzfixture" })
+    XCTAssertFalse(fixture.isBundle)
+    XCTAssertTrue(fixture.isDirectory)
+    XCTAssertTrue(
+      files.contains { $0.relativePath == "characters/KEVIN.zzfixture/manifest.json" })
   }
 
-  func testEmptyBundleExtensionsTreatsDossierAsAFolder() async throws {
-    try makeDossier("GARETH")
+  func testEmptyBundleExtensionsTreatsUnregisteredFolderAsAFolder() async throws {
+    try makeDossier("GARETH", extension: Self.unregisteredExtension)
 
     let files = try await ProjectFileDiscovery.discover(at: tempRoot, bundleExtensions: [])
-    let dossier = try XCTUnwrap(files.first { $0.name == "GARETH.dossier" })
+    let fixture = try XCTUnwrap(files.first { $0.name == "GARETH.zzfixture" })
 
-    XCTAssertFalse(dossier.isBundle)
-    XCTAssertTrue(dossier.isDirectory)
+    XCTAssertFalse(fixture.isBundle)
+    XCTAssertTrue(fixture.isDirectory)
     // manifest.json, CHARACTER.md, dossier.html, images/, images/face.png, voice/, voice/GARETH.vox
     XCTAssertEqual(
-      files.filter { $0.relativePath.hasPrefix("characters/GARETH.dossier/") }.count, 7)
+      files.filter { $0.relativePath.hasPrefix("characters/GARETH.zzfixture/") }.count, 7)
   }
 
   func testAPlainFileWithABundleExtensionIsStillAFile() async throws {

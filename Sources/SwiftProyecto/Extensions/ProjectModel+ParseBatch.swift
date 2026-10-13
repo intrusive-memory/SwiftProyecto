@@ -71,71 +71,14 @@ extension ProjectModel {
       quiet: args?.quiet ?? false
     )
 
+    // Delegates to the ParseBatchConfig copy, the tested implementation.
     // Discover files
-    config.discoveredFiles = try discoverFiles(
+    config.discoveredFiles = try ParseBatchConfig.discoverFiles(
       in: config.episodesDirURL, patterns: config.filePatterns)
 
     return config
   }
 
-  /// Discover episode files based on patterns
-  private func discoverFiles(in directory: URL, patterns: [String]) throws -> [URL] {
-    var discovered: [URL] = []
-
-    for pattern in patterns {
-      if isGlobPattern(pattern) {
-        // Use glob matching
-        let matches = try glob(pattern: pattern, in: directory)
-        discovered.append(contentsOf: matches)
-      } else {
-        // Explicit filename
-        let fileURL = directory.appendingPathComponent(pattern)
-        if FileManager.default.fileExists(atPath: fileURL.path) {
-          discovered.append(fileURL)
-        }
-      }
-    }
-
-    // Remove duplicates, sort naturally
-    let unique = Array(Set(discovered))
-    return unique.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
-  }
-
-  private func isGlobPattern(_ pattern: String) -> Bool {
-    pattern.contains("*") || pattern.contains("?")
-  }
-
-  private func glob(pattern: String, in directory: URL) throws -> [URL] {
-    guard
-      let enumerator = FileManager.default.enumerator(
-        at: directory,
-        includingPropertiesForKeys: [.isRegularFileKey],
-        options: [.skipsHiddenFiles]
-      )
-    else {
-      return []
-    }
-
-    var matches: [URL] = []
-    for case let fileURL as URL in enumerator {
-      let resourceValues = try? fileURL.resourceValues(forKeys: [.isRegularFileKey])
-      if resourceValues?.isRegularFile == true {
-        if matchesPattern(fileURL.lastPathComponent, pattern: pattern) {
-          matches.append(fileURL)
-        }
-      }
-    }
-    return matches
-  }
-
-  private func matchesPattern(_ filename: String, pattern: String) -> Bool {
-    // Simple glob matching (*.fountain, *.fdx, etc.)
-    if pattern.hasPrefix("*") && pattern.filter({ $0 == "*" }).count == 1 {
-      let suffix = String(pattern.dropFirst())
-      return filename.hasSuffix(suffix)
-    }
-    return filename == pattern
-  }
 }
 
 // MARK: - Convenience Factory
@@ -214,7 +157,7 @@ extension ParseBatchConfig {
   }
 
   /// Discover episode files based on patterns
-  private static func discoverFiles(in directory: URL, patterns: [String]) throws -> [URL] {
+  fileprivate static func discoverFiles(in directory: URL, patterns: [String]) throws -> [URL] {
     var discovered: [URL] = []
 
     for pattern in patterns {
@@ -236,7 +179,7 @@ extension ParseBatchConfig {
     return unique.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
   }
 
-  private static func isGlobPattern(_ pattern: String) -> Bool {
+  fileprivate static func isGlobPattern(_ pattern: String) -> Bool {
     pattern.contains("*") || pattern.contains("?")
   }
 
