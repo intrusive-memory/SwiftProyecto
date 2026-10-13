@@ -120,7 +120,9 @@ public final class ClaudeAPIBackend: LLMBackendProtocol, @unchecked Sendable {
   // MARK: - Private Methods
 
   /// Build a few-shot prompt for PROJECT.md generation.
-  private func buildPrompt(project: ProjectAnalysis) -> String {
+  ///
+  /// Internal rather than private so tests can pin the prompt contents.
+  func buildPrompt(project: ProjectAnalysis) -> String {
     let filesList =
       project.discoveredFiles.isEmpty
       ? "No files discovered"
@@ -256,14 +258,21 @@ public final class ClaudeAPIBackend: LLMBackendProtocol, @unchecked Sendable {
       throw LLMBackendError.generationFailed(reason: "No content in API response")
     }
 
-    let jsonString = content.text.trimmingCharacters(in: .whitespacesAndNewlines)
+    return try Self.parseMetadataJSON(content.text)
+  }
+
+  /// Decodes metadata JSON from model text, tolerating a Markdown code fence.
+  ///
+  /// Only fence lines are removed. Content lines are kept even when they contain
+  /// the word "json", since a title or description can legitimately contain it.
+  static func parseMetadataJSON(_ text: String) throws -> ProjectMetadata {
+    let jsonString = text.trimmingCharacters(in: .whitespacesAndNewlines)
 
     // Extract JSON if it's wrapped in code fences
     let jsonToParse: String
     if jsonString.contains("```") {
-      // Extract content between code fences
       let lines = jsonString.components(separatedBy: "\n")
-      let filtered = lines.filter { !$0.contains("```") && !$0.contains("json") }
+      let filtered = lines.filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("```") }
       jsonToParse = filtered.joined(separator: "\n")
     } else {
       jsonToParse = jsonString

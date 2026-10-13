@@ -24,7 +24,7 @@ import SwiftAcervo
 /// - ``ModelContainerFactory``
 public struct SwiftProyecto {
   /// The current version of SwiftProyecto
-  public static let version = "5.3.0"
+  public static let version = "5.3.1"
 
   /// Private initializer - SwiftProyecto is a namespace
   private init() {}
