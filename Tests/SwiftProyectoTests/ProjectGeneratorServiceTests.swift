@@ -74,6 +74,9 @@ final class ProjectGeneratorServiceTests: XCTestCase {
   // MARK: - Test 3: Fallback Chain - Foundation Models Second
 
   func testFallbackChainTriesFoundationModelsWhenSwiftBrujaUnavailable() async throws {
+    try XCTSkipUnless(
+      isMacOSVersionAtLeast(major: 27),
+      "Foundation Models fallback runs only on macOS 27+ (see ProjectGeneratorService)")
     let registry = BackendRegistry()
     let fmBackend = MockLLMBackend(
       name: "Apple Foundation Models",
@@ -122,6 +125,9 @@ final class ProjectGeneratorServiceTests: XCTestCase {
   // MARK: - Test 5: Fallback Chain - Skips Unavailable Backends
 
   func testFallbackChainSkipsUnavailableBackends() async throws {
+    try XCTSkipUnless(
+      isMacOSVersionAtLeast(major: 27),
+      "Foundation Models fallback runs only on macOS 27+ (see ProjectGeneratorService)")
     let registry = BackendRegistry()
     let unavailableSwiftBruja = MockLLMBackend(
       name: "SwiftBruja",
