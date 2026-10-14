@@ -1,13 +1,15 @@
 ---
 type: execution-plan
 title: SwiftProyecto ProjectBrowser Enhancements
-mission: Add Personaje-required features to ProjectBrowser and ProjectFrontMatter (PY-P1 through PY-P4 in v5.1.0; PY-P5 deferred to v5.2.0)
 origin: REQUIREMENTS-personaje.md (Personaje docs/REQUIREMENTS-APP-UI.md, recon verified)
 work-unit-count: 1
 sortie-count: 6 (5 for v5.1.0, 1 deferred to v5.2.0)
 sequencing: Serial; sorties 1–5 ordered by dependency, ship v5.1.0. Sortie 6 deferred to v5.2.0.
 open-questions: 3 (all resolved)
-updated: 2026-10-03
+mission_summary: Add Personaje-required features to ProjectBrowser and ProjectFrontMatter (PY-P1 through PY-P4 in v5.1.0; PY-P5 deferred to v5.2.0)
+state: completed
+mission: persona-01
+updated: 2026-10-13
 ---
 
 # Terminology

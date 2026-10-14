@@ -1,12 +1,14 @@
 ---
 type: recon-report
-state: current
 requirements_file: REQUIREMENTS-personaje.md
 requirements_sha256: 890d8d9c5e6a1e0b9f2d3c4b5a6e7f8d9c0a1b2e3d4c5b6a7f8e9d0c1a2b3
 project_head: ad8bf9e7b9c5d1e0f2g3h4i5j6k7l8m9n0o1p2q3
 search_root: ~/Projects
 generated: 2026-10-03
 verdict: CLEAR
+state: completed
+mission: persona-01
+updated: 2026-10-13
 ---
 
 # RECON_REPORT.md — SwiftProyecto / Personaje Requirements
