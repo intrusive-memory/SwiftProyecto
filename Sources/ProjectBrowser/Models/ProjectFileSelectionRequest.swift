@@ -15,7 +15,9 @@ import SwiftUI
 /// A request runs the same path a sidebar click does: the file is highlighted,
 /// its ancestor folders are expanded, and `onFileSelection` fires. A path that is
 /// not in the discovered tree, or that names a directory, is ignored. Requesting
-/// the file that is already selected does nothing.
+/// the file that is already selected does nothing. A file listed in
+/// `expectedFiles` but absent on disk is selected like any other, and goes to
+/// `onMissingFileSelected` as a click on its row does.
 ///
 /// Outside a ``ProjectWindow`` detail pane the default action does nothing.
 public struct ProjectFileSelectionAction: Sendable {
@@ -86,5 +88,68 @@ enum ProjectFileSelectionResolver {
     }
 
     return Resolution(file: file, ancestorFolderIDs: ancestorFolderIDs)
+  }
+}
+
+/// The selection transitions ``ProjectWindow`` runs, with its `@State` passed
+/// in as `inout` and its side effects passed in as closures.
+///
+/// The window calls these and nothing else to change the selection, so tests
+/// that call them with plain variables and recording closures exercise exactly
+/// what a sidebar click and a host request do, without hosting the view.
+@MainActor
+enum ProjectWindowSelection {
+
+  /// A sidebar click, or a resolved host request: sets the selection, reports
+  /// it through `onFileSelection`, then either routes an expected-but-missing
+  /// file to `onMissingFileSelected` or asks for its content to be loaded.
+  static func select(
+    _ file: ProjectFile,
+    selectedFile: inout ProjectFile?,
+    onFileSelection: FileSelectionCallback?,
+    onMissingFileSelected: ((String) -> Void)?,
+    loadContent: (ProjectFile) -> Void
+  ) {
+    selectedFile = file
+    onFileSelection?(file)
+    if file.isExpectedButMissing {
+      onMissingFileSelected?(file.relativePath)
+    } else {
+      loadContent(file)
+    }
+  }
+
+  /// A host request by relative path: resolves it against `files`, expands the
+  /// file's ancestor folders, and hands the window's own ``ProjectFile`` to
+  /// `select`. An unknown path, a directory, and the file already selected are
+  /// ignored, leaving the selection and the expanded folders as they were.
+  ///
+  /// An expected-but-missing file is in `files`, so it is selected like any
+  /// other and `select` routes it to `onMissingFileSelected`, as a click on its
+  /// row does.
+  ///
+  /// `currentSelection` is passed by value, not `inout`: `select` writes the
+  /// window's selection itself, and an `inout` copy written back afterwards
+  /// would undo that write.
+  ///
+  /// - Returns: `true` when the request selected a file.
+  @discardableResult
+  static func request(
+    relativePath: String,
+    in files: [ProjectFile],
+    currentSelection: ProjectFile?,
+    expandedFolders: inout Set<UUID>,
+    select: (ProjectFile) -> Void
+  ) -> Bool {
+    guard
+      let resolution = ProjectFileSelectionResolver.resolve(
+        relativePath: relativePath, in: files),
+      currentSelection?.relativePath != resolution.file.relativePath
+    else {
+      return false
+    }
+    expandedFolders.formUnion(resolution.ancestorFolderIDs)
+    select(resolution.file)
+    return true
   }
 }

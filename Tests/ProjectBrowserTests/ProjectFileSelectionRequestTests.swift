@@ -4,11 +4,15 @@ import XCTest
 @testable import ProjectBrowser
 
 /// Tests for the host-driven selection request: the path resolver that
-/// ``ProjectWindow`` uses to honour `selectProjectFile`, and the action itself.
+/// ``ProjectWindow`` uses to honour `selectProjectFile`, the selection
+/// transitions the window runs (``ProjectWindowSelection``), and the action
+/// itself.
 ///
-/// The window's `@State` (selection, expansion) is private, so these tests cover
-/// the pure lookup and the environment plumbing. The sidebar and detail behaviour
-/// that the lookup feeds is exercised by the window in both layouts.
+/// The window's `@State` is private, so the transition tests hold that state in
+/// a ``WindowState`` and wire it exactly as the window does: a request resolves
+/// and expands, then hands the file to the same `select` a sidebar click calls.
+/// Which layout shows the result is the window's own `NavigationSplitView` or
+/// `NavigationStack` binding to that selection, and is not covered here.
 @MainActor
 final class ProjectFileSelectionRequestTests: XCTestCase {
 
@@ -131,6 +135,168 @@ final class ProjectFileSelectionRequestTests: XCTestCase {
 
     XCTAssertEqual(resolution?.file, orphan)
     XCTAssertEqual(resolution?.ancestorFolderIDs, [])
+  }
+
+  // MARK: - Window state
+
+  /// Stands in for the window's `@State` and records every side effect, in
+  /// order, as `"<effect>:<relativePath>"`.
+  private final class WindowState: @unchecked Sendable {
+    var selectedFile: ProjectFile?
+    var expandedFolders: Set<UUID> = []
+    var events: [String] = []
+  }
+
+  /// A sidebar click, wired as ``ProjectWindow/selectFile(_:)`` wires it.
+  private func click(_ file: ProjectFile, state: WindowState) {
+    ProjectWindowSelection.select(
+      file,
+      selectedFile: &state.selectedFile,
+      onFileSelection: { state.events.append("selected:\($0.relativePath)") },
+      onMissingFileSelected: { state.events.append("missing:\($0)") },
+      loadContent: { state.events.append("loaded:\($0.relativePath)") }
+    )
+  }
+
+  /// A host request, wired as ``ProjectWindow/requestSelection(relativePath:)``
+  /// wires it.
+  @discardableResult
+  private func request(_ path: String, in files: [ProjectFile], state: WindowState) -> Bool {
+    ProjectWindowSelection.request(
+      relativePath: path,
+      in: files,
+      currentSelection: state.selectedFile,
+      expandedFolders: &state.expandedFolders,
+      select: { click($0, state: state) }
+    )
+  }
+
+  // MARK: - Window: host request
+
+  /// A request highlights the window's own file, expands every ancestor so its
+  /// row is visible, reports it through `onFileSelection`, then loads it: the
+  /// same effects, in the same order, as a click on its row.
+  func testRequestSelectsExpandsReportsAndLoadsNestedFile() {
+    let files = tree
+    let state = WindowState()
+
+    XCTAssertTrue(request("book/part1/notes.md", in: files, state: state))
+
+    XCTAssertEqual(state.selectedFile, files[4])
+    XCTAssertEqual(state.expandedFolders, [files[2].id, files[3].id])
+    XCTAssertEqual(state.events, ["selected:book/part1/notes.md", "loaded:book/part1/notes.md"])
+  }
+
+  /// A request has the same effects as a click on the same row.
+  func testRequestAndClickProduceTheSameSelectionAndEvents() {
+    let files = tree
+    let requested = WindowState()
+    let clicked = WindowState()
+
+    request("chapter2.md", in: files, state: requested)
+    click(files[1], state: clicked)
+
+    XCTAssertEqual(requested.selectedFile, clicked.selectedFile)
+    XCTAssertEqual(requested.events, clicked.events)
+  }
+
+  /// Expansion adds the ancestors; folders the user already opened stay open.
+  func testRequestKeepsFoldersTheUserAlreadyExpanded() {
+    let files = tree
+    let state = WindowState()
+    let unrelated = UUID()
+    state.expandedFolders = [unrelated]
+
+    request("book/part1/notes.md", in: files, state: state)
+
+    XCTAssertEqual(state.expandedFolders, [unrelated, files[2].id, files[3].id])
+  }
+
+  func testRequestMovesTheSelectionFromOneFileToAnother() {
+    let files = tree
+    let state = WindowState()
+
+    request("chapter1.md", in: files, state: state)
+    request("chapter2.md", in: files, state: state)
+
+    XCTAssertEqual(state.selectedFile, files[1])
+    XCTAssertEqual(
+      state.events,
+      ["selected:chapter1.md", "loaded:chapter1.md", "selected:chapter2.md", "loaded:chapter2.md"])
+  }
+
+  /// An unknown path leaves the current selection standing and has no effect.
+  func testRequestForUnknownPathLeavesTheSelectionStanding() {
+    let files = tree
+    let state = WindowState()
+    request("chapter1.md", in: files, state: state)
+    let before = state.events
+
+    XCTAssertFalse(request("missing.md", in: files, state: state))
+
+    XCTAssertEqual(state.selectedFile, files[0])
+    XCTAssertEqual(state.expandedFolders, [])
+    XCTAssertEqual(state.events, before)
+  }
+
+  /// A directory is not selectable, and is not expanded either.
+  func testRequestForDirectoryLeavesTheSelectionStanding() {
+    let files = tree
+    let state = WindowState()
+    request("chapter1.md", in: files, state: state)
+    let before = state.events
+
+    XCTAssertFalse(request("book/part1", in: files, state: state))
+
+    XCTAssertEqual(state.selectedFile, files[0])
+    XCTAssertEqual(state.expandedFolders, [])
+    XCTAssertEqual(state.events, before)
+  }
+
+  /// Requesting the file that is already selected neither reports it again nor
+  /// reloads it.
+  func testRequestForTheSelectedFileDoesNothing() {
+    let files = tree
+    let state = WindowState()
+    request("chapter2.md", in: files, state: state)
+    let before = state.events
+
+    XCTAssertFalse(request("chapter2.md", in: files, state: state))
+
+    XCTAssertEqual(state.selectedFile, files[1])
+    XCTAssertEqual(state.events, before)
+  }
+
+  /// An expected-but-missing file is in the tree, so a request selects it as a
+  /// click on its row does: it is reported, routed to `onMissingFileSelected`,
+  /// and never loaded.
+  func testRequestForExpectedButMissingFileRoutesToTheMissingHandler() {
+    let missing = ProjectFile(
+      name: "CAST.md", relativePath: "CAST.md", fileExtension: "md",
+      isDirectory: false, modifiedDate: Date(), isExpectedButMissing: true)
+    let files = tree + [missing]
+    let state = WindowState()
+
+    XCTAssertTrue(request("CAST.md", in: files, state: state))
+
+    XCTAssertEqual(state.selectedFile, missing)
+    XCTAssertEqual(state.events, ["selected:CAST.md", "missing:CAST.md"])
+  }
+
+  /// With no `onFileSelection` or `onMissingFileSelected` supplied, selection
+  /// still moves and a present file still loads.
+  func testSelectWithoutConsumerCallbacksStillSelectsAndLoads() {
+    let files = tree
+    var selectedFile: ProjectFile?
+    var loaded: [String] = []
+
+    ProjectWindowSelection.select(
+      files[0], selectedFile: &selectedFile,
+      onFileSelection: nil, onMissingFileSelected: nil,
+      loadContent: { loaded.append($0.relativePath) })
+
+    XCTAssertEqual(selectedFile, files[0])
+    XCTAssertEqual(loaded, ["chapter1.md"])
   }
 
   // MARK: - Action
