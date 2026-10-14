@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.3.2] - 2026-10-13
+
+### Changed
+
+- `ProjectWindow` changes its selection only through the internal `ProjectWindowSelection.select` and `.request`, which take the window's `@State` as `inout` and its side effects as closures. No public API or behaviour change.
+- The `ProjectFileSelectionAction` doc comment says what a request does with an expected-but-missing file: it is selected and sent to `onMissingFileSelected`, as a click on its row is.
+
+### Tests
+
+- Ten tests in `ProjectFileSelectionRequestTests` drive the window's selection transitions as the window wires them. A host request expands every ancestor folder and keeps folders already open. It reports the file, then loads it, in a click's order, and moves the selection from one file to another. It leaves the selection standing for an unknown path, a directory, or the file already selected. It routes an expected-but-missing file to `onMissingFileSelected` without loading it.
+
 ## [5.3.1] - 2026-10-13
 
 ### Fixed
