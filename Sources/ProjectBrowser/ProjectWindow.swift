@@ -451,15 +451,13 @@ public struct ProjectWindow: View {
   /// that are not in the discovered tree or that name a directory, and does
   /// nothing when the file is already selected, so its content is not reloaded.
   private func requestSelection(relativePath: String) {
-    guard
-      let resolution = ProjectFileSelectionResolver.resolve(
-        relativePath: relativePath, in: files)
-    else {
-      return
-    }
-    guard selectedFile?.relativePath != resolution.file.relativePath else { return }
-    expandedFolders.formUnion(resolution.ancestorFolderIDs)
-    selectFile(resolution.file)
+    ProjectWindowSelection.request(
+      relativePath: relativePath,
+      in: files,
+      currentSelection: selectedFile,
+      expandedFolders: &expandedFolders,
+      select: selectFile
+    )
   }
 
   /// Updates selection state, forwards the selection to the consumer, and
@@ -468,13 +466,13 @@ public struct ProjectWindow: View {
   /// invokes the `onMissingFileSelected` callback instead of attempting
   /// to load its contents.
   private func selectFile(_ file: ProjectFile) {
-    selectedFile = file
-    onFileSelection?(file)
-    if file.isExpectedButMissing {
-      onMissingFileSelected?(file.relativePath)
-    } else {
-      Task { await loadContentIfNeeded(for: file) }
-    }
+    ProjectWindowSelection.select(
+      file,
+      selectedFile: &selectedFile,
+      onFileSelection: onFileSelection,
+      onMissingFileSelected: onMissingFileSelected,
+      loadContent: { file in Task { await loadContentIfNeeded(for: file) } }
+    )
   }
 
   // MARK: - File Actions
