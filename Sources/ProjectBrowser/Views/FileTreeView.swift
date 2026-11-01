@@ -40,6 +40,10 @@ public struct FileTreeView: View {
   /// context menu entirely.
   private let onFileAction: ((ProjectFile, FileAction) -> Void)?
 
+  /// Builds a view shown at the trailing edge of a file row, or `nil` for no
+  /// accessory on any row.
+  private let rowAccessory: ((ProjectFile) -> AnyView)?
+
   /// Creates a hierarchical file tree view.
   ///
   /// - Parameters:
@@ -56,13 +60,18 @@ public struct FileTreeView: View {
   ///     is responsible for updating `selectedFile` in response.
   ///   - onFileAction: Invoked with a file and the chosen action when the
   ///     user picks a context-menu item. `nil` hides the context menu.
+  ///   - rowAccessory: Builds a view for the trailing edge of a file or bundle
+  ///     row, such as a progress indicator. Folder rows have no accessory. The
+  ///     view exists only while its row does, so it can start and stop its own
+  ///     work on appear and disappear. Defaults to `nil`.
   public init(
     files: [ProjectFile],
     expandedFolders: Binding<Set<UUID>>,
     selectedFile: Binding<ProjectFile?>,
     onFolderToggle: @escaping (UUID) -> Void,
     onSelect: @escaping (ProjectFile) -> Void,
-    onFileAction: ((ProjectFile, FileAction) -> Void)? = nil
+    onFileAction: ((ProjectFile, FileAction) -> Void)? = nil,
+    rowAccessory: ((ProjectFile) -> AnyView)? = nil
   ) {
     self.files = files
     self._expandedFolders = expandedFolders
@@ -70,6 +79,7 @@ public struct FileTreeView: View {
     self.onFolderToggle = onFolderToggle
     self.onSelect = onSelect
     self.onFileAction = onFileAction
+    self.rowAccessory = rowAccessory
   }
 
   public var body: some View {
@@ -81,7 +91,8 @@ public struct FileTreeView: View {
           selectedFile: $selectedFile,
           onFolderToggle: onFolderToggle,
           onSelect: onSelect,
-          onFileAction: onFileAction
+          onFileAction: onFileAction,
+          rowAccessory: rowAccessory
         )
       }
     }
@@ -148,6 +159,7 @@ private struct FileTreeNodeRow: View {
   let onFolderToggle: (UUID) -> Void
   let onSelect: (ProjectFile) -> Void
   let onFileAction: ((ProjectFile, FileAction) -> Void)?
+  let rowAccessory: ((ProjectFile) -> AnyView)?
 
   private var isExpanded: Binding<Bool> {
     Binding(
@@ -170,14 +182,15 @@ private struct FileTreeNodeRow: View {
             selectedFile: $selectedFile,
             onFolderToggle: onFolderToggle,
             onSelect: onSelect,
-            onFileAction: onFileAction
+            onFileAction: onFileAction,
+            rowAccessory: rowAccessory
           )
         }
       } label: {
         FileTreeRowLabel(file: node.file)
       }
     } else {
-      FileTreeRowLabel(file: node.file)
+      FileTreeRowLabel(file: node.file, accessory: rowAccessory?(node.file))
         .contentShape(Rectangle())
         .padding(.vertical, 2)
         .padding(.horizontal, 4)
@@ -226,6 +239,7 @@ private struct FileTreeNodeRow: View {
 /// tests without rendering the view.
 struct FileTreeRowLabel: View {
   let file: ProjectFile
+  var accessory: AnyView? = nil
 
   var body: some View {
     Label {
@@ -243,6 +257,11 @@ struct FileTreeRowLabel: View {
             .padding(.vertical, 2)
             .background(Color.orange.opacity(0.15))
             .cornerRadius(3)
+        }
+
+        if let accessory {
+          Spacer(minLength: 0)
+          accessory
         }
       }
     } icon: {
