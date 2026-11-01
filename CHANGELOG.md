@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `ProjectWindow`, `ProjectBrowserSidebar` and `FileTreeView` take an optional
+  `rowAccessory`, which builds a view for the trailing edge of a file or bundle row,
+  such as a progress indicator. Folder rows have none. The default is `nil`, and rows
+  then look as they did.
+
 ## [5.3.2] - 2026-10-13
 
 ### Changed
