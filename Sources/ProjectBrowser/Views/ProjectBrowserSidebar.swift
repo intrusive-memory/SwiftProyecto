@@ -68,6 +68,10 @@ public struct ProjectBrowserSidebar: View {
   /// Finder). `nil` (the default) hides the context menu.
   private let onFileAction: ((ProjectFile, FileAction) -> Void)?
 
+  /// Builds a view for the trailing edge of a file row in the embedded
+  /// ``FileTreeView``. `nil` (the default) shows none.
+  private let rowAccessory: ((ProjectFile) -> AnyView)?
+
   /// Whether the action bar's buttons are currently enabled. Forwarded
   /// directly to ``ProjectActionBar/isEnabled``.
   private let isActionBarEnabled: Bool
@@ -94,6 +98,8 @@ public struct ProjectBrowserSidebar: View {
   ///   - onFileAction: Invoked with a file and the chosen action when the
   ///     user picks a file row's context-menu item. `nil` hides the
   ///     context menu.
+  ///   - rowAccessory: Builds a view for the trailing edge of a file or bundle
+  ///     row. Defaults to `nil`.
   public init(
     files: [ProjectFile],
     metadata: ProjectMetadata?,
@@ -107,7 +113,8 @@ public struct ProjectBrowserSidebar: View {
     onImport: @escaping () -> Void,
     onLoadAll: @escaping () -> Void,
     onUnloadAll: @escaping () -> Void,
-    onFileAction: ((ProjectFile, FileAction) -> Void)? = nil
+    onFileAction: ((ProjectFile, FileAction) -> Void)? = nil,
+    rowAccessory: ((ProjectFile) -> AnyView)? = nil
   ) {
     self.files = files
     self.metadata = metadata
@@ -122,6 +129,7 @@ public struct ProjectBrowserSidebar: View {
     self.onLoadAll = onLoadAll
     self.onUnloadAll = onUnloadAll
     self.onFileAction = onFileAction
+    self.rowAccessory = rowAccessory
   }
 
   public var body: some View {
@@ -139,7 +147,8 @@ public struct ProjectBrowserSidebar: View {
         selectedFile: $selectedFile,
         onFolderToggle: onFolderToggle,
         onSelect: onSelect,
-        onFileAction: onFileAction
+        onFileAction: onFileAction,
+        rowAccessory: rowAccessory
       )
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 

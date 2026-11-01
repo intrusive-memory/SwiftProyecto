@@ -78,6 +78,9 @@ public struct ProjectWindow: View {
   /// react to it.
   private let onFileAction: FileActionCallback?
 
+  /// Builds a view for the trailing edge of a file row in the sidebar.
+  private let rowAccessory: ((ProjectFile) -> AnyView)?
+
   /// A consumer-supplied loader for file contents. Used by
   /// ``loadContentIfNeeded(for:)`` to lazily fetch a handler-less file's
   /// contents the first time it's selected, and by
@@ -209,6 +212,9 @@ public struct ProjectWindow: View {
   ///     keeps its extension, so a handler registered for `"dossier"` renders
   ///     `SHANE.dossier` when it is selected. Defaults to
   ///     ``ProjectFileDiscovery/defaultBundleExtensions``.
+  ///   - rowAccessory: Builds a view for the trailing edge of a file or bundle
+  ///     row in the sidebar, such as a progress indicator. Folder rows have
+  ///     none. Defaults to `nil`.
   ///   - sidebarMinWidth: Sidebar minimum width (macOS). Defaults to `250`.
   ///   - sidebarIdealWidth: Sidebar ideal width (macOS). Defaults to `300`.
   ///   - sidebarMaxWidth: Sidebar maximum width (macOS). Defaults to `400`.
@@ -225,6 +231,7 @@ public struct ProjectWindow: View {
     expectedFiles: [String]? = nil,
     onMissingFileSelected: ((String) -> Void)? = nil,
     bundleExtensions: Set<String> = ProjectFileDiscovery.defaultBundleExtensions,
+    rowAccessory: ((ProjectFile) -> AnyView)? = nil,
     sidebarMinWidth: CGFloat = 250,
     sidebarIdealWidth: CGFloat = 300,
     sidebarMaxWidth: CGFloat = 400
@@ -236,6 +243,7 @@ public struct ProjectWindow: View {
     self.onFileSelection = onFileSelection
     self.onMissingFileSelected = onMissingFileSelected
     self.onFileAction = onFileAction
+    self.rowAccessory = rowAccessory
     self.contentLoader = contentLoader
     self.fileWriter = fileWriter
     self.textEditorBuilder = textEditorBuilder
@@ -388,7 +396,8 @@ public struct ProjectWindow: View {
       },
       onLoadAll: { Task { await loadAllContent() } },
       onUnloadAll: { unloadAllContent() },
-      onFileAction: dispatchFileAction
+      onFileAction: dispatchFileAction,
+      rowAccessory: rowAccessory
     )
   }
 
