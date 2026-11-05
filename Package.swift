@@ -33,7 +33,7 @@ let package = Package(
     // `Tokenizers` target into every downstream consumer's graph (colliding
     // with mlx-audio-swift's swift-tokenizers) and breaks library consumers
     // like SwiftEchada. Keep it out.
-    .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMajor(from: "1.7.1")),
+    .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMajor(from: "1.8.2")),
   ],
   targets: [
     .target(
