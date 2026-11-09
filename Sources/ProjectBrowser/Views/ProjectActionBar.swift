@@ -2,7 +2,8 @@ import SwiftUI
 
 /// A row of action buttons for a `ProjectWindow` — Sync, Import, Load All,
 /// and Unload All — rendered as a compact macOS toolbar-style row or an
-/// iOS button group, adapting to the available width.
+/// iOS button group, adapting to the available width. On macOS the row drops
+/// to icon-only buttons (titles as tooltips) when the titles don't fit.
 ///
 /// `ProjectActionBar` never performs the actions itself; it purely forwards
 /// user intent to consumer-supplied callbacks so `ProjectWindow` (WU4) can
@@ -94,9 +95,32 @@ public struct ProjectActionBar: View {
   // MARK: - macOS layout
 
   #if os(macOS)
-    /// A single toolbar-style row of icon+label buttons, matching macOS
-    /// window-toolbar conventions.
+    /// How the macOS row labels its buttons.
+    enum MacLabelStyle: CaseIterable {
+      /// Icon and title, when the sidebar is wide enough for all four titles.
+      case titleAndIcon
+      /// Icon only, with the title as the tooltip and the accessibility label.
+      case iconOnly
+    }
+
+    /// A single toolbar-style row of buttons, matching macOS window-toolbar
+    /// conventions.
+    ///
+    /// The four titled buttons need more than the sidebar's default ideal
+    /// width (300 pt), let alone its minimum (250 pt).
+    /// Squeezed into less, SwiftUI truncated every title ("S…", "Im…", "Lo…",
+    /// "Unl…"). ``ViewThatFits`` now keeps the titles when they fit and falls
+    /// back to icon-only buttons when they don't.
     private var macLayout: some View {
+      ViewThatFits(in: .horizontal) {
+        macRow(.titleAndIcon)
+        macRow(.iconOnly)
+      }
+    }
+
+    /// The macOS row with its buttons labelled in `style`. Internal so tests
+    /// can measure each variant.
+    func macRow(_ style: MacLabelStyle) -> some View {
       HStack(spacing: 8) {
         actionButton(
           title: "Sync", systemImage: "arrow.circlepath", enabled: canSync, action: onSync)
@@ -113,10 +137,26 @@ public struct ProjectActionBar: View {
           title: "Unload All", systemImage: "xmark.circle", enabled: canUnloadAll,
           action: onUnloadAll)
 
-        Spacer()
+        Spacer(minLength: 0)
       }
+      .labelStyle(MacRowLabelStyle(style: style))
       .padding(.horizontal, 8)
       .padding(.vertical, 6)
+    }
+
+    /// Applies a ``MacLabelStyle``. A label style (not a `Group` with a
+    /// conditional modifier) so both rows keep the same view structure.
+    private struct MacRowLabelStyle: LabelStyle {
+      let style: MacLabelStyle
+
+      func makeBody(configuration: Configuration) -> some View {
+        switch style {
+        case .titleAndIcon:
+          Label(configuration)
+        case .iconOnly:
+          configuration.icon
+        }
+      }
     }
   #endif
 
@@ -182,6 +222,8 @@ public struct ProjectActionBar: View {
       Label(title, systemImage: systemImage)
         .frame(maxWidth: expand ? .infinity : nil)
     }
+    .help(title)
+    .accessibilityLabel(title)
     .disabled(!isEnabled || !enabled)
   }
 }
