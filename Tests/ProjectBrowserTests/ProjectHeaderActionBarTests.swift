@@ -55,4 +55,26 @@ final class ProjectHeaderActionBarTests: XCTestCase {
 
     XCTAssertEqual(fired, ["sync", "import", "load", "unload"])
   }
+
+  #if os(macOS)
+    /// `ProjectWindow`'s default sidebar minimum width (`sidebarMinWidth`).
+    private static let sidebarMinWidth: CGFloat = 250
+
+    private static func fittingWidth(_ style: ProjectActionBar.MacLabelStyle) -> CGFloat {
+      let bar = ProjectActionBar(onSync: {}, onImport: {}, onLoadAll: {}, onUnloadAll: {})
+      return NSHostingView(rootView: bar.macRow(style)).fittingSize.width
+    }
+
+    /// The fallback row must fit the narrowest sidebar `ProjectWindow` allows by
+    /// default, or the buttons truncate ("S…", "Im…") as they did before.
+    func testIconOnlyRowFitsTheDefaultSidebarMinimumWidth() {
+      XCTAssertLessThanOrEqual(Self.fittingWidth(.iconOnly), Self.sidebarMinWidth)
+    }
+
+    /// The titled row is the wide one; `ViewThatFits` falls back to the
+    /// icon-only row when the titled row doesn't fit.
+    func testTitledRowIsWiderThanTheIconOnlyRow() {
+      XCTAssertGreaterThan(Self.fittingWidth(.titleAndIcon), Self.fittingWidth(.iconOnly))
+    }
+  #endif
 }
