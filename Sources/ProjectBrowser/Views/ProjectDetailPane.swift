@@ -110,6 +110,16 @@ public struct ProjectDetailPane: View {
   /// can be asserted from tests without widening the public surface.
   var hasTextEditorBuilder: Bool { textEditorBuilder != nil }
 
+  /// Builds the detail view for a selected folder. A folder never goes to
+  /// `handlers`, even when its name matches a key. When `nil`, a selected
+  /// folder shows ``UnsupportedFileView``.
+  private let folderHandler: ((ProjectFile) -> AnyView)?
+
+  /// Whether a ``folderHandler`` is installed. Internal so `ProjectWindow`'s
+  /// forwarding of its own `folderHandler:` parameter can be asserted from
+  /// tests.
+  var hasFolderHandler: Bool { folderHandler != nil }
+
   /// Creates a project detail pane.
   ///
   /// - Parameters:
@@ -130,6 +140,8 @@ public struct ProjectDetailPane: View {
   ///   - textEditorBuilder: Replaces the built-in editable text view for
   ///     handler-less UTF-8 text files. When `nil`, the built-in editor is
   ///     used exactly as before.
+  ///   - folderHandler: Builds the detail view for a selected folder. A folder
+  ///     is never looked up in `handlers`. Defaults to `nil`.
   public init(
     selectedFile: ProjectFile?,
     handlers: [String: (ProjectFile) -> AnyView],
@@ -139,7 +151,8 @@ public struct ProjectDetailPane: View {
     onAction: ((ProjectFile, FileAction) -> Void)? = nil,
     onRetryLoad: ((ProjectFile) -> Void)? = nil,
     onSaveText: ((ProjectFile, String) async throws -> Void)? = nil,
-    textEditorBuilder: TextEditorBuilder? = nil
+    textEditorBuilder: TextEditorBuilder? = nil,
+    folderHandler: ((ProjectFile) -> AnyView)? = nil
   ) {
     self.selectedFile = selectedFile
     self.handlers = handlers
@@ -150,6 +163,7 @@ public struct ProjectDetailPane: View {
     self.onRetryLoad = onRetryLoad
     self.onSaveText = onSaveText
     self.textEditorBuilder = textEditorBuilder
+    self.folderHandler = folderHandler
   }
 
   public var body: some View {
@@ -185,6 +199,9 @@ public struct ProjectDetailPane: View {
 
     /// A handler is registered for the file's exact extension; it renders.
     case handler
+
+    /// A folder with a `folderHandler`; that builder renders it.
+    case folder
 
     /// A content fetch is in flight.
     case loading
@@ -233,7 +250,15 @@ public struct ProjectDetailPane: View {
   /// This allows specific files like "PROJECT.md" and "CAST.md" to have their
   /// own handlers while still allowing extension-based handlers to work for
   /// other files with the same extension.
+  ///
+  /// A folder never reaches that lookup: it goes to ``ContentRoute/folder``
+  /// when a `folderHandler` is installed and to ``ContentRoute/unsupported``
+  /// otherwise, so a `handlers` key that happens to match a folder's name
+  /// never renders it.
   func contentRoute(for file: ProjectFile) -> ContentRoute {
+    if file.isDirectory {
+      return folderHandler != nil ? .folder : .unsupported
+    }
     if handlers[file.name] != nil {
       return .handler
     }
@@ -273,6 +298,9 @@ public struct ProjectDetailPane: View {
     case .handler:
       // Look up handler by filename first, then by extension.
       (handlers[file.name] ?? handlers[file.fileExtension ?? ""])?(file)
+
+    case .folder:
+      folderHandler?(file)
 
     case .loading:
       LoadingView(filename: file.displayName)
@@ -349,12 +377,15 @@ public struct ProjectDetailPane: View {
   private func actionButtons(for file: ProjectFile) -> some View {
     if let onAction {
       HStack(spacing: 12) {
-        Button {
-          onAction(file, .reload)
-        } label: {
-          Image(systemName: "arrow.clockwise")
+        // A folder has no contents of its own to reload.
+        if !file.isDirectory {
+          Button {
+            onAction(file, .reload)
+          } label: {
+            Image(systemName: "arrow.clockwise")
+          }
+          .help("Reload")
         }
-        .help("Reload")
 
         #if os(macOS)
           Button {
