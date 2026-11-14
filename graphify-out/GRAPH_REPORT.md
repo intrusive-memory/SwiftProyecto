@@ -1,15 +1,15 @@
-# Graph Report - .  (2026-11-09)
+# Graph Report - .  (2026-11-14)
 
 ## Corpus Check
 - cluster-only mode — file stats not available
 
 ## Summary
-- 2874 nodes · 5166 edges · 139 communities (106 shown, 33 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 418 edges (avg confidence: 0.79)
+- 2874 nodes · 5133 edges · 150 communities (119 shown, 31 thin omitted)
+- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 414 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d471f518`
+- Built from commit: `c3ffedc6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -150,293 +150,304 @@
 - [[_COMMUNITY_Community 133|Community 133]]
 - [[_COMMUNITY_Community 134|Community 134]]
 - [[_COMMUNITY_Community 135|Community 135]]
+- [[_COMMUNITY_Community 136|Community 136]]
 - [[_COMMUNITY_Community 137|Community 137]]
 - [[_COMMUNITY_Community 138|Community 138]]
+- [[_COMMUNITY_Community 139|Community 139]]
+- [[_COMMUNITY_Community 140|Community 140]]
+- [[_COMMUNITY_Community 141|Community 141]]
+- [[_COMMUNITY_Community 142|Community 142]]
+- [[_COMMUNITY_Community 143|Community 143]]
+- [[_COMMUNITY_Community 144|Community 144]]
+- [[_COMMUNITY_Community 145|Community 145]]
+- [[_COMMUNITY_Community 146|Community 146]]
+- [[_COMMUNITY_Community 148|Community 148]]
+- [[_COMMUNITY_Community 149|Community 149]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `ProjectMarkdownParser` - 132 edges
 2. `Sendable` - 59 edges
 3. `ProjectFrontMatterTests` - 59 edges
 4. `ProjectMarkdownParserTests` - 57 edges
-5. `ProjectWindow` - 42 edges
-6. `ProjectWindowIntegrationTests` - 41 edges
-7. `ProjectValidator` - 38 edges
-8. `EpisodePathResolverTests` - 36 edges
-9. `GitRepositoryFileSource` - 35 edges
-10. `ProjectBundleTests` - 35 edges
+5. `ProjectWindowIntegrationTests` - 41 edges
+6. `ProjectValidator` - 38 edges
+7. `EpisodePathResolverTests` - 36 edges
+8. `GitRepositoryFileSource` - 35 edges
+9. `ProjectWindow` - 34 edges
+10. `SwiftBrujaBackend` - 34 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `PY-P2 Per-file handlers` --references--> `ProjectDetailPane`  [INFERRED]
-  Docs/REQUIREMENTS-personaje.md → Sources/ProjectBrowser/Views/ProjectDetailPane.swift
-- `VARIANT_REFERENCE` --references--> `ProjectFrontMatter`  [INFERRED]
-  Docs/VARIANT_REFERENCE.md → Sources/SwiftProyecto/Models/ProjectFrontMatter.swift
-- `tests.yml CI result check` --references--> `ProjectBundleTests`  [AMBIGUOUS]
-  .github/workflows/tests.yml → Tests/ProjectBrowserTests/ProjectBundleTests.swift
-- `EXECUTION_PLAN.md (SwiftAcervo 0.8.0 Migration)` --conceptually_related_to--> `ProjectModel (existing class)`  [AMBIGUOUS]
-  Docs/missions/manifest-airdrop-2026-04/EXECUTION_PLAN.md → Sources/SwiftProyecto/Models/ProjectModel.swift
-- `File type handler registry` --conceptually_related_to--> `ProjectWindow`  [INFERRED]
-  Docs/REQUIREMENTS_ReusableProjectWindow.md → Sources/ProjectBrowser/ProjectWindow.swift
+- `SwiftProyecto banner (JPG): wooden mannequin wizard with glowing PROJECT sign` --semantically_similar_to--> `SwiftProyecto banner (PNG): same wizard mannequin and PROJECT sign illustration`  [INFERRED] [semantically similar]
+  SwiftProyecto.jpg → SwiftProyecto.png
+- `SwiftProyecto icon (small thumbnail of wizard mannequin illustration)` --semantically_similar_to--> `SwiftProyecto banner (PNG): same wizard mannequin and PROJECT sign illustration`  [INFERRED] [semantically similar]
+  icon-sm.png → SwiftProyecto.png
+- `PROJECT.md Front Matter Schema Reference` --references--> `FilePattern type`  [AMBIGUOUS]
+  Docs/PROJECT_MD_REFERENCE.md → Docs/GENERATION_CONFIG_REQUIREMENTS.md
+- `ProjectBrowser library README` --conceptually_related_to--> `Fixtures PROJECT.md`  [INFERRED]
+  Sources/ProjectBrowser/README.md → Tests/SwiftProyectoTests/Fixtures/PROJECT.md
+- `WindowState` --inherits--> `Sendable`  [EXTRACTED]
+  Tests/ProjectBrowserTests/ProjectFileSelectionRequestTests.swift → Sources/SwiftProyecto/Infrastructure/ModelManager.swift
 
 ## Import Cycles
 - None detected.
 
-## Communities (139 total, 33 thin omitted)
+## Communities (150 total, 31 thin omitted)
 
 ### Community 0 - "Project File Service"
 Cohesion: 0.06
 Nodes (21): AppleFoundationModelsBackend, registerAppleFoundationModelsBackend(), isMacOSVersionAtLeast(), macOSVersion(), Bool, ProjectAnalysis, ProjectMetadata, String (+13 more)
 
 ### Community 1 - "Markdown Parser Tests"
-Cohesion: 0.05
-Nodes (47): AppleFoundationModelsBackend, FileActionCallback, INTEGRATION_GUIDE, Operation Persona 01 brief, Persona-01 EXECUTION_PLAN, Persona-01 RECON_REPORT, Persona-01 SUPERVISOR_STATE, ProjectFile (+39 more)
+Cohesion: 0.06
+Nodes (43): CodingKey, Color, FileTreeNode, Identifiable, FileTypeHandler, CodingKeys, error, fileExtension (+35 more)
 
 ### Community 2 - "Front Matter Tests"
-Cohesion: 0.05
-Nodes (45): CodingKey, Color, FileTreeNode, Identifiable, FileTypeHandler, CodingKeys, error, fileExtension (+37 more)
-
-### Community 3 - "Git Repository File Source"
-Cohesion: 0.06
-Nodes (22): DirectoryAnalysisTests, Test Fixture Reference, sample.fdx, sample.highland, test-screenplay.fountain, CastExtractionError, fileNotReadable, parsingFailed (+14 more)
-
-### Community 4 - "PROJECT.md Discovery"
 Cohesion: 0.07
 Nodes (22): EnvironmentKey, MainActor, EnvironmentValues, ProjectFileSelectionAction, ProjectFileSelectionKey, ProjectFileSelectionResolver, ProjectWindowSelection, Resolution (+14 more)
 
-### Community 5 - "Directory File Source"
+### Community 3 - "Git Repository File Source"
 Cohesion: 0.05
 Nodes (19): FileNode, Hasher, ProjectModel, Bool, Int, ProjectFileReference, ProjectModel, String (+11 more)
 
-### Community 6 - "File Tree Structure"
+### Community 4 - "PROJECT.md Discovery"
 Cohesion: 0.08
-Nodes (8): ProjectFileContentLoaderTests, ProjectWindowPlatformLayoutTests, ProjectWindowTests, ProjectWindow, ProjectFile, String, URL, UUID
+Nodes (8): ProjectFileContentLoaderTests, ProjectWindowPlatformLayoutTests, ProjectWindowTests, ProjectFile, ProjectWindow, String, URL, UUID
 
-### Community 8 - "Markdown Parser Core"
+### Community 6 - "File Tree Structure"
 Cohesion: 0.08
 Nodes (25): VariantIndexer, VariantIndexError, invalidVariantReference, notAMasterFile, parseError, variantFileNotFound, variantNotFound, Int (+17 more)
 
-### Community 10 - "Batch File Iterator"
+### Community 8 - "Markdown Parser Core"
 Cohesion: 0.11
 Nodes (25): CastExtractor, ProjectStructure, ProjectError, bookmarkCreationFailed, bookmarkResolutionFailed, fileNotFound, noBookmarkData, projectAlreadyExists (+17 more)
 
-### Community 11 - "File Source Error Handling"
-Cohesion: 0.10
-Nodes (39): lingua-matra reference project, Compartido Cast Extraction Execution Plan, v4.1.0 LLM Project Generation Execution Plan, AppleFoundationModelsBackend, LLMBackendProtocol, BackendRegistry, ClaudeAPIBackend, DirectoryAnalyzer (+31 more)
-
-### Community 12 - "Project Model Tests"
+### Community 9 - "Cast Member Tests"
 Cohesion: 0.11
 Nodes (12): registerSwiftBrujaBackend(), SwiftBrujaBackend, Bool, ProjectAnalysis, ProjectMetadata, String, MockLLMBackend, SwiftBrujaBackendTests (+4 more)
 
-### Community 13 - "File Pattern Tests"
+### Community 10 - "Batch File Iterator"
 Cohesion: 0.10
 Nodes (9): ProyectoCLIMigrateTests, ProyectoCLIValidateTests, Int32, String, URL, Int32, String, URL (+1 more)
 
-### Community 14 - "Release Workflow"
+### Community 11 - "File Source Error Handling"
 Cohesion: 0.09
 Nodes (4): ProjectWindowIntegrationTests, ProjectFile, String, URL
 
-### Community 15 - "Project Service Tests"
-Cohesion: 0.07
-Nodes (34): CastMigrator, MigrationError, characterMissing, importFailed, validationFailed, Outcome, migrated, nothingToDo (+26 more)
-
-### Community 16 - "Bookmark Manager Tests"
+### Community 12 - "Project Model Tests"
 Cohesion: 0.08
 Nodes (11): GitRepositoryFileSource, Data, Date, DiscoveredFile, FileSourceType, Set, String, URL (+3 more)
 
-### Community 17 - "Service Abstractions"
+### Community 13 - "File Pattern Tests"
 Cohesion: 0.08
 Nodes (12): FileSource, DirectoryFileSource, Data, Date, DiscoveredFile, FileSourceType, Set, String (+4 more)
 
-### Community 18 - "Iterative LLM Generation"
-Cohesion: 0.09
-Nodes (21): ProjectDiscovery Execution Plan (v3.1.0, completed), CastMember, ProjectDiscovery.findProjectMd, ProjectDiscovery.readCast, ProjectFrontMatter.mergingCast, ProjectFrontMatter.withCast, ProjectMarkdownParser.write, ProjectDiscovery (+13 more)
+### Community 14 - "Release Workflow"
+Cohesion: 0.11
+Nodes (27): Codable, Equatable, ExportSettings, GenerationSettings, AppFrontMatterSettings, LanguageDefinition, ProjectType, overview (+19 more)
 
-### Community 19 - "App Settings Tests"
-Cohesion: 0.10
-Nodes (25): AudioFormat, Chapter, Codable, Equatable, ExportSettings, GenerationSettings, AppFrontMatterSettings, AudioFormat (+17 more)
-
-### Community 20 - "File Reference Tests"
+### Community 15 - "Project Service Tests"
 Cohesion: 0.14
 Nodes (13): BackendRegistry, ProjectGeneratorService, LLMBackendProtocol, ProjectAnalysis, ProjectMetadata, URL, FailingMockLLMBackend, MockLLMBackend (+5 more)
 
-### Community 21 - "Batch Parse Configuration"
+### Community 16 - "Bookmark Manager Tests"
 Cohesion: 0.11
 Nodes (21): CGSize, Context, FileTypeHandler, DefaultHandlers, NSViewRepresentable, PDFView, AnyView, ProjectFile (+13 more)
 
-### Community 22 - "CLI Validation Tests"
-Cohesion: 0.11
-Nodes (16): ProjectFileDiscoveryIntegrationTests, PY-P1 Expected files, PY-P2 Per-file handlers, REQUIREMENTS_Playlist, ProjectFileDiscovery, Sonido REQUIREMENTS, Bool, ProjectFile (+8 more)
-
-### Community 23 - "Documentation Examples"
+### Community 17 - "Service Abstractions"
 Cohesion: 0.18
 Nodes (4): ProjectMarkdownParser, GenerateCommandTests, String, URL
 
-### Community 25 - "Settings Type Definitions"
+### Community 19 - "App Settings Tests"
+Cohesion: 0.11
+Nodes (33): App Group entitlement group.intrusive-memory.models, Bare ComponentDescriptor pattern, SwiftAcervo manifest-first contract, Phi-3-mini-4k-instruct-4bit model, AcervoDownloadIntegrationTests setUp, Bruja.defaultModel, ensure-model-cdn.yml workflow, EXECUTION_PLAN.md (SwiftAcervo 0.8.0 migration) (+25 more)
+
+### Community 20 - "File Reference Tests"
+Cohesion: 0.08
+Nodes (27): DiscoveredFile, FileSource, FileSourceError, fileNotFound, invalidPath, notGitRepository, permissionDenied, FileSourceType (+19 more)
+
+### Community 21 - "Batch Parse Configuration"
+Cohesion: 0.12
+Nodes (4): ProjectBundleTests, ProjectFile, String, URL
+
+### Community 22 - "CLI Validation Tests"
 Cohesion: 0.09
 Nodes (7): ProjectFileTests, Bool, Date, FileLoadingState, ProjectFile, String, UUID
 
-### Community 26 - "Bookmark Error Handling"
-Cohesion: 0.10
-Nodes (18): AudioPlayerController, AVPlayer, Float, NSObject, NSObjectProtocol, ObservableObject, AudioFolderView (planned), SpecialFolderRule (planned) (+10 more)
+### Community 23 - "Documentation Examples"
+Cohesion: 0.13
+Nodes (12): ProjectFileDiscoveryIntegrationTests, ProjectFileDiscovery, Bool, ProjectFile, Set, String, URL, Bool (+4 more)
 
-### Community 27 - "Foundation Model Manager"
+### Community 24 - "Model Container Factory"
+Cohesion: 0.11
+Nodes (14): ProjectDiscovery, Bool, ProjectFrontMatter, URL, VariantReference, makeProjectMdContent(), makeTestProject(), ProjectDiscoveryDirectoryTests (+6 more)
+
+### Community 25 - "Settings Type Definitions"
 Cohesion: 0.13
 Nodes (3): ProjectStructureRecognitionTests, String, URL
 
-### Community 28 - "SwiftData Container Factory"
+### Community 26 - "Bookmark Error Handling"
 Cohesion: 0.11
 Nodes (15): Bool, Error, ProjectFileReference, ProjectModel, ProjectService, Set, String, URL (+7 more)
 
-### Community 30 - "Project Data Model"
+### Community 28 - "SwiftData Container Factory"
 Cohesion: 0.07
 Nodes (3): ProjectModelTests, ModelContainer, ModelContext
 
-### Community 31 - "File Pattern Type"
-Cohesion: 0.10
-Nodes (28): Produciesta, Proyecto app, swift-tokenizers-mlx dependency, SwiftAcervo, SwiftBruja, SwiftEchada, SwiftProyecto package, PROJECT.md Foundation Execution Plan (Phase 0) (+20 more)
-
-### Community 32 - "Document Context Tests"
+### Community 29 - "Audio Export Settings"
 Cohesion: 0.11
-Nodes (23): DiscoveredFile, FileSource, FileSourceType, directory, gitRepository, packageBundle, ScreenplayFileType, episode (+15 more)
+Nodes (16): AudioPlayerController, AVPlayer, Float, NSObject, NSObjectProtocol, ObservableObject, Any, Bool (+8 more)
 
-### Community 33 - "File Source Protocol"
+### Community 30 - "Project Data Model"
+Cohesion: 0.16
+Nodes (15): DynamicCodingKey, ProjectFrontMatter, Style, AnyCodable, Date, Decoder, Encoder, FilePattern (+7 more)
+
+### Community 31 - "File Pattern Type"
 Cohesion: 0.09
 Nodes (3): ClaudeAPIBackend, Bool, ClaudeAPIBackendTests
 
-### Community 35 - "YAML Parsing Tests"
+### Community 33 - "File Source Protocol"
 Cohesion: 0.22
 Nodes (6): VariantResolverTests, FilePattern, ProjectFrontMatter, SeasonDefinition, String, TTSConfig
 
-### Community 36 - "Model Download Integration"
+### Community 34 - "SwiftProyecto Tests"
 Cohesion: 0.13
 Nodes (14): FileCoordinationManager, Any, AnyCodable, FilePattern, Int, ProjectFrontMatter, String, URL (+6 more)
 
-### Community 37 - "Character Voice Mapping"
+### Community 35 - "YAML Parsing Tests"
 Cohesion: 0.18
 Nodes (17): FileRevealing, NSWorkspace, ProjectFileActionError, fileNotFound, permissionDenied, underlying, ProjectFileActionHandler, ProjectFileActionResult (+9 more)
 
-### Community 38 - "Type-Erased Codable"
+### Community 36 - "Model Download Integration"
 Cohesion: 0.08
 Nodes (5): ProjectServiceTests, ModelContainer, ModelContext, ProjectService, URL
 
-### Community 39 - "Directory Analysis"
+### Community 37 - "Character Voice Mapping"
+Cohesion: 0.10
+Nodes (27): Operation Persona execution plan, Operation Persona mission brief, Operation Persona recon report, AudioFolderView, AudioPlayerView, Audio Folder View requirements, SpecialFolderRule, SwiftProyecto requirements for Personaje (+19 more)
+
+### Community 38 - "Type-Erased Codable"
 Cohesion: 0.07
 Nodes (27): KnownCodingKeys, audioDir, author, created, description, episodePath, episodes, episodesDir (+19 more)
 
-### Community 40 - "CI Workflow"
-Cohesion: 0.16
-Nodes (19): Bruja.defaultModel, DateFormatter, ParsableCommand, InfoCommand, InitCommand, ProyectoCLI, ProyectoError, directoryNotFound (+11 more)
+### Community 39 - "Directory Analysis"
+Cohesion: 0.20
+Nodes (18): GenerateCommand, GenerateError, directoryNotFound, invalidPath, languageNotFound, noSeasonsFound, parseError, projectMdNotFound (+10 more)
 
-### Community 42 - "Community 42"
+### Community 41 - "AnyCodable Tests"
 Cohesion: 0.18
 Nodes (15): DirectoryAnalyzer, ProjectSection, GeneratorError, invalidConfigResponse, invalidNumberResponse, missingRequiredFields, sectionFailed, IterativeProjectGenerator (+7 more)
 
-### Community 43 - "Community 43"
+### Community 42 - "Community 42"
 Cohesion: 0.20
 Nodes (10): Bool, Int, LanguageDefinition, ProjectFrontMatter, SeasonDefinition, String, ProjectValidator, ValidationMetadata (+2 more)
 
-### Community 44 - "Project File Reference"
+### Community 43 - "Community 43"
 Cohesion: 0.10
 Nodes (3): IntroOutroAssets, Bool, IntroOutroAssetsTests
 
-### Community 45 - "Front Matter Settings Extension"
+### Community 44 - "Project File Reference"
 Cohesion: 0.21
 Nodes (8): BuilderRecorder, Fixture, ProjectDetailPaneTextEditorBuilderTests, Data, ProjectFile, ProjectFileContents, String, URL
 
-### Community 46 - "Foundation Models Integration"
-Cohesion: 0.11
-Nodes (13): ACERVO_MIGRATION_REQUIREMENTS_2026-03, AcervoDownloadProgress, ComponentDescriptor, EXECUTION_PLAN_CDN_MIGRATION, ModelManager, REQUIREMENTS_ACERVO_INTEGRATION, REQUIREMENTS_ACERVO_V2_MIGRATION, Bool (+5 more)
-
-### Community 47 - "Community 47"
+### Community 45 - "Front Matter Settings Extension"
 Cohesion: 0.15
 Nodes (12): Config, AppFrontMatterSettingsTests, ComplexTestSettings, Config, SimpleTestSettings, Theme, dark, light (+4 more)
 
+### Community 46 - "Foundation Models Integration"
+Cohesion: 0.17
+Nodes (16): FileActionCallback, ProjectWindow, ProjectFileSelectionAction, AnyView, Bool, CGFloat, FileLoaderCallback, FileSelectionCallback (+8 more)
+
+### Community 47 - "Community 47"
+Cohesion: 0.14
+Nodes (9): LocalizedError, ValidationError, mutuallyExclusive, ParseBatchArguments, Bool, Int, String, URL (+1 more)
+
 ### Community 48 - "Document Context Type"
 Cohesion: 0.15
-Nodes (4): ParseBatchConfigTests, Int, String, URL
+Nodes (18): GenerateProjectCommand, GenerateProjectError, analysisError, backendUnavailable, backupError, directoryNotFound, generationError, invalidBackend (+10 more)
 
 ### Community 49 - "Community 49"
 Cohesion: 0.10
 Nodes (3): ProjectFileReferenceTests, ModelContainer, ModelContext
 
 ### Community 50 - "Batch Processing Iterator"
-Cohesion: 0.22
-Nodes (17): group.intrusive-memory.models App Group entitlement, SwiftAcervo CDN manifest, Acervo.modelDirectory(for:), Acervo.slugify, SwiftAcervo (external library), ensure-model-cdn.yml workflow, EXECUTION_PLAN.md (SwiftAcervo 0.8.0 Migration), EXECUTION_PLAN_CDN_MIGRATION (v3.4.0, superseded) (+9 more)
-
-### Community 51 - "Package Management"
 Cohesion: 0.15
 Nodes (9): EdgeInsets, Font, ProjectActionBar, ProjectHeaderActionBarTests, Int, ProjectMetadata, String, CGFloat (+1 more)
 
-### Community 52 - "Settings Extension System"
+### Community 51 - "Package Management"
 Cohesion: 0.19
 Nodes (3): ProjectFileDiscoveryTests, String, URL
 
-### Community 53 - "SwiftProyecto Package"
+### Community 52 - "Settings Extension System"
 Cohesion: 0.25
 Nodes (3): TypeValidationTests, String, URL
 
-### Community 56 - "Contributing Guidelines"
-Cohesion: 0.22
+### Community 53 - "SwiftProyecto Package"
+Cohesion: 0.12
+Nodes (9): AcervoDownloadProgress, ComponentDescriptor, ModelManager, Bool, String, T, URL, Void (+1 more)
+
+### Community 54 - "File Pattern Configuration"
+Cohesion: 0.21
 Nodes (12): ByteCountFormatter, AnyView, Bool, Date, FileAction, Int64, ProjectFile, ProjectFileContents (+4 more)
 
-### Community 57 - "Platform Enforcement"
+### Community 56 - "Contributing Guidelines"
+Cohesion: 0.17
+Nodes (4): ParseBatchConfigTests, Int, String, URL
+
+### Community 58 - "Bookmark Utilities"
 Cohesion: 0.11
 Nodes (15): Hashable, FileAction, custom, delete, reload, showInFinder, FileLoadingState, error (+7 more)
 
-### Community 58 - "Bookmark Utilities"
-Cohesion: 0.18
-Nodes (8): ValidationError, mutuallyExclusive, ParseBatchArguments, Bool, Int, String, URL, ParseBatchArgumentsValidationTests
-
 ### Community 60 - "Cast List Merging"
+Cohesion: 0.20
+Nodes (12): CaseIterable, Configuration, LabelStyle, Bool, String, Void, View, MacLabelStyle (+4 more)
+
+### Community 61 - "Universal"
 Cohesion: 0.19
 Nodes (13): CastMemberData, CastMemberData, LLMBackendError, generationFailed, invalidInput, unavailable, LLMBackendProtocol, ProjectAnalysis (+5 more)
 
-### Community 61 - "Universal"
-Cohesion: 0.18
-Nodes (14): FilePattern, ProjectFrontMatter, OPERATION_STAGE_WHISPER_1_COMPLETE, OPERATION_STAGE_WHISPER_1_SUMMARY, Produciesta, Fixtures PROJECT.md, AnyCodable, Date (+6 more)
-
 ### Community 62 - "AGENTS Front Matter"
+Cohesion: 0.19
+Nodes (13): CastMigrator, MigrationError, characterMissing, importFailed, validationFailed, Outcome, migrated, nothingToDo (+5 more)
+
+### Community 63 - "Version Changelog"
+Cohesion: 0.21
+Nodes (12): Bool, Data, String, T, URL, BookmarkError, accessDenied, creationFailed (+4 more)
+
+### Community 64 - "Gemini Integration"
 Cohesion: 0.13
 Nodes (5): DirectoryAnalysisIntegrationTests, MetadataExtractorTests, ProjectServiceAnalysisTests, SwiftProyectoTests, XCTestCase
 
-### Community 63 - "Version Changelog"
-Cohesion: 0.19
-Nodes (11): CaseIterable, Configuration, LabelStyle, Bool, String, Void, MacLabelStyle, iconOnly (+3 more)
-
-### Community 64 - "Gemini Integration"
+### Community 65 - "Performance Testing"
 Cohesion: 0.21
 Nodes (9): Error, LoadError, invalidEncoding, missingFrontMatter, missingTitle, ProjectMetadata, Date, String (+1 more)
 
-### Community 65 - "Performance Testing"
+### Community 66 - "Quick Start Guide"
 Cohesion: 0.26
 Nodes (9): ParseBatchConfig, ParseBatchConfigError, invalidProjectPath, projectMdNotFound, ProjectModel, Bool, ParseBatchConfig, String (+1 more)
 
-### Community 66 - "Quick Start Guide"
-Cohesion: 0.21
-Nodes (8): DynamicCodingKey, ProjectType, overview, project, Style, Encoder, Int, String
-
-### Community 68 - "Discovered File Type"
-Cohesion: 0.29
-Nodes (9): ProjectFile, String, Void, View, BundleContentView, ErrorView, LoadingView, PlainTextContentView (+1 more)
+### Community 67 - "SwiftProyecto Logo"
+Cohesion: 0.18
+Nodes (9): ValidationError, castListNotFound, episodeFileNotFound, missingCastList, mutuallyExclusive, ParseCommandArguments, Bool, String (+1 more)
 
 ### Community 69 - "Community 69"
 Cohesion: 0.23
-Nodes (13): AnyView, Binding, Bool, FileAction, Int, ProjectFile, ProjectMetadata, Set (+5 more)
+Nodes (5): SelectableFolderTests, AnyView, Bool, ProjectFile, ProjectWindow
 
 ### Community 70 - "Community 70"
+Cohesion: 0.23
+Nodes (13): AnyView, Binding, Bool, FileAction, Int, ProjectFile, ProjectMetadata, Set (+5 more)
+
+### Community 71 - "Community 71"
 Cohesion: 0.30
 Nodes (3): InfoCommandTests, String, URL
 
-### Community 72 - "Community 72"
-Cohesion: 0.15
-Nodes (14): EFFORT_MULTISEASON_SCHEMA.md (v4.0.0 design), Lossless cast merging (v4 CastMember.merge), Episode path template (episodePath), Multi-language variant system, introFile / outroFile fields, Intro/outro resolution hierarchy, schemaVersion field (v5), Legacy cast block (v4) (+6 more)
-
 ### Community 73 - "Community 73"
-Cohesion: 0.17
-Nodes (15): AppFrontMatterSettings protocol, FilePattern enum, ProjectFrontMatter (generation config proposal), ProjectMarkdownParser (proposed static API), ProjectDiscovery, ProjectMarkdownParser, ParseBatchArguments, ParseBatchConfig (+7 more)
-
-### Community 74 - "Community 74"
 Cohesion: 0.30
 Nodes (7): MetadataExtractor, ProjectMetadataInference, ProjectMetadataInference, FileManager, Int, String, URL
+
+### Community 74 - "Community 74"
+Cohesion: 0.22
+Nodes (10): ParsableCommand, MigrateCommand, InfoCommand, ValidateCommand, VariantsCommand, Bool, String, Bool (+2 more)
 
 ### Community 75 - "Community 75"
 Cohesion: 0.20
@@ -451,194 +462,240 @@ Cohesion: 0.22
 Nodes (9): DocumentContext, ContainerError, cacheDirectoryCreationFailed, containerCreationFailed, projectRootDoesNotExist, ModelContainerFactory, Bool, ModelContainer (+1 more)
 
 ### Community 78 - "Community 78"
-Cohesion: 0.22
-Nodes (9): ValidationError, castListNotFound, episodeFileNotFound, missingCastList, mutuallyExclusive, ParseCommandArguments, Bool, String (+1 more)
+Cohesion: 0.25
+Nodes (8): CastExtractionError, fileNotReadable, parsingFailed, unsupportedFormat, CastExtractor, Bool, String, URL
 
 ### Community 80 - "Community 80"
 Cohesion: 0.15
 Nodes (11): ProjectSection, author, config, description, episodes, genre, season, tags (+3 more)
 
-### Community 82 - "Community 82"
+### Community 81 - "Community 81"
+Cohesion: 0.26
+Nodes (8): ProjectFile, String, Void, BundleContentView, ErrorView, LoadingView, PlainTextContentView, UnsupportedFileView
+
+### Community 83 - "Community 83"
 Cohesion: 0.26
 Nodes (11): CastMemberJSON, ContentBlock, Decodable, APIResponse, CastMemberJSON, ContentBlock, MetadataJSON, TokenUsage (+3 more)
 
-### Community 83 - "Community 83"
+### Community 84 - "Community 84"
 Cohesion: 0.17
 Nodes (10): CustomStringConvertible, ExpressibleByArrayLiteral, ExpressibleByStringLiteral, FilePattern, multiple, single, Bool, Decoder (+2 more)
 
-### Community 84 - "Community 84"
-Cohesion: 0.26
-Nodes (4): proyecto migrate (verify-then-strip), Expected files UI (PY-P1), Schema detection and v3 migration, CAST.md (owned by SwiftReparto)
+### Community 85 - "Community 85"
+Cohesion: 0.24
+Nodes (7): ProjectFrontMatter, String, URL, Void, Style, FileCoordinationManager, OwnedFields
 
-### Community 88 - "Community 88"
+### Community 89 - "Community 89"
 Cohesion: 0.18
 Nodes (5): OtherAppSettings, TestAppSettings, Bool, Int, String
 
-### Community 89 - "Community 89"
+### Community 90 - "Community 90"
 Cohesion: 0.35
 Nodes (3): VariantsCommandTests, String, URL
 
-### Community 90 - "Community 90"
+### Community 91 - "Community 91"
+Cohesion: 0.21
+Nodes (11): ProjectBrowser Execution Plan, OPERATION PROJECT-BROWSER Brief, FileTypeHandler, ProjectDetailPane, ProjectFileContentLoader, ProjectFileDiscovery, ProjectMetadata, ProjectBrowser Supervisor State (+3 more)
+
+### Community 92 - "Community 92"
 Cohesion: 0.29
 Nodes (5): BackendRegistry, NSLock, LLMBackendProtocol, String, T
 
-### Community 91 - "Community 91"
-Cohesion: 0.27
-Nodes (8): LocalizedError, RepartoRunner, Result, RunnerError, binaryNotFound, Int32, String, URL
-
-### Community 92 - "Community 92"
+### Community 93 - "Community 93"
 Cohesion: 0.26
 Nodes (10): ProjectStructure, flat, languageFirstMultiSeason, languageOnly, singleLanguageMultiSeason, unknown, RecognitionPattern, Int (+2 more)
 
-### Community 93 - "Community 93"
+### Community 94 - "Community 94"
 Cohesion: 0.35
 Nodes (6): VTTCue, VTTParser, Bool, Double, String, URL
 
-### Community 97 - "Community 97"
+### Community 98 - "Community 98"
 Cohesion: 0.18
 Nodes (5): OtherAppSettings, TestAppSettings, Bool, Int, String
 
-### Community 98 - "Community 98"
-Cohesion: 0.20
-Nodes (6): IteratorProtocol, ParseFileIterator, Sequence, Int, ParseBatchConfig, URL
-
 ### Community 99 - "Community 99"
-Cohesion: 0.24
-Nodes (7): ProjectFrontMatter, VariantResolver, Int, ProjectFrontMatter, SeasonDefinition, T, VARIANT_REFERENCE
+Cohesion: 0.31
+Nodes (8): DateFormatter, ProyectoError, directoryNotFound, invalidPath, llmError, parseError, projectMdExists, projectMdNotFound
 
 ### Community 100 - "Community 100"
+Cohesion: 0.31
+Nodes (7): RepartoRunner, Result, RunnerError, binaryNotFound, Int32, String, URL
+
+### Community 101 - "Community 101"
+Cohesion: 0.18
+Nodes (10): ContentRoute, customTextEditor, editableText, error, folder, handler, loading, readOnlyText (+2 more)
+
+### Community 102 - "Community 102"
+Cohesion: 0.29
+Nodes (10): ProjectDiscovery v3.1.0 execution plan (completed), CastMember, ProjectDiscovery.checkDirectory, ProjectDiscovery.findProjectMd, ProjectDiscovery.readCast, ProjectFrontMatter.mergingCast, ProjectFrontMatter.withCast, ProjectMarkdownParser.generate (+2 more)
+
+### Community 103 - "Community 103"
 Cohesion: 0.36
 Nodes (3): APIResponse, ProjectAnalysis, ProjectMetadata
 
-### Community 101 - "Community 101"
+### Community 104 - "Community 104"
+Cohesion: 0.27
+Nodes (10): Lossless Cast Merging, Multi-Season PROJECT.md Schema v4.0.0, Episode Path Template, Master PROJECT.md (type overview), Example PROJECT.md Files v4.0.0, Intro and Outro File Patterns v4.0.0, introFile / outroFile fields, PROJECT.md v3.x to v4.0.0 Migration Guide (+2 more)
+
+### Community 105 - "Community 105"
+Cohesion: 0.31
+Nodes (10): Example PROJECT.md (Podcast Meditations), AppFrontMatterSettings protocol, Extending PROJECT.md with App-Specific Settings, proyecto migrate command, PARSE Architecture, ParseBatchConfig, ParseFileIterator, PROJECT.md Front Matter Schema Reference (+2 more)
+
+### Community 106 - "Community 106"
 Cohesion: 0.29
 Nodes (6): AnyCodable, Bool, Data, Decoder, Encoder, T
 
-### Community 102 - "Community 102"
-Cohesion: 0.20
-Nodes (7): LanguageDefinition, DocumentContext, project, singleFile, String, Bool, URL
+### Community 107 - "Community 107"
+Cohesion: 0.33
+Nodes (5): DocumentContext, project, singleFile, Bool, URL
 
-### Community 103 - "Community 103"
+### Community 108 - "Community 108"
 Cohesion: 0.40
 Nodes (5): DirectoryAnalyzer, DirectoryContext, Int, String, URL
 
-### Community 107 - "Community 107"
-Cohesion: 0.20
-Nodes (9): ContentRoute, customTextEditor, editableText, error, handler, loading, readOnlyText, unsupported (+1 more)
-
 ### Community 109 - "Community 109"
-Cohesion: 0.28
-Nodes (5): Bool, Int, String, Void, EditableTextContentView
-
-### Community 110 - "Community 110"
-Cohesion: 0.50
-Nodes (5): Bool, Data, T, URL, BookmarkManager
-
-### Community 111 - "Community 111"
-Cohesion: 0.46
-Nodes (5): ParseBatchConfig, Bool, Int, String, URL
-
-### Community 112 - "Community 112"
-Cohesion: 0.39
-Nodes (6): ProjectFileContents, Bool, Data, Date, ProjectFile, String
+Cohesion: 0.27
+Nodes (6): ProjectFrontMatter, VariantResolver, Int, ProjectFrontMatter, SeasonDefinition, T
 
 ### Community 113 - "Community 113"
-Cohesion: 0.39
-Nodes (6): ProjectFileReference, Data, Date, ProjectModel, String, UUID
+Cohesion: 0.25
+Nodes (6): AsyncParsableCommand, DownloadCommand, InitCommand, ProyectoCLI, Bool, Int
 
 ### Community 114 - "Community 114"
-Cohesion: 0.43
-Nodes (6): SeasonDefinition, Date, FilePattern, Int, String, TTSConfig
+Cohesion: 0.33
+Nodes (9): Mission / Sortie / Work Unit terminology, PROJECT.md Foundation Execution Plan (Phase 0), Incomplete/Archived Docs README, PROJECT.md Foundation Execution Plan (Missions copy), SwiftProyecto CDN Model Management Requirements, Requirements: Per-language Voice Prompts on CastMember, CastMember, ProjectDiscovery (+1 more)
 
 ### Community 115 - "Community 115"
-Cohesion: 0.36
-Nodes (4): EpisodePathResolver, Bool, Int, String
+Cohesion: 0.22
+Nodes (9): DefaultHandlers, Image Handler Integration Guide, Project Feature Implementation Strategy, ProjectManager service, SwiftProyecto Integration Guide, ProjectMarkdownParser, ProjectService, Personaje Integration Requirements v5.1.0 (+1 more)
 
 ### Community 116 - "Community 116"
 Cohesion: 0.25
-Nodes (6): ProjectFileContentLoader, Bool, ProjectFile, ProjectFileContents, Set, UUID
+Nodes (6): IteratorProtocol, ParseFileIterator, Sequence, Int, ParseBatchConfig, URL
 
 ### Community 117 - "Community 117"
-Cohesion: 0.25
-Nodes (7): String, BookmarkError, accessDenied, creationFailed, invalidBookmarkData, resolutionFailed, staleBookmark
+Cohesion: 0.33
+Nodes (3): ProjectDetailPane, FileAction, ProjectFile
 
-### Community 118 - "Community 118"
+### Community 119 - "Community 119"
+Cohesion: 0.28
+Nodes (5): Bool, Int, String, Void, EditableTextContentView
+
+### Community 120 - "Community 120"
+Cohesion: 0.39
+Nodes (8): Compartido-Based Cast Extraction Execution Plan, Operation Format Detente Supervisor State, Operation MetaWing Test Cleanup Report, Sortie 1a SwiftCompartido API Investigation, Sortie 1b Test Audit for CastExtractor Refactoring, GuionParsedElementCollection.extractCharacters(), GuionParsedElementCollection, CastExtractor
+
+### Community 121 - "Community 121"
+Cohesion: 0.39
+Nodes (8): FilePattern type, PROJECT.md Generation Configuration Requirements, FilePattern type, preGenerateHook / postGenerateHook, Produciesta headless CLI generate command, Generation config fields on ProjectFrontMatter, Fixtures PROJECT.md, ProjectFrontMatter
+
+### Community 122 - "Community 122"
+Cohesion: 0.46
+Nodes (5): ParseBatchConfig, Bool, Int, String, URL
+
+### Community 123 - "Community 123"
+Cohesion: 0.39
+Nodes (6): ProjectFileContents, Bool, Data, Date, ProjectFile, String
+
+### Community 124 - "Community 124"
+Cohesion: 0.39
+Nodes (6): ProjectFileReference, Data, Date, ProjectModel, String, UUID
+
+### Community 125 - "Community 125"
+Cohesion: 0.43
+Nodes (6): SeasonDefinition, Date, FilePattern, Int, String, TTSConfig
+
+### Community 126 - "Community 126"
+Cohesion: 0.46
+Nodes (8): Operation MetaWing Brief, BackendRegistry, DirectoryAnalyzer, LLMBackendProtocol, ProjectGeneratorService, v4.1.0 LLM Project Generation Execution Plan, v4.1.0 LLM Project Generation Mission README, v4.1.0 LLM Project Generation Requirements
+
+### Community 127 - "Community 127"
+Cohesion: 0.36
+Nodes (4): EpisodePathResolver, Bool, Int, String
+
+### Community 128 - "Community 128"
+Cohesion: 0.25
+Nodes (6): ProjectFileContentLoader, Bool, ProjectFile, ProjectFileContents, Set, UUID
+
+### Community 129 - "Community 129"
 Cohesion: 0.38
 Nodes (3): ProjectFrontMatter, Bool, T
 
-### Community 119 - "Community 119"
-Cohesion: 0.33
-Nodes (6): ComponentDescriptor (SwiftAcervo), Acervo.customBaseDirectory, Acervo.ensureComponentReady, AcervoDownloadIntegrationTests, ModelManager.ensureModelReady, phi3RequiredFiles (hardcoded file list)
+### Community 130 - "Community 130"
+Cohesion: 0.52
+Nodes (7): CastExtractor, DirectoryAnalysisTests, Test Fixture Reference, sample.fdx fixture, sample.highland fixture, SwiftCompartido parsers, test-screenplay.fountain fixture
 
-### Community 120 - "Community 120"
+### Community 131 - "Community 131"
+Cohesion: 0.33
+Nodes (3): ProjectFile, FileLoadingState, UUID
+
+### Community 132 - "Community 132"
 Cohesion: 0.33
 Nodes (3): ProjectModel, UUID, ProjectWindow
 
-### Community 121 - "Community 121"
-Cohesion: 0.40
-Nodes (5): Phase 0-7 implementation plan, ProjectManager (proposed), ProjectFileReference (SwiftData), ProjectModel (SwiftData), ProjectService
+### Community 133 - "Community 133"
+Cohesion: 0.67
+Nodes (6): BackendRegistry, LLMBackend Architecture, LLMBackendProtocol, ProjectAnalysis, ProjectGeneratorService, ProjectMetadata
 
-### Community 122 - "Community 122"
-Cohesion: 0.53
-Nodes (6): BackendRegistry, CastMemberData, LLMBackendProtocol, ProjectAnalysis, ProjectGeneratorService, ProjectMetadata
+### Community 134 - "Community 134"
+Cohesion: 0.67
+Nodes (6): ProjectBrowser library README, FileAction, ProjectFile, ProjectFileDiscovery, ProjectWindow, textEditorBuilder
 
-### Community 123 - "Community 123"
-Cohesion: 0.40
-Nodes (3): AsyncParsableCommand, DownloadCommand, Bool
-
-### Community 124 - "Community 124"
-Cohesion: 0.40
-Nodes (5): FileSourceError, fileNotFound, invalidPath, notGitRepository, permissionDenied
-
-### Community 125 - "Community 125"
+### Community 135 - "Community 135"
 Cohesion: 0.40
 Nodes (3): registerClaudeAPIBackend(), initializeLLMBackends(), SwiftProyecto
 
-### Community 126 - "Community 126"
-Cohesion: 0.40
-Nodes (5): PLATFORM-ENFORCEMENT, CI platform checks, QUICK-START-ENFORCEMENT, Package.swift platforms 26, .swiftlint.yml platform rules
-
-### Community 127 - "Community 127"
+### Community 136 - "Community 136"
 Cohesion: 0.50
-Nodes (4): DefaultHandlers, ProjectWindow (image guide usage), Handler disambiguation (PY-P2), ProjectWindow (v5.1.0 initializer)
+Nodes (3): SwiftProyecto icon (small thumbnail of wizard mannequin illustration), SwiftProyecto banner (JPG): wooden mannequin wizard with glowing PROJECT sign, SwiftProyecto banner (PNG): same wizard mannequin and PROJECT sign illustration
+
+### Community 137 - "Community 137"
+Cohesion: 0.16
+Nodes (6): AudioFormat, Chapter, DocumentationExamplesTests, MyAppSettings, PodcastAppSettings, Bool
+
+### Community 138 - "Community 138"
+Cohesion: 0.67
+Nodes (4): PLAYLIST.jspf generation requirements, EpisodeFrontMatter, PLAYLIST.jspf output, proyecto playlist subcommand
+
+### Community 139 - "Community 139"
+Cohesion: 0.67
+Nodes (3): Quick Start: Platform Enforcement, macOS/iOS 26+ platform floor, SwiftLint platform availability rules
+
+### Community 140 - "Community 140"
+Cohesion: 1.00
+Nodes (3): SwiftAcervo v2 integration requirements, SwiftAcervo v2 access migration (completed), ModelManager
 
 ## Ambiguous Edges - Review These
-- `ProjectWindow.swift` → `OPERATION PROJECT-BROWSER Post-Mission Brief`  [AMBIGUOUS]
-  Docs/complete/projectbrowser-library-01/OPERATION_PROJECT-BROWSER_01_BRIEF.md · relation: references
-- `ProjectBundleTests` → `tests.yml CI result check`  [AMBIGUOUS]
-  Docs/TEST_ANALYSIS.md · relation: references
-- `IMAGE_HANDLER_GUIDE.md` → `macOS 26+ minimum platform rule`  [AMBIGUOUS]
-  Docs/PLATFORM-ENFORCEMENT.md · relation: conceptually_related_to
-- `PROJECT_MD_RULES.md` → `Coordinated writes (PY-P4)`  [AMBIGUOUS]
-  Docs/PERSONAJE_INTEGRATION_v5.1.0.md · relation: conceptually_related_to
-- `FilePattern enum` → `ProjectFrontMatter (PROJECT.md schema)`  [AMBIGUOUS]
-  Docs/GENERATION_CONFIG_REQUIREMENTS.md · relation: conceptually_related_to
-- `ProjectMarkdownParser (proposed static API)` → `ProjectMarkdownParser`  [AMBIGUOUS]
-  Docs/IMPLEMENTATION_STRATEGY.md · relation: semantically_similar_to
-- `EXECUTION_PLAN.md (SwiftAcervo 0.8.0 Migration)` → `ProjectModel (existing class)`  [AMBIGUOUS]
+- `FilePattern type` → `PROJECT.md Front Matter Schema Reference`  [AMBIGUOUS]
+  Docs/PROJECT_MD_REFERENCE.md · relation: references
+- `v4.1.0 LLM Project Generation Execution Plan` → `CastExtractor`  [AMBIGUOUS]
+  Docs/incomplete/v4.1.0-llm-project-generation/EXECUTION_PLAN.md · relation: references
+- `ProjectMetadata` → `ProjectFrontMatter`  [AMBIGUOUS]
+  Docs/complete/projectbrowser-library-01/EXECUTION_PLAN.md · relation: conceptually_related_to
+- `ProyectoCLI DownloadCommand` → `ProyectoCLI InitCommand`  [AMBIGUOUS]
+  Docs/missions/manifest-airdrop-2026-04/ACERVO_AUDIT.md · relation: conceptually_related_to
+- `ProjectModel constant (planned, renamed to LanguageModel)` → `Existing ProjectModel class`  [AMBIGUOUS]
   Docs/missions/manifest-airdrop-2026-04/EXECUTION_PLAN.md · relation: conceptually_related_to
-- `Manifest Airdrop Mission Archive README` → `SwiftAcervo (external library)`  [AMBIGUOUS]
-  Docs/missions/manifest-airdrop-2026-04/README.md · relation: references
 
 ## Knowledge Gaps
-- **373 isolated node(s):** `projectManifest`, `file`, `ProjectModel`, `Set`, `PersistentIdentifier` (+368 more)
+- **369 isolated node(s):** `projectManifest`, `file`, `ProjectModel`, `Set`, `PersistentIdentifier` (+364 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **33 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **31 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **What is the exact relationship between `ProjectWindow.swift` and `OPERATION PROJECT-BROWSER Post-Mission Brief`?**
+- **What is the exact relationship between `FilePattern type` and `PROJECT.md Front Matter Schema Reference`?**
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
-- **What is the exact relationship between `ProjectBundleTests` and `tests.yml CI result check`?**
+- **What is the exact relationship between `v4.1.0 LLM Project Generation Execution Plan` and `CastExtractor`?**
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
-- **What is the exact relationship between `IMAGE_HANDLER_GUIDE.md` and `macOS 26+ minimum platform rule`?**
+- **What is the exact relationship between `ProjectMetadata` and `ProjectFrontMatter`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **What is the exact relationship between `PROJECT_MD_RULES.md` and `Coordinated writes (PY-P4)`?**
+- **What is the exact relationship between `ProyectoCLI DownloadCommand` and `ProyectoCLI InitCommand`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **What is the exact relationship between `FilePattern enum` and `ProjectFrontMatter (PROJECT.md schema)`?**
+- **What is the exact relationship between `ProjectModel constant (planned, renamed to LanguageModel)` and `Existing ProjectModel class`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **What is the exact relationship between `ProjectMarkdownParser (proposed static API)` and `ProjectMarkdownParser`?**
-  _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
-- **What is the exact relationship between `EXECUTION_PLAN.md (SwiftAcervo 0.8.0 Migration)` and `ProjectModel (existing class)`?**
-  _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
+- **Why does `ProjectMarkdownParser` connect `Service Abstractions` to `Directory File Source`, `File Tree Structure`, `Security-Scoped Bookmark Management`, `Markdown Parser Core`, `Community 137`, `Release Workflow`, `Model Container Factory`, `Bookmark Error Handling`, `Foundation Model Manager`, `SwiftProyecto Tests`, `Directory Analysis`, `Document Context Type`, `Settings Extension System`, `AGENTS Front Matter`, `Quick Start Guide`, `Community 71`, `Community 74`, `Community 76`, `Community 82`, `Community 85`, `Community 90`, `Community 99`?**
+  _High betweenness centrality (0.248) - this node is a cross-community bridge._
+- **Why does `Sendable` connect `Release Workflow` to `Markdown Parser Tests`, `Front Matter Tests`, `Git Repository File Source`, `Cast Member Tests`, `Project Model Tests`, `File Pattern Tests`, `Project Service Tests`, `File Reference Tests`, `Model Container Factory`, `Project Data Model`, `File Pattern Type`, `YAML Parsing Tests`, `Community 43`, `Front Matter Settings Extension`, `Community 47`, `SwiftProyecto Package`, `Bookmark Utilities`, `Universal`, `Performance Testing`, `SwiftProyecto Logo`, `Community 73`, `Community 80`, `Community 84`, `Community 92`, `Community 93`, `Community 106`, `Community 107`, `Community 108`, `Community 122`, `Community 123`, `Community 125`?**
+  _High betweenness centrality (0.178) - this node is a cross-community bridge._
