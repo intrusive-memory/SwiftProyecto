@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.5.0] - 2026-11-14
+
 ### Added
 
 - `ProjectWindow.init` takes two optional parameters, both `nil` by default: `selectableFolder`, a predicate naming the folders whose sidebar row selects the folder when its label is tapped, and `folderHandler`, which builds a selected folder's detail view. The disclosure arrow still expands and collapses a selectable folder. A folder is never looked up in `handlers`, even when its name matches a key. `ProjectBrowserSidebar` and `FileTreeView` take `selectableFolder`, and `ProjectDetailPane` takes `folderHandler`. The predicate runs while each folder row draws, so it must be cheap and must not read files. With neither set, the browser behaves as before.
