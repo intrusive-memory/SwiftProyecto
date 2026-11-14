@@ -72,6 +72,10 @@ public struct ProjectBrowserSidebar: View {
   /// ``FileTreeView``. `nil` (the default) shows none.
   private let rowAccessory: ((ProjectFile) -> AnyView)?
 
+  /// Names the folders in the embedded ``FileTreeView`` whose row selects the
+  /// folder. `nil` (the default) makes none selectable.
+  private let selectableFolder: ((ProjectFile) -> Bool)?
+
   /// Whether the action bar's buttons are currently enabled. Forwarded
   /// directly to ``ProjectActionBar/isEnabled``.
   private let isActionBarEnabled: Bool
@@ -100,6 +104,12 @@ public struct ProjectBrowserSidebar: View {
   ///     context menu.
   ///   - rowAccessory: Builds a view for the trailing edge of a file or bundle
   ///     row. Defaults to `nil`.
+  ///   - selectableFolder: Returns `true` for a folder whose row selects the
+  ///     folder when its label is tapped; the disclosure arrow still expands
+  ///     and collapses it. It is called while each folder row draws, so it
+  ///     must be cheap and must not read files: work out what you need once
+  ///     and only compare here. Defaults to `nil`, and then no folder is
+  ///     selectable.
   public init(
     files: [ProjectFile],
     metadata: ProjectMetadata?,
@@ -114,7 +124,8 @@ public struct ProjectBrowserSidebar: View {
     onLoadAll: @escaping () -> Void,
     onUnloadAll: @escaping () -> Void,
     onFileAction: ((ProjectFile, FileAction) -> Void)? = nil,
-    rowAccessory: ((ProjectFile) -> AnyView)? = nil
+    rowAccessory: ((ProjectFile) -> AnyView)? = nil,
+    selectableFolder: ((ProjectFile) -> Bool)? = nil
   ) {
     self.files = files
     self.metadata = metadata
@@ -130,6 +141,7 @@ public struct ProjectBrowserSidebar: View {
     self.onUnloadAll = onUnloadAll
     self.onFileAction = onFileAction
     self.rowAccessory = rowAccessory
+    self.selectableFolder = selectableFolder
   }
 
   public var body: some View {
@@ -148,7 +160,8 @@ public struct ProjectBrowserSidebar: View {
         onFolderToggle: onFolderToggle,
         onSelect: onSelect,
         onFileAction: onFileAction,
-        rowAccessory: rowAccessory
+        rowAccessory: rowAccessory,
+        selectableFolder: selectableFolder
       )
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 

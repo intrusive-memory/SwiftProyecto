@@ -37,6 +37,8 @@ public enum ProjectFileContentLoader {
   ///   this file's content itself.
   /// - `file.isBundle` is `true` — a package bundle is a directory on disk
   ///   with no bytes of its own; only a handler can render one.
+  /// - `file.isDirectory` is `true` — a folder has no bytes of its own either;
+  ///   a selected folder renders through `ProjectWindow`'s `folderHandler`.
   /// - `cache` already has an entry for `file.id` — a cache hit; the
   ///   previously-loaded contents are still good enough to display.
   /// - `loadingFiles` already contains `file.id` — a load is already in
@@ -52,6 +54,7 @@ public enum ProjectFileContentLoader {
   ) -> Bool {
     guard !hasHandler else { return false }
     guard !file.isBundle else { return false }
+    guard !file.isDirectory else { return false }
     guard cache[file.id] == nil else { return false }
     guard !loadingFiles.contains(file.id) else { return false }
     return true
