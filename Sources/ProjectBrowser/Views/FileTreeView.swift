@@ -44,6 +44,10 @@ public struct FileTreeView: View {
   /// accessory on any row.
   private let rowAccessory: ((ProjectFile) -> AnyView)?
 
+  /// Names the folders whose row selects the folder when its label is tapped,
+  /// or `nil` for no selectable folders.
+  private let selectableFolder: ((ProjectFile) -> Bool)?
+
   /// Creates a hierarchical file tree view.
   ///
   /// - Parameters:
@@ -64,6 +68,12 @@ public struct FileTreeView: View {
   ///     row, such as a progress indicator. Folder rows have no accessory. The
   ///     view exists only while its row does, so it can start and stop its own
   ///     work on appear and disappear. Defaults to `nil`.
+  ///   - selectableFolder: Returns `true` for a folder whose row selects the
+  ///     folder, through `onSelect`, when its label is tapped. The disclosure
+  ///     arrow still expands and collapses it. It is called while each folder
+  ///     row draws, so it must be cheap and must not read files: work out what
+  ///     you need once and only compare here. Defaults to `nil`, and then no
+  ///     folder is selectable.
   public init(
     files: [ProjectFile],
     expandedFolders: Binding<Set<UUID>>,
@@ -71,7 +81,8 @@ public struct FileTreeView: View {
     onFolderToggle: @escaping (UUID) -> Void,
     onSelect: @escaping (ProjectFile) -> Void,
     onFileAction: ((ProjectFile, FileAction) -> Void)? = nil,
-    rowAccessory: ((ProjectFile) -> AnyView)? = nil
+    rowAccessory: ((ProjectFile) -> AnyView)? = nil,
+    selectableFolder: ((ProjectFile) -> Bool)? = nil
   ) {
     self.files = files
     self._expandedFolders = expandedFolders
@@ -80,6 +91,7 @@ public struct FileTreeView: View {
     self.onSelect = onSelect
     self.onFileAction = onFileAction
     self.rowAccessory = rowAccessory
+    self.selectableFolder = selectableFolder
   }
 
   public var body: some View {
@@ -92,13 +104,27 @@ public struct FileTreeView: View {
           onFolderToggle: onFolderToggle,
           onSelect: onSelect,
           onFileAction: onFileAction,
-          rowAccessory: rowAccessory
+          rowAccessory: rowAccessory,
+          selectableFolder: selectableFolder
         )
       }
     }
     #if os(macOS)
       .listStyle(.sidebar)
     #endif
+  }
+
+  // MARK: - Selectable folders
+
+  /// Whether `file` is a folder whose row selects it: it is a directory and
+  /// `selectableFolder` returns `true` for it. A file is never a selectable
+  /// folder, and with no predicate no folder is.
+  static func isSelectableFolder(
+    _ file: ProjectFile,
+    selectableFolder: ((ProjectFile) -> Bool)?
+  ) -> Bool {
+    guard file.isDirectory, let selectableFolder else { return false }
+    return selectableFolder(file)
   }
 
   // MARK: - Tree Building
@@ -149,7 +175,8 @@ struct FileTreeNode: Identifiable, Hashable {
 
 /// Renders a single ``FileTreeNode``: a `DisclosureGroup` for directories
 /// (recursing into children), or a selectable row with icon and label for
-/// files.
+/// files. A directory the `selectableFolder` predicate names also selects
+/// when its label is tapped.
 private struct FileTreeNodeRow: View {
   let node: FileTreeNode
 
@@ -160,6 +187,7 @@ private struct FileTreeNodeRow: View {
   let onSelect: (ProjectFile) -> Void
   let onFileAction: ((ProjectFile, FileAction) -> Void)?
   let rowAccessory: ((ProjectFile) -> AnyView)?
+  let selectableFolder: ((ProjectFile) -> Bool)?
 
   private var isExpanded: Binding<Bool> {
     Binding(
@@ -183,11 +211,28 @@ private struct FileTreeNodeRow: View {
             onFolderToggle: onFolderToggle,
             onSelect: onSelect,
             onFileAction: onFileAction,
-            rowAccessory: rowAccessory
+            rowAccessory: rowAccessory,
+            selectableFolder: selectableFolder
           )
         }
       } label: {
-        FileTreeRowLabel(file: node.file)
+        if FileTreeView.isSelectableFolder(node.file, selectableFolder: selectableFolder) {
+          // Only the label selects; the disclosure arrow sits outside it and
+          // keeps expanding and collapsing through `isExpanded`.
+          FileTreeRowLabel(file: node.file)
+            .contentShape(Rectangle())
+            .padding(.vertical, 2)
+            .padding(.horizontal, 4)
+            .background(
+              RoundedRectangle(cornerRadius: 4)
+                .fill(isSelected ? Color.blue.opacity(0.2) : Color.clear)
+            )
+            .onTapGesture {
+              onSelect(node.file)
+            }
+        } else {
+          FileTreeRowLabel(file: node.file)
+        }
       }
     } else {
       FileTreeRowLabel(file: node.file, accessory: rowAccessory?(node.file))

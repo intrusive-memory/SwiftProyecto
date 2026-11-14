@@ -133,6 +133,16 @@ public struct ProjectWindow: View {
   /// Sidebar column maximum width (macOS).
   private let sidebarMaxWidth: CGFloat
 
+  /// Names the folders whose sidebar row selects the folder when its label is
+  /// tapped. It is called while each folder row draws, so it must be cheap and
+  /// must not read files: a host works out what it needs once and only
+  /// compares here. `nil` makes no folder selectable.
+  private let selectableFolder: ((ProjectFile) -> Bool)?
+
+  /// Builds the detail view for a selected folder. A folder is never looked up
+  /// in `handlers`, even by name. `nil` shows ``UnsupportedFileView``.
+  private let folderHandler: ((ProjectFile) -> AnyView)?
+
   // MARK: - Internal state
 
   /// The flat array of files/folders discovered beneath ``directoryURL``.
@@ -218,6 +228,15 @@ public struct ProjectWindow: View {
   ///   - sidebarMinWidth: Sidebar minimum width (macOS). Defaults to `250`.
   ///   - sidebarIdealWidth: Sidebar ideal width (macOS). Defaults to `300`.
   ///   - sidebarMaxWidth: Sidebar maximum width (macOS). Defaults to `400`.
+  ///   - selectableFolder: Returns `true` for a folder whose sidebar row
+  ///     selects the folder when its label is tapped; the disclosure arrow
+  ///     still expands and collapses it. It is called while each folder row
+  ///     draws, so it must be cheap and must not read files: work out what you
+  ///     need once and only compare here. Defaults to `nil`, and then no folder
+  ///     is selectable.
+  ///   - folderHandler: Builds the detail view for a selected folder. A folder
+  ///     is never looked up in `handlers`, even when its name matches a key.
+  ///     Defaults to `nil`.
   public init(
     directoryURL: URL,
     handlers: [String: (ProjectFile) -> AnyView] = [:],
@@ -234,7 +253,9 @@ public struct ProjectWindow: View {
     rowAccessory: ((ProjectFile) -> AnyView)? = nil,
     sidebarMinWidth: CGFloat = 250,
     sidebarIdealWidth: CGFloat = 300,
-    sidebarMaxWidth: CGFloat = 400
+    sidebarMaxWidth: CGFloat = 400,
+    selectableFolder: ((ProjectFile) -> Bool)? = nil,
+    folderHandler: ((ProjectFile) -> AnyView)? = nil
   ) {
     self.directoryURL = directoryURL
     self.handlers = handlers
@@ -252,6 +273,8 @@ public struct ProjectWindow: View {
     self.sidebarMinWidth = sidebarMinWidth
     self.sidebarIdealWidth = sidebarIdealWidth
     self.sidebarMaxWidth = sidebarMaxWidth
+    self.selectableFolder = selectableFolder
+    self.folderHandler = folderHandler
   }
 
   public var body: some View {
@@ -397,8 +420,16 @@ public struct ProjectWindow: View {
       onLoadAll: { Task { await loadAllContent() } },
       onUnloadAll: { unloadAllContent() },
       onFileAction: dispatchFileAction,
-      rowAccessory: rowAccessory
+      rowAccessory: rowAccessory,
+      selectableFolder: selectableFolder
     )
+  }
+
+  /// Whether `file`'s sidebar row selects it, as the window passes
+  /// `selectableFolder` to the tree. Internal so tests can assert the
+  /// forwarding without hosting the view.
+  func isSelectableFolder(_ file: ProjectFile) -> Bool {
+    FileTreeView.isSelectableFolder(file, selectableFolder: selectableFolder)
   }
 
   /// Builds ``ProjectDetailPane`` for `file`, wiring up its lazily-loaded
@@ -419,7 +450,8 @@ public struct ProjectWindow: View {
       onAction: dispatchFileAction,
       onRetryLoad: { file in dispatchFileAction(file, action: .reload) },
       onSaveText: saveText,
-      textEditorBuilder: textEditorBuilder
+      textEditorBuilder: textEditorBuilder,
+      folderHandler: folderHandler
     )
   }
 
