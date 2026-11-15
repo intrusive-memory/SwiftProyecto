@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.5.1] - 2026-11-14
+
+### Fixed
+
+- A selectable folder's sidebar row is now an accessibility button. Its label combines its children, carries the button trait (and the selected trait while selected), performs the selection as an accessibility action, and has the identifier `projectBrowser.folder.<relativePath>`. Before, XCUITest could not resolve the row and VoiceOver users could not select the folder. File rows and non-selectable folders are unchanged.
+
 ## [5.5.0] - 2026-11-14
 
 ### Added
