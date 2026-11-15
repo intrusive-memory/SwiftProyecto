@@ -127,6 +127,12 @@ public struct FileTreeView: View {
     return selectableFolder(file)
   }
 
+  /// The accessibility identifier of a selectable folder's row:
+  /// `"projectBrowser.folder."` followed by the folder's `relativePath`.
+  static func folderAccessibilityIdentifier(for file: ProjectFile) -> String {
+    "projectBrowser.folder." + file.relativePath
+  }
+
   // MARK: - Tree Building
 
   /// Builds a nested tree of ``FileTreeNode`` from a flat array of
@@ -230,6 +236,15 @@ private struct FileTreeNodeRow: View {
             .onTapGesture {
               onSelect(node.file)
             }
+            // After the tap gesture and background, so neither is disturbed.
+            // Without these the label is not a resolvable accessibility
+            // element: XCUITest cannot click it and VoiceOver cannot select it.
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+            .accessibilityAction {
+              onSelect(node.file)
+            }
+            .accessibilityIdentifier(FileTreeView.folderAccessibilityIdentifier(for: node.file))
         } else {
           FileTreeRowLabel(file: node.file)
         }
