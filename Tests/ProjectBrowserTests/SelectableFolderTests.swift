@@ -62,6 +62,27 @@ final class SelectableFolderTests: XCTestCase {
     )
   }
 
+  // MARK: - Accessibility identifier
+
+  func testFolderAccessibilityIdentifierForTopLevelFolder() {
+    XCTAssertEqual(
+      FileTreeView.folderAccessibilityIdentifier(for: locationsFolder),
+      "projectBrowser.folder.locations")
+  }
+
+  func testFolderAccessibilityIdentifierForNestedFolder() {
+    let nested = ProjectFile(
+      name: "interiors",
+      relativePath: "locations/interiors",
+      fileExtension: nil,
+      isDirectory: true,
+      modifiedDate: Date()
+    )
+    XCTAssertEqual(
+      FileTreeView.folderAccessibilityIdentifier(for: nested),
+      "projectBrowser.folder.locations/interiors")
+  }
+
   // MARK: - Predicate true
 
   func testPredicateTrueFolderIsSelectableAndShowsFolderHandlerView() {
