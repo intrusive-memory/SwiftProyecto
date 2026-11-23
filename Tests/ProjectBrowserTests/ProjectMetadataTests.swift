@@ -185,4 +185,83 @@ final class ProjectMetadataTests: XCTestCase {
     let unwrapped = try XCTUnwrap(metadata)
     XCTAssertEqual(unwrapped.title, "Extended Project")
   }
+
+  // MARK: - YAML scalar decoding
+
+  func testLoadDecodesDoubleQuotedEscapes() async throws {
+    try writeProjectMD(
+      #"""
+      ---
+      title: "The \"Quoted\" Show"
+      author: "Back\\slash \/ Writer"
+      description: "A host named \"Captain\" tours the town.\nSecond line\twith a tab, a \\ backslash and café."
+      ---
+      """#
+    )
+
+    let metadata = try await ProjectMetadata.load(from: tempRoot)
+
+    let unwrapped = try XCTUnwrap(metadata)
+    XCTAssertEqual(unwrapped.title, #"The "Quoted" Show"#)
+    XCTAssertEqual(unwrapped.author, #"Back\slash / Writer"#)
+    XCTAssertEqual(
+      unwrapped.description,
+      "A host named \"Captain\" tours the town.\nSecond line\twith a tab, a \\ backslash and caf\u{E9}."
+    )
+  }
+
+  func testLoadDecodesSingleQuotedEscapes() async throws {
+    try writeProjectMD(
+      #"""
+      ---
+      title: 'It''s a Show'
+      author: 'Pat O''Brien'
+      description: 'Single quotes keep \n and \" as written.'
+      ---
+      """#
+    )
+
+    let metadata = try await ProjectMetadata.load(from: tempRoot)
+
+    let unwrapped = try XCTUnwrap(metadata)
+    XCTAssertEqual(unwrapped.title, "It's a Show")
+    XCTAssertEqual(unwrapped.author, "Pat O'Brien")
+    XCTAssertEqual(unwrapped.description, #"Single quotes keep \n and \" as written."#)
+  }
+
+  func testLoadLeavesPlainScalarsUnchanged() async throws {
+    try writeProjectMD(
+      #"""
+      ---
+      title: Plain Title with a \n and "inner" quotes
+      author: It's Plain
+      description: Ends with a quote"
+      ---
+      """#
+    )
+
+    let metadata = try await ProjectMetadata.load(from: tempRoot)
+
+    let unwrapped = try XCTUnwrap(metadata)
+    XCTAssertEqual(unwrapped.title, #"Plain Title with a \n and "inner" quotes"#)
+    XCTAssertEqual(unwrapped.author, "It's Plain")
+    XCTAssertEqual(unwrapped.description, #"Ends with a quote""#)
+  }
+
+  func testLoadIgnoresCommentAfterClosingQuote() async throws {
+    try writeProjectMD(
+      #"""
+      ---
+      title: "Commented \"Title\"" # a trailing comment
+      created: "2026-01-15"
+      ---
+      """#
+    )
+
+    let metadata = try await ProjectMetadata.load(from: tempRoot)
+
+    let unwrapped = try XCTUnwrap(metadata)
+    XCTAssertEqual(unwrapped.title, #"Commented "Title""#)
+    XCTAssertNotNil(unwrapped.created)
+  }
 }
