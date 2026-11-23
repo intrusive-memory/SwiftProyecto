@@ -1,5 +1,6 @@
 ---
 type: doc
+updated: 2026-11-23
 ---
 
 # Changelog
@@ -10,6 +11,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [5.5.2] - 2026-11-23
+
+### Fixed
+
+- `ProjectMetadata.load` (ProjectBrowser) decodes YAML quoted scalars in PROJECT.md front matter. Double-quoted values decode the YAML 1.2 escapes (`\"`, `\\`, `\/`, `\n`, `\t`, `\uXXXX` and the rest); single-quoted values decode `''`. Before, a quoted description kept its backslashes, which showed in the sidebar (reported in intrusive-memory/Personaje#41). Plain scalars are unchanged, and text after a closing quote is ignored.
 
 ## [5.5.1] - 2026-11-14
 
