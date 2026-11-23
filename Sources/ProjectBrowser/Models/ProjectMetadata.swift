@@ -63,8 +63,9 @@ extension ProjectMetadata {
   /// present, parses its YAML front matter into a ``ProjectMetadata``.
   ///
   /// Only a small, dependency-free subset of YAML is supported — simple
-  /// `key: value` pairs (optionally quoted) between a pair of `---`
-  /// delimiters at the top of the file. This is sufficient for the
+  /// `key: value` pairs between a pair of `---` delimiters at the top of
+  /// the file. Quoted values are decoded as YAML does: double-quoted
+  /// escapes (`\"`, `\\`, `\n`, `\uXXXX`, …) and single-quoted `''`. This is sufficient for the
   /// `title` / `author` / `description` / `created` fields consumed by
   /// `ProjectHeader`; anything beyond that (nested structures, lists,
   /// multi-line scalars) is ignored.
@@ -190,19 +191,109 @@ extension ProjectMetadata {
     return (key, value)
   }
 
-  /// Strips a single layer of matching single or double quotes from
-  /// `value`, if present.
+  /// Decodes a YAML scalar value the way a YAML parser would.
+  ///
+  /// - Double-quoted (`"..."`): the quotes are removed and YAML escape
+  ///   sequences are decoded (`\"`, `\\`, `\/`, `\n`, `\t`, `\r`,
+  ///   `\0`, `\xXX`, `\uXXXX`, `\UXXXXXXXX`, and the rest of the YAML 1.2
+  ///   set).
+  /// - Single-quoted (`'...'`): the quotes are removed and `''` becomes `'`.
+  /// - Plain scalars are returned unchanged.
+  ///
+  /// Text after the closing quote (such as a trailing `# comment`) is
+  /// ignored. A quoted value that is never closed on its line is returned
+  /// as written, since multi-line scalars aren't supported here.
   private static func unquote(_ value: String) -> String {
-    guard value.count >= 2 else {
-      return value
+    if value.hasPrefix("\"") {
+      return decodeDoubleQuoted(value.dropFirst()) ?? value
     }
-    if value.hasPrefix("\"") && value.hasSuffix("\"") {
-      return String(value.dropFirst().dropLast())
-    }
-    if value.hasPrefix("'") && value.hasSuffix("'") {
-      return String(value.dropFirst().dropLast())
+    if value.hasPrefix("'") {
+      return decodeSingleQuoted(value.dropFirst()) ?? value
     }
     return value
+  }
+
+  /// Decodes the body of a double-quoted scalar (the text after the
+  /// opening quote). Returns `nil` if there is no closing quote.
+  private static func decodeDoubleQuoted(_ body: Substring) -> String? {
+    var result = ""
+    var iterator = body.makeIterator()
+    while let char = iterator.next() {
+      switch char {
+      case "\"":
+        return result
+      case "\\":
+        guard let escape = iterator.next() else {
+          return nil
+        }
+        switch escape {
+        case "0": result.append("\u{0}")
+        case "a": result.append("\u{7}")
+        case "b": result.append("\u{8}")
+        case "t", "\t": result.append("\t")
+        case "n": result.append("\n")
+        case "v": result.append("\u{B}")
+        case "f": result.append("\u{C}")
+        case "r": result.append("\r")
+        case "e": result.append("\u{1B}")
+        case " ": result.append(" ")
+        case "\"": result.append("\"")
+        case "/": result.append("/")
+        case "\\": result.append("\\")
+        case "N": result.append("\u{85}")
+        case "_": result.append("\u{A0}")
+        case "L": result.append("\u{2028}")
+        case "P": result.append("\u{2029}")
+        case "x", "u", "U":
+          let length = escape == "x" ? 2 : (escape == "u" ? 4 : 8)
+          var hex = ""
+          for _ in 0..<length {
+            guard let digit = iterator.next() else {
+              return nil
+            }
+            hex.append(digit)
+          }
+          if let code = UInt32(hex, radix: 16), let scalar = Unicode.Scalar(code) {
+            result.unicodeScalars.append(scalar)
+          } else {
+            // Not a valid code point: keep the escape as written.
+            result.append("\\")
+            result.append(escape)
+            result.append(hex)
+          }
+        default:
+          // Not a YAML escape: keep it as written rather than dropping text.
+          result.append("\\")
+          result.append(escape)
+        }
+      default:
+        result.append(char)
+      }
+    }
+    return nil
+  }
+
+  /// Decodes the body of a single-quoted scalar (the text after the
+  /// opening quote), where `''` stands for one `'`. Returns `nil` if there
+  /// is no closing quote.
+  private static func decodeSingleQuoted(_ body: Substring) -> String? {
+    var result = ""
+    var index = body.startIndex
+    while index < body.endIndex {
+      let char = body[index]
+      let next = body.index(after: index)
+      if char == "'" {
+        if next < body.endIndex, body[next] == "'" {
+          result.append("'")
+          index = body.index(after: next)
+          continue
+        }
+        return result
+      }
+      result.append(char)
+      index = next
+    }
+    return nil
   }
 
   /// Parses a `created` value using ISO 8601, falling back to a

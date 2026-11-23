@@ -22,6 +22,45 @@ final class ProjectMarkdownParserTests: XCTestCase {
 
   // MARK: - Parsing Tests - Valid Content
 
+  func testParse_DecodesQuotedScalarEscapes() throws {
+    let content = #"""
+      ---
+      type: project
+      title: 'It''s a Show'
+      author: "A \"Quoted\" Writer"
+      created: 2025-11-17T10:30:00Z
+      description: "A host named \"Captain\" tours the town.\nSecond line\twith a tab."
+      ---
+      """#
+
+    let (frontMatter, _) = try parser.parse(content: content)
+
+    XCTAssertEqual(frontMatter.title, "It's a Show")
+    XCTAssertEqual(frontMatter.author, "A \"Quoted\" Writer")
+    XCTAssertEqual(
+      frontMatter.description, "A host named \"Captain\" tours the town.\nSecond line\twith a tab.")
+  }
+
+  /// UNIVERSAL 5.3.0's YAML parser leaves `\\` out of its double-quoted
+  /// escape set (Sources/YAML/YAML.swift, `unescapeDoubleQuotes`), so
+  /// `"a\\b"` decodes as `a\` plus a backspace. When UNIVERSAL fixes it,
+  /// this expected failure stops failing: delete the XCTExpectFailure.
+  func testParse_DecodesEscapedBackslash_KnownUniversalBug() throws {
+    let content = #"""
+      ---
+      type: project
+      title: "Back\\slash"
+      author: A
+      created: 2025-11-17T10:30:00Z
+      ---
+      """#
+
+    let (frontMatter, _) = try parser.parse(content: content)
+
+    XCTExpectFailure("UNIVERSAL does not decode \\\\ in double-quoted YAML scalars")
+    XCTAssertEqual(frontMatter.title, #"Back\slash"#)
+  }
+
   func testParse_MinimalContent() throws {
     let content = """
       ---
